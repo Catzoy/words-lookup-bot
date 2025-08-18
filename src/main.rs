@@ -7,8 +7,7 @@ use std::net::SocketAddr;
 use teloxide::dispatching::{Dispatcher, UpdateFilterExt};
 use teloxide::error_handlers::LoggingErrorHandler;
 use teloxide::prelude::{DependencyMap, Requester, Update};
-use teloxide::types::{Me, Message};
-use teloxide::utils::command::parse_command;
+use teloxide::types::Message;
 use teloxide::{update_listeners, Bot};
 
 #[derive(Clone)]
