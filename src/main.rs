@@ -2,7 +2,8 @@ use anyhow::Context as _;
 use shuttle_runtime::{Error, SecretStore};
 use std::net::SocketAddr;
 use teloxide::prelude::Requester;
-use teloxide::types::Message;
+use teloxide::types::{Me, Message};
+use teloxide::utils::command::parse_command;
 use teloxide::{repl, Bot};
 
 pub struct TelegramService {
@@ -22,19 +23,15 @@ impl shuttle_runtime::Service for TelegramService {
             .build()
             .expect("Could not build request client");
         let bot = Bot::with_client(self.token, client);
-
-        repl(bot, |bot: Bot, message: Message| async move {
+        repl(bot, |bot: Bot, me: Me, message: Message| async move {
             log::info!("Handling a new message!");
             log::debug!("Message: {:#?}", message);
-            let result = bot.send_message(message.chat.id, "Hi there").await;
-            match result {
-                Ok(_) => {
-                    log::info!("Sent successfully!");
-                }
-                Err(e) => {
-                    log::error!("Error while sending message: {}", e);
-                }
-            }
+            let text = message.text().unwrap_or_default();
+            let bot_name = me.username.clone().unwrap_or_default();
+            let (cmd, args) = parse_command(text, bot_name).unwrap_or_default();
+            match cmd {
+                _ => {}
+            };
             Ok(())
         }).await;
 
