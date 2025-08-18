@@ -3011,7 +3011,6 @@ dependencies = [
  "shuttle-runtime",
  "teloxide",
  "tokio",
- "tracing",
 ]
 
 [[package]]
