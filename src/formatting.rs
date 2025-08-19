@@ -31,7 +31,7 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append(format!("#{} - {}\n", i, def.term));
         self.builder.append(format!("Meaning \"{}\"\n", def.explanation));
         if def.example.is_empty().not() {
-            self.builder.append(format!("As in {}\n", def.example));
+            self.builder.append(format!("As in \"{}\n\"", def.example));
         }
         self.builder.append("\n");
     }
