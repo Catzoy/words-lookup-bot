@@ -98,7 +98,7 @@ where
         } else if let Some(error) = &self.error {
             Err(anyhow::anyhow!("{}", error))
         } else {
-            Err(anyhow::anyhow!("LookUp failed without an error"))
+            Ok(Vec::default()) // such bullshit
         }
     }
 }

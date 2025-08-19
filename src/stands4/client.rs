@@ -38,6 +38,10 @@ impl Stands4Client {
         let txt = response.text().await?;
         log::info!("RESPONSE={:?}", txt);
 
+        if txt.is_empty() {
+            return Ok(Vec::default());
+        }
+
         let vec = serde_json::from_slice::<Results<WordResult>>(txt.as_bytes())
             .map_err(anyhow::Error::msg)?
             .to_entity()?;
@@ -59,6 +63,10 @@ impl Stands4Client {
         let response = self.client.execute(request).await?;
         let txt = response.text().await?;
         log::info!("RESPONSE={:?}", txt);
+
+        if txt.is_empty() {
+            return Ok(Vec::default());
+        }
 
         let vec = serde_json::from_slice::<Results<PhraseResult>>(txt.as_bytes())
             .map_err(anyhow::Error::msg)?
