@@ -18,12 +18,14 @@ pub struct WordResult {
     definition: StringMixedType,
     #[serde(rename = "partofspeech")]
     part_of_speech: StringMixedType,
+    example: StringMixedType,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct PhraseResult {
     term: StringMixedType,
     explanation: StringMixedType,
+    example: StringMixedType,
 }
 
 #[derive(Deserialize, Debug)]
@@ -54,6 +56,7 @@ impl ToEntity for WordResult {
             term: self.term.to_string(),
             definition: self.definition.to_string(),
             part_of_speech: self.part_of_speech.to_string(),
+            example: self.example.to_string(),
         }
     }
 }
@@ -64,6 +67,7 @@ impl ToEntity for PhraseResult {
         PhraseDefinition {
             term: self.term.to_string(),
             explanation: self.explanation.to_string(),
+            example: self.example.to_string(),
         }
     }
 }

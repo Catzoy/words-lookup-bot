@@ -11,3 +11,4 @@ shuttle-runtime = "0.56.0"
 teloxide = { version = "0.17.0", features = ["macros"] }
 tokio = { version = "1.8", features = ["rt-multi-thread", "macros"] }
 log = "0.4.27"
+string-builder = "0.2.0"

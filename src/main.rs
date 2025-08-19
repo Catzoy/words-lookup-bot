@@ -1,5 +1,7 @@
 mod stands4;
+mod formatting;
 
+use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use anyhow::Context as _;
 use shuttle_runtime::{Error, SecretStore};
 use stands4::client::Stands4Client;
@@ -52,15 +54,31 @@ impl shuttle_runtime::Service for TelegramService {
                     log::info!("Looking up word {}", word);
 
                     let defs = client.search_word(word).await?;
-                    let msg = format!("Found {} defs", defs.len());
+                    let mut msg = string_builder::Builder::default();
+                    msg.append(format!("Found {} definitions\n\n", defs.len()));
+
+                    let mut formatter = FullMessageFormatter { builder: msg };
+                    for (i, def) in defs.iter().take(5).enumerate() {
+                        formatter.visit_word(i, def);
+                    }
+
+                    let msg = formatter.build()?;
                     bot.send_message(message.chat.id, msg).await?;
                 }
                 _ => {
                     let phrase = words.join(" ");
                     log::info!("Looking up phrase {}", phrase);
 
-                    let phrases = client.search_phrase(phrase.as_str()).await?;
-                    let msg = format!("Found {} phrases", phrases.len());
+                    let defs = client.search_phrase(phrase.as_str()).await?;
+                    let mut msg = string_builder::Builder::default();
+                    msg.append(format!("Found {} definitions\n\n", defs.len()));
+
+                    let mut formatter = FullMessageFormatter { builder: msg };
+                    for (i, def) in defs.iter().take(5).enumerate() {
+                        formatter.visit_phrase(i, def);
+                    }
+
+                    let msg = formatter.build()?;
                     bot.send_message(message.chat.id, msg).await?;
                 }
             }
