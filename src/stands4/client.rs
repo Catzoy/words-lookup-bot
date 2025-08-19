@@ -1,5 +1,6 @@
+use crate::stands4::entities::{PhraseDefinition, ToEntity, WordDefinition};
+use crate::stands4::responses::{PhraseResult, Results, WordResult};
 use reqwest::Client;
-use serde::Deserialize;
 use shuttle_runtime::__internals::serde_json;
 
 const WORDS_API_URL: &str = "https://www.stands4.com/services/v2/defs.php";
@@ -12,41 +13,6 @@ pub struct Stands4Client {
     token: String,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Results<T> {
-    error: Option<StringMixedType>,
-    result: Option<VecMixedType<T>>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct WordResult {
-    term: StringMixedType,
-    definition: StringMixedType,
-    #[serde(rename = "partofspeech")]
-    part_of_speech: StringMixedType,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct PhraseResult {
-    term: StringMixedType,
-    explanation: StringMixedType,
-}
-
-#[derive(Deserialize, Debug)]
-// note, this causes deserialization to try the variants top-to-bottom
-#[serde(untagged)]
-enum StringMixedType {
-    String(String),
-    Other(serde_json::Value),
-}
-
-#[derive(Deserialize, Debug)]
-// note, this causes deserialization to try the variants top-to-bottom
-#[serde(untagged)]
-enum VecMixedType<T> {
-    Vec(Vec<T>),
-    Other(serde_json::Value),
-}
 
 impl Stands4Client {
     pub fn new(user_id: String, token: String) -> Self {
@@ -56,7 +22,7 @@ impl Stands4Client {
             token,
         }
     }
-    pub async fn search_word(&self, word: &str) -> anyhow::Result<Vec<WordResult>> {
+    pub async fn search_word(&self, word: &str) -> anyhow::Result<Vec<WordDefinition>> {
         let query = &[
             ("uid", self.user_id.as_str()),
             ("tokenid", self.token.as_str()),
@@ -72,23 +38,13 @@ impl Stands4Client {
         let txt = response.text().await?;
         log::info!("RESPONSE={:?}", txt);
 
-        let results = serde_json::from_slice::<Results<WordResult>>(txt.as_bytes())
-            .map_err(anyhow::Error::msg)?;
-        let array = results.result.ok_or_else(|| {
-            let error = results.error.unwrap_or(StringMixedType::String(String::default()));
-            match error {
-                StringMixedType::Other(_) => anyhow::anyhow!("Request failed without an error"),
-                StringMixedType::String(str) => anyhow::anyhow!(str),
-            }
-        })?;
-        let vec = match array {
-            VecMixedType::Other(_) => vec![],
-            VecMixedType::Vec(vec) => vec,
-        };
+        let vec = serde_json::from_slice::<Results<WordResult>>(txt.as_bytes())
+            .map_err(anyhow::Error::msg)?
+            .to_entity()?;
         Ok(vec)
     }
 
-    pub async fn search_phrase(&self, phrase: &str) -> anyhow::Result<Vec<PhraseResult>> {
+    pub async fn search_phrase(&self, phrase: &str) -> anyhow::Result<Vec<PhraseDefinition>> {
         let query = &[
             ("uid", self.user_id.as_str()),
             ("tokenid", self.token.as_str()),
@@ -104,26 +60,17 @@ impl Stands4Client {
         let txt = response.text().await?;
         log::info!("RESPONSE={:?}", txt);
 
-        let results = serde_json::from_slice::<Results<PhraseResult>>(txt.as_bytes())
-            .map_err(anyhow::Error::msg)?;
-        let array = results.result.ok_or_else(|| {
-            let error = results.error.unwrap_or(StringMixedType::String(String::default()));
-            match error {
-                StringMixedType::Other(_) => anyhow::anyhow!("Request failed without an error"),
-                StringMixedType::String(str) => anyhow::anyhow!(str),
-            }
-        })?;
-        let vec = match array {
-            VecMixedType::Other(_) => vec![],
-            VecMixedType::Vec(vec) => vec,
-        };
+        let vec = serde_json::from_slice::<Results<PhraseResult>>(txt.as_bytes())
+            .map_err(anyhow::Error::msg)?
+            .to_entity()?;
         Ok(vec)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::stands4_client::{Results, StringMixedType, VecMixedType, WordResult};
+    use crate::stands4::client::{Results, WordResult};
+    use crate::stands4::responses::VecMixedType;
     use shuttle_runtime::__internals::serde_json;
 
     #[test]
@@ -136,20 +83,16 @@ mod tests {
             Err(_) => panic!("Failed to parse results from stands4"),
         };
         let array = results.result.ok_or_else(|| {
-            let error = results.error.unwrap_or(StringMixedType::String(String::default()));
-            match error {
-                StringMixedType::Other(_) => anyhow::anyhow!("Request failed without an error"),
-                StringMixedType::String(str) => anyhow::anyhow!(str),
-            }
+            panic!("Failed to parse result values from stands4");
         });
         let vec = match array {
             Ok(array) => array,
-            Err(_) => panic!("Failed to parse results from stands4"),
+            Err(_) => panic!("Failed to parse result into a vec from stands4"),
         };
         let vec = match vec {
             VecMixedType::Vec(vec) => vec,
             VecMixedType::Other(it) => panic!("Empty state unexpected - {}", it),
         };
-        assert_eq!(vec.len(), 17);
+        assert_eq!(vec.len(), 17, "every item should be properly parsed");
     }
 }

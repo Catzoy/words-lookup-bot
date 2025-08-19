@@ -1,8 +1,8 @@
-mod stands4_client;
+mod stands4;
 
-use crate::stands4_client::Stands4Client;
 use anyhow::Context as _;
 use shuttle_runtime::{Error, SecretStore};
+use stands4::client::Stands4Client;
 use std::net::SocketAddr;
 use teloxide::dispatching::{Dispatcher, UpdateFilterExt};
 use teloxide::error_handlers::LoggingErrorHandler;
