@@ -45,6 +45,7 @@ where
     T: ToEntity,
 {
     Vec(Vec<T>),
+    Single(T),
     #[allow(dead_code)]
     Other(serde_json::Value),
 }
@@ -80,6 +81,7 @@ where
     fn to_entity(&self) -> Self::Output {
         match self {
             VecMixedType::Vec(vec) => vec.iter().map(ToEntity::to_entity).collect(),
+            VecMixedType::Single(value) => vec![value.to_entity()],
             VecMixedType::Other(_) => Vec::default(),
         }
     }

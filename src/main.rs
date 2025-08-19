@@ -9,7 +9,8 @@ use std::net::SocketAddr;
 use teloxide::dispatching::{Dispatcher, UpdateFilterExt};
 use teloxide::error_handlers::LoggingErrorHandler;
 use teloxide::prelude::{DependencyMap, Requester, Update};
-use teloxide::types::Message;
+use teloxide::types::{Me, Message};
+use teloxide::utils::command::parse_command;
 use teloxide::{update_listeners, Bot};
 
 #[derive(Clone)]
@@ -36,21 +37,27 @@ impl shuttle_runtime::Service for TelegramService {
         // Other update types are of no interest to use since this REPL is only for
         // messages. See <https://github.com/teloxide/teloxide/issues/557>.
         let ignore_update = |_upd| Box::pin(async {});
-        let handler = async move |bot: Bot, client: Stands4Client, message: Message| -> anyhow::Result<()>{
+        let handler = async move |bot: Bot, me: Me, client: Stands4Client, message: Message| -> anyhow::Result<()>{
             let text = message.text().unwrap_or_default();
-            let words = text.split_whitespace()
-                .map(|s| s.to_lowercase())
-                .collect::<Vec<String>>();
+            let (cmd, args) = parse_command(text, me.username.clone().unwrap_or_default())
+                .unwrap_or_else(|| {
+                    let words = text.split_whitespace().collect::<Vec<&str>>();
+                    match words.len() {
+                        0 => ("teapot", Vec::default()),
+                        1 => ("word", words),
+                        _ => ("phrase", words),
+                    }
+                });
 
             log::info!("Received message: {:?}", text);
-            log::info!("Received words: {:?}", words.len());
+            log::info!("Processing command {} {:?}", cmd, args);
 
-            match words.len() {
-                0 => {
+            match cmd {
+                "teapot" => {
                     bot.send_message(message.chat.id, "I'm a teapot").await?;
                 }
-                1 => {
-                    let word = words.first().unwrap();
+                "word" => {
+                    let word = *args.first().unwrap();
                     log::info!("Looking up word {}", word);
 
                     let defs = client.search_word(word).await?;
@@ -65,8 +72,8 @@ impl shuttle_runtime::Service for TelegramService {
                     let msg = formatter.build()?;
                     bot.send_message(message.chat.id, msg).await?;
                 }
-                _ => {
-                    let phrase = words.join(" ");
+                "phrase" => {
+                    let phrase = args.join(" ");
                     log::info!("Looking up phrase {}", phrase);
 
                     let defs = client.search_phrase(phrase.as_str()).await?;
@@ -80,6 +87,18 @@ impl shuttle_runtime::Service for TelegramService {
 
                     let msg = formatter.build()?;
                     bot.send_message(message.chat.id, msg).await?;
+                }
+                "start" => {
+                    bot.send_message(
+                        message.chat.id,
+                        "Hi!\nI'm a bot that can look up words and phrases.\nSimply send me a message and I'll search for the definition of the text.".to_string(),
+                    ).await?;
+                }
+                _ => {
+                    bot.send_message(
+                        message.chat.id,
+                        "I don't know that command, sorry.",
+                    ).await?;
                 }
             }
             Ok(())
