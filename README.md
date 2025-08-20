@@ -16,7 +16,7 @@ Can look up English words from Stands4 API.
         <td>Initial release with words and phrases lookup from Stands4 API</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.1.1</td>
         <td>Refactor commands processing to a trait-based approach</td>
     </tr>
