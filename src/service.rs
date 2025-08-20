@@ -24,6 +24,7 @@ impl TelegramService {
         registry.insert(TeapotCommand {});
         registry.insert(WordLookup::new(&stands4_client));
         registry.insert(PhraseLookup::new(&stands4_client));
+        registry.insert(HelpCommand::new(&registry));
 
         TelegramService { token, registry }
     }

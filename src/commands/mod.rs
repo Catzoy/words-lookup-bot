@@ -4,9 +4,10 @@ pub mod unknown;
 pub mod teapot;
 pub mod word_lookup;
 pub mod phrase_lookup;
-mod help;
+pub mod help;
 
 pub use command::*;
+pub use help::*;
 pub use phrase_lookup::*;
 pub use start::*;
 pub use teapot::*;
