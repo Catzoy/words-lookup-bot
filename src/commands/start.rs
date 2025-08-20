@@ -1,19 +1,24 @@
-use crate::commands::command::Command;
+use crate::commands::{Command, HelpDescriptor};
 use shuttle_runtime::async_trait;
 use teloxide::prelude::{Message, Requester};
 use teloxide::types::Me;
 use teloxide::Bot;
 
 pub struct StartCommand {}
-
+impl StartCommand {
+    const NAME: &'static str = "start";
+}
 #[async_trait]
 impl Command for StartCommand {
     fn name(&self) -> &'static str {
-        "start"
+        Self::NAME
     }
 
-    fn description(&self) -> &'static str {
-        "Doesn't really do anything, is just here to greet you."
+    fn descriptor(&self) -> Option<HelpDescriptor> {
+        Some(HelpDescriptor {
+            name: StartCommand::NAME,
+            description: "Doesn't really do anything, is just here to greet you.",
+        })
     }
 
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {

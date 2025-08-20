@@ -1,4 +1,4 @@
-use crate::commands::command::Command;
+use crate::commands::{Command, HelpDescriptor};
 use shuttle_runtime::async_trait;
 use teloxide::prelude::{Message, Requester};
 use teloxide::types::Me;
@@ -12,8 +12,8 @@ impl Command for UnknownCommand {
         ""
     }
 
-    fn description(&self) -> &'static str {
-        "Handles unknown commands and prints this message"
+    fn descriptor(&self) -> Option<HelpDescriptor> {
+        None
     }
 
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {

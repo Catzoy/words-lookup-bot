@@ -1,19 +1,24 @@
-use crate::commands::{BoxedCommand, Command, CommandsRegistry};
+use crate::commands::{Command, CommandsRegistry};
 use shuttle_runtime::async_trait;
-use std::sync::Arc;
 use teloxide::prelude::{Message, Requester};
 use teloxide::types::Me;
 use teloxide::Bot;
 
 pub struct HelpCommand {
-    commands: Vec<BoxedCommand>,
+    commands: Vec<HelpDescriptor>,
+}
+
+pub struct HelpDescriptor {
+    pub(crate) name: &'static str,
+    pub(crate) description: &'static str,
 }
 
 impl HelpCommand {
+    const NAME: &'static str = "help";
     pub fn new(registry: &CommandsRegistry) -> Self {
         Self {
             commands: registry.get_commands()
-                .map(|v| Arc::clone(v))
+                .flat_map(|v| v.descriptor())
                 .collect()
         }
     }
@@ -22,18 +27,21 @@ impl HelpCommand {
 #[async_trait]
 impl Command for HelpCommand {
     fn name(&self) -> &'static str {
-        "help"
+        HelpCommand::NAME
     }
 
-    fn description(&self) -> &'static str {
-        "Print this helpful message"
+    fn descriptor(&self) -> Option<HelpDescriptor> {
+        Some(HelpDescriptor {
+            name: HelpCommand::NAME,
+            description: "Print this helpful message",
+        })
     }
 
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         let mut msg = string_builder::Builder::default();
         msg.append("Here are supported commands:\n\n");
         msg = self.commands.iter().fold(msg, |mut builder, command| {
-            let line = format!("{} - {}", command.name(), command.description());
+            let line = format!("/{} - {}", command.name, command.description);
             builder.append(line);
             builder
         });

@@ -1,3 +1,4 @@
+use crate::commands::HelpDescriptor;
 use shuttle_runtime::async_trait;
 use std::collections::hash_map::Values;
 use std::collections::HashMap;
@@ -8,7 +9,7 @@ use teloxide::Bot;
 #[async_trait]
 pub trait Command: Sync + Send {
     fn name(&self) -> &'static str;
-    fn description(&self) -> &'static str;
+    fn descriptor(&self) -> Option<HelpDescriptor>;
     async fn handle(&self, me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()>;
 }
 

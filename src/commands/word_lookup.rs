@@ -1,4 +1,4 @@
-use crate::commands::command::Command;
+use crate::commands::{Command, HelpDescriptor};
 use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
 use shuttle_runtime::async_trait;
@@ -23,9 +23,12 @@ impl Command for WordLookup {
         Self::NAME
     }
 
-    fn description(&self) -> &'static str {
-        "Find definition of the specified phrase.\n\
-        Any message containing at most 1 word, even with hyphens, will be looked up."
+    fn descriptor(&self) -> Option<HelpDescriptor> {
+        Some(HelpDescriptor {
+            name: Self::NAME,
+            description: "Find definition of the specified phrase.\n\
+        Any message containing at most 1 word, even with hyphens, will be looked up.",
+        })
     }
 
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {
