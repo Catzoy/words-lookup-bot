@@ -41,6 +41,16 @@ Can look up English words from Stands4 API.
         <td>Add support for urban dictionary lookups</td>
     </tr>
     <tr>
+        <td>:x:</td>
+        <td>0.4.0</td>
+        <td>Add synonims/antonims lookup
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.5.0</td>
+        <td>Add in-place buttons for contextual synonims/antonims look-up
+    </tr>
+    <tr>
         <td>...</td>
         <td>...</td>
         <td>...</td>
