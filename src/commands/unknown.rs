@@ -11,7 +11,11 @@ impl Command for UnknownCommand {
     fn name(&self) -> &'static str {
         ""
     }
-    
+
+    fn description(&self) -> &'static str {
+        "Handles unknown commands and prints this message"
+    }
+
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         bot.send_message(
             message.chat.id,

@@ -1,4 +1,5 @@
 use shuttle_runtime::async_trait;
+use std::collections::hash_map::Values;
 use std::collections::HashMap;
 use std::sync::Arc;
 use teloxide::types::{Me, Message};
@@ -7,6 +8,7 @@ use teloxide::Bot;
 #[async_trait]
 pub trait Command: Sync + Send {
     fn name(&self) -> &'static str;
+    fn description(&self) -> &'static str;
     async fn handle(&self, me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()>;
 }
 
@@ -34,5 +36,9 @@ impl CommandsRegistry {
 
     pub(crate) fn get(&self, name: String) -> &BoxedCommand {
         self.registry.get(name.as_str()).unwrap_or_else(|| &self.unknown_command)
+    }
+
+    pub(crate) fn get_commands(&self) -> Values<&'static str, BoxedCommand> {
+        self.registry.values()
     }
 }

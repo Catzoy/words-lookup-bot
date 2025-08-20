@@ -23,6 +23,11 @@ impl Command for WordLookup {
         Self::NAME
     }
 
+    fn description(&self) -> &'static str {
+        "Find definition of the specified phrase.\n\
+        Any message containing at most 1 word, even with hyphens, will be looked up."
+    }
+
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {
         let word = args.first().unwrap();
         log::info!("Looking up word {}", word);

@@ -14,6 +14,10 @@ impl Command for TeapotCommand {
         TeapotCommand::NAME
     }
 
+    fn description(&self) -> &'static str {
+        "Aha, an easter egg!"
+    }
+
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         bot.send_message(message.chat.id, "I'm a teapot").await?;
         Ok(())

@@ -12,6 +12,10 @@ impl Command for StartCommand {
         "start"
     }
 
+    fn description(&self) -> &'static str {
+        "Doesn't really do anything, is just here to greet you."
+    }
+
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         bot.send_message(
             message.chat.id,
