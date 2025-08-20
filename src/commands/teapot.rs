@@ -1,8 +1,6 @@
-use crate::commands::{Command, HelpDescriptor};
+use crate::commands::{Command, Payload};
 use shuttle_runtime::async_trait;
-use teloxide::prelude::{Message, Requester};
-use teloxide::types::Me;
-use teloxide::Bot;
+use teloxide::prelude::Requester;
 
 pub struct TeapotCommand {}
 impl TeapotCommand {
@@ -14,11 +12,7 @@ impl Command for TeapotCommand {
         TeapotCommand::NAME
     }
 
-    fn descriptor(&self) -> Option<HelpDescriptor> {
-        None
-    }
-
-    async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
+    async fn handle(&self, &Payload { bot, message, .. }: &Payload) -> anyhow::Result<()> {
         bot.send_message(message.chat.id, "I'm a teapot").await?;
         Ok(())
     }

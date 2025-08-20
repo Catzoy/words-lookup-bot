@@ -1,8 +1,6 @@
-use crate::commands::{Command, HelpDescriptor};
+use crate::commands::{Command, Payload};
 use shuttle_runtime::async_trait;
-use teloxide::prelude::{Message, Requester};
-use teloxide::types::Me;
-use teloxide::Bot;
+use teloxide::prelude::Requester;
 
 pub struct UnknownCommand {}
 
@@ -12,11 +10,7 @@ impl Command for UnknownCommand {
         ""
     }
 
-    fn descriptor(&self) -> Option<HelpDescriptor> {
-        None
-    }
-
-    async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
+    async fn handle(&self, &Payload { bot, message, .. }: &Payload) -> anyhow::Result<()> {
         bot.send_message(
             message.chat.id,
             "I don't know that command, sorry.",

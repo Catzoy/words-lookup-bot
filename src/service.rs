@@ -12,19 +12,20 @@ use teloxide::{update_listeners, Bot};
 #[derive(Clone)]
 pub struct TelegramService {
     token: String,
-    registry: CommandsRegistry,
+    pub(crate) registry: CommandsRegistry,
 }
 
 impl TelegramService {
-    pub fn new(token: String, stands4_client: Stands4Client) -> Self {
+    pub fn new<'a>(token: String, stands4_client: Stands4Client) -> Self {
         let mut registry = CommandsRegistry::new(
             UnknownCommand {}
         );
+        registry.insert(HelpCommand {});
         registry.insert(StartCommand {});
         registry.insert(TeapotCommand {});
         registry.insert(WordLookup::new(&stands4_client));
         registry.insert(PhraseLookup::new(&stands4_client));
-        registry.insert(HelpCommand::new(&registry));
+
 
         TelegramService { token, registry }
     }
@@ -63,7 +64,14 @@ impl shuttle_runtime::Service for TelegramService {
         let handler = async move |bot: Bot, me: Me, service: TelegramService, message: Message| -> anyhow::Result<()>{
             let chat_id = message.chat.id;
             let (command, args) = service.extract_command(&me, &message);
-            match command.handle(&me, &bot, &message, args).await {
+            let payload = Payload {
+                bot: &bot,
+                me: &me,
+                message: &message,
+                service: &service,
+                args: &args,
+            };
+            match command.handle(&payload).await {
                 Ok(_) => {
                     Ok(())
                 }

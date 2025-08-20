@@ -1,10 +1,8 @@
-use crate::commands::{Command, HelpDescriptor};
+use crate::commands::{Command, HelpDescriptor, Payload};
 use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
 use shuttle_runtime::async_trait;
-use teloxide::prelude::{Message, Requester};
-use teloxide::types::Me;
-use teloxide::Bot;
+use teloxide::prelude::Requester;
 
 pub struct PhraseLookup {
     stands4_client: Stands4Client,
@@ -32,21 +30,30 @@ impl Command for PhraseLookup {
         })
     }
 
-    async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {
-        let phrase = args.join(" ");
-        log::info!("Looking up phrase {}", phrase);
+    async fn handle(&self, &Payload { bot, message, args, .. }: &Payload) -> anyhow::Result<()> {
+        match args.join(" ").as_str() {
+            "" => {
+                bot.send_message(
+                    message.chat.id,
+                    "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
+                ).await?;
+            }
+            phrase => {
+                log::info!("Looking up phrase {}", phrase);
 
-        let defs = self.stands4_client.search_phrase(phrase.as_str()).await?;
-        let mut msg = string_builder::Builder::default();
-        msg.append(format!("Found {} definitions\n\n", defs.len()));
+                let defs = self.stands4_client.search_phrase(phrase).await?;
+                let mut msg = string_builder::Builder::default();
+                msg.append(format!("Found {} definitions\n\n", defs.len()));
 
-        let mut formatter = FullMessageFormatter { builder: msg };
-        for (i, def) in defs.iter().take(5).enumerate() {
-            formatter.visit_phrase(i, def);
-        }
+                let mut formatter = FullMessageFormatter { builder: msg };
+                for (i, def) in defs.iter().take(5).enumerate() {
+                    formatter.visit_phrase(i, def);
+                }
 
-        let msg = formatter.build()?;
-        bot.send_message(message.chat.id, msg).await?;
+                let msg = formatter.build()?;
+                bot.send_message(message.chat.id, msg).await?;
+            }
+        };
         Ok(())
     }
 }

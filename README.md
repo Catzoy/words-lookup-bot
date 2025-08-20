@@ -31,6 +31,11 @@ Can look up English words from Stands4 API.
         <td>Add `/help` command to show all usage</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.1.3.1</td>
+        <td>Fix `help` not printing all the help; Handle empty inputs for words and phrases
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.1.4</td>
         <td>Add link to website in case of 5+ definitions</td>
