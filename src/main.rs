@@ -25,10 +25,10 @@ impl TelegramService {
         let mut registry = CommandsRegistry::new(
             UnknownCommand {}
         );
-        registry.insert("start", StartCommand {});
-        registry.insert("teapot", TeapotCommand {});
-        registry.insert("word", WordLookup::new(&stands4_client));
-        registry.insert("phrase", PhraseLookup::new(&stands4_client));
+        registry.insert(StartCommand {});
+        registry.insert(TeapotCommand {});
+        registry.insert(WordLookup::new(&stands4_client));
+        registry.insert(PhraseLookup::new(&stands4_client));
 
         TelegramService { token, registry }
     }
@@ -41,9 +41,9 @@ impl TelegramService {
         let (cmd, args) = parse_command(text, username).unwrap_or_else(|| {
             let words = text.split_whitespace().collect::<Vec<&str>>();
             match words.len() {
-                0 => ("teapot", Vec::default()),
-                1 => ("word", words),
-                _ => ("phrase", words),
+                0 => (TeapotCommand::NAME, Vec::default()),
+                1 => (WordLookup::NAME, words),
+                _ => (PhraseLookup::NAME, words),
             }
         });
 

@@ -11,6 +11,7 @@ pub struct WordLookup {
 }
 
 impl WordLookup {
+    pub(crate) const NAME: &'static str = "word";
     pub(crate) fn new(client: &Stands4Client) -> Self {
         Self { stands4_client: client.clone() }
     }
@@ -18,6 +19,10 @@ impl WordLookup {
 
 #[async_trait]
 impl Command for WordLookup {
+    fn name(&self) -> &'static str {
+        Self::NAME
+    }
+
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {
         let word = args.first().unwrap();
         log::info!("Looking up word {}", word);

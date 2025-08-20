@@ -11,6 +11,7 @@ pub struct PhraseLookup {
 }
 
 impl PhraseLookup {
+    pub(crate) const NAME: &'static str = "phrase";
     pub(crate) fn new(client: &Stands4Client) -> Self {
         Self { stands4_client: client.clone() }
     }
@@ -18,6 +19,10 @@ impl PhraseLookup {
 
 #[async_trait]
 impl Command for PhraseLookup {
+    fn name(&self) -> &'static str {
+        Self::NAME
+    }
+
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {
         let phrase = args.join(" ");
         log::info!("Looking up phrase {}", phrase);

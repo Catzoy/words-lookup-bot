@@ -8,7 +8,11 @@ pub struct StartCommand {}
 
 #[async_trait]
 impl Command for StartCommand {
-    async fn handle(&self, me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {
+    fn name(&self) -> &'static str {
+        "start"
+    }
+
+    async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         bot.send_message(
             message.chat.id,
             "Hi!\n\

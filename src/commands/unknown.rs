@@ -8,6 +8,10 @@ pub struct UnknownCommand {}
 
 #[async_trait]
 impl Command for UnknownCommand {
+    fn name(&self) -> &'static str {
+        ""
+    }
+    
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         bot.send_message(
             message.chat.id,
