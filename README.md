@@ -21,7 +21,7 @@ Can look up English words from Stands4 API.
         <td>Refactor commands processing to a trait-based approach</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.1.2</td>
         <td>Automate deployments with GitHub Actions</td>
     </tr>
