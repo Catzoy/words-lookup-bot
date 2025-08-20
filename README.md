@@ -32,6 +32,11 @@ Can look up English words from Stands4 API.
     </tr>
     <tr>
         <td>:x:</td>
+        <td>0.1.4</td>
+        <td>Add link to website in case of 5+ definitions</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
         <td>0.2.0</td>
         <td>Introduce inline lookups</td>
     </tr>
