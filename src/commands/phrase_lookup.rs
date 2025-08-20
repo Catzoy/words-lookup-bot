@@ -1,4 +1,4 @@
-use crate::commands::command::Command;
+use crate::commands::{Command, HelpDescriptor};
 use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
 use shuttle_runtime::async_trait;
@@ -21,6 +21,15 @@ impl PhraseLookup {
 impl Command for PhraseLookup {
     fn name(&self) -> &'static str {
         Self::NAME
+    }
+
+    fn descriptor(&self) -> Option<HelpDescriptor> {
+        Some(HelpDescriptor {
+            name: PhraseLookup::NAME,
+            description:
+            "Find definition of the specified phrase.\n\
+            Any message with more than 1 word is considered to be a phrase",
+        })
     }
 
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, args: Vec<String>) -> anyhow::Result<()> {

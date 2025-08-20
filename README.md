@@ -26,9 +26,14 @@ Can look up English words from Stands4 API.
         <td>Automate deployments with GitHub Actions</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.1.3</td>
         <td>Add `/help` command to show all usage</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.1.4</td>
+        <td>Add link to website in case of 5+ definitions</td>
     </tr>
     <tr>
         <td>:x:</td>
