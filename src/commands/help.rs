@@ -39,9 +39,9 @@ impl Command for HelpCommand {
 
     async fn handle(&self, _me: &Me, bot: &Bot, message: &Message, _args: Vec<String>) -> anyhow::Result<()> {
         let mut msg = string_builder::Builder::default();
-        msg.append("Here are supported commands:\n\n");
+        msg.append("Here are the supported commands:\n\n");
         msg = self.commands.iter().fold(msg, |mut builder, command| {
-            let line = format!("/{} - {}", command.name, command.description);
+            let line = format!("/{} - {}\n", command.name, command.description);
             builder.append(line);
             builder
         });
