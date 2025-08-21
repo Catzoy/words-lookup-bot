@@ -3,6 +3,7 @@ use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
 use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
 use shuttle_runtime::async_trait;
+use std::collections::HashMap;
 use std::string::FromUtf8Error;
 use teloxide::prelude::Requester;
 use teloxide::types::ParseMode;
@@ -41,10 +42,11 @@ impl WordLookup {
         let mut formatter = FullMessageFormatter::default();
         formatter.builder.append(format!("Found {} definitions\n\n", defs.len()));
 
-        for (i, def) in defs.iter().take(5).enumerate() {
-            formatter.visit_abbreviation(i, def);
+        let categorized = defs.categorized();
+        for (i, (category, defs)) in categorized.iter().take(5).enumerate() {
+            formatter.visit_abbreviations(i, category, defs);
         }
-        if defs.len() > 5 {
+        if categorized.len() > 5 {
             formatter.append_link(self.abbr_link(word))
         }
         formatter.build()
@@ -69,10 +71,11 @@ impl WordLookup {
         formatter.builder.append("And also\n");
         formatter.builder.append(format!("Found {} abbreviations\n\n", abbrs.len()));
 
-        for (i, def) in abbrs.iter().take(5).enumerate() {
-            formatter.visit_abbreviation(i, def);
+        let categorized = abbrs.categorized();
+        for (i, (category, defs)) in categorized.iter().take(5).enumerate() {
+            formatter.visit_abbreviations(i, category, defs);
         }
-        if abbrs.len() > 5 {
+        if categorized.len() > 5 {
             formatter.append_link(self.abbr_link(word))
         }
 
@@ -138,5 +141,30 @@ impl Command for WordLookup {
             }
         }
         Ok(())
+    }
+}
+
+trait VecAbbreviationsExt {
+    fn categorized(&self) -> Vec<(&str, Vec<&AbbreviationDefinition>)>;
+}
+
+impl VecAbbreviationsExt for Vec<AbbreviationDefinition> {
+    fn categorized(&self) -> Vec<(&str, Vec<&AbbreviationDefinition>)> {
+        let categorized = &mut self.iter().fold(
+            HashMap::<&str, Vec<&AbbreviationDefinition>>::new(), |mut map, def| {
+                let category = def.category.as_str();
+                match map.get_mut(category) {
+                    Some(v) => { v.push(def); }
+                    None => { map.insert(category, vec![def]); }
+                };
+                map
+            },
+        );
+
+        let mut common = categorized
+            .drain()
+            .collect::<Vec<_>>();
+        common.sort_by_cached_key(|(_, value)| value.len());
+        common
     }
 }
