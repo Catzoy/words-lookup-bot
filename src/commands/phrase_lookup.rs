@@ -1,7 +1,9 @@
 use crate::commands::{Command, HelpDescriptor, Payload};
 use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
+use crate::stands4::entities::PhraseDefinition;
 use shuttle_runtime::async_trait;
+use std::string::FromUtf8Error;
 use teloxide::prelude::Requester;
 
 pub struct PhraseLookup {
@@ -12,6 +14,23 @@ impl PhraseLookup {
     pub(crate) const NAME: &'static str = "phrase";
     pub(crate) fn new(client: &Stands4Client) -> Self {
         Self { stands4_client: client.clone() }
+    }
+
+    fn phrase_link(&self, components: &Vec<String>) -> String {
+        format!("https://www.phrases.com/psearch/{}", components.join("+"))
+    }
+    fn compose_phrase_defs(&self, components: &Vec<String>, defs: Vec<PhraseDefinition>) -> Result<String, FromUtf8Error> {
+        let mut formatter = FullMessageFormatter::default();
+        formatter.builder.append(format!("Found {} definitions\n\n", defs.len()));
+        
+        for (i, def) in defs.iter().take(5).enumerate() {
+            formatter.visit_phrase(i, def);
+        }
+        if defs.len() > 5 {
+            formatter.append_link(self.phrase_link(components));
+        }
+
+        formatter.build()
     }
 }
 
@@ -42,15 +61,7 @@ impl Command for PhraseLookup {
                 log::info!("Looking up phrase {}", phrase);
 
                 let defs = self.stands4_client.search_phrase(phrase).await?;
-                let mut msg = string_builder::Builder::default();
-                msg.append(format!("Found {} definitions\n\n", defs.len()));
-
-                let mut formatter = FullMessageFormatter { builder: msg };
-                for (i, def) in defs.iter().take(5).enumerate() {
-                    formatter.visit_phrase(i, def);
-                }
-
-                let msg = formatter.build()?;
+                let msg = self.compose_phrase_defs(args, defs)?;
                 bot.send_message(message.chat.id, msg).await?;
             }
         };

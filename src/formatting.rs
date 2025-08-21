@@ -5,12 +5,21 @@ pub trait LookupFormatter {
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
     fn visit_abbreviation(&mut self, i: usize, def: &AbbreviationDefinition);
+    fn append_link(&mut self, link: String);
 
     fn build(self) -> Result<String, std::string::FromUtf8Error>;
 }
 
 pub struct FullMessageFormatter {
     pub(crate) builder: string_builder::Builder,
+}
+
+impl Default for FullMessageFormatter {
+    fn default() -> Self {
+        FullMessageFormatter {
+            builder: string_builder::Builder::default()
+        }
+    }
 }
 
 impl LookupFormatter for FullMessageFormatter {
@@ -45,6 +54,10 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append(format!("#{} - {} [{}]\n", i + 1, def.term, categories));
         self.builder.append(format!("Stands for \"{}\"\n", def.definition));
         self.builder.append("\n");
+    }
+
+    fn append_link(&mut self, link: String) {
+        self.builder.append(format!("Check out other definitions at {}", link));
     }
 
     fn build(self) -> Result<String, std::string::FromUtf8Error> {

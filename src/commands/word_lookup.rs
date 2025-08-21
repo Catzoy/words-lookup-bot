@@ -3,6 +3,7 @@ use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
 use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
 use shuttle_runtime::async_trait;
+use std::string::FromUtf8Error;
 use teloxide::prelude::Requester;
 
 pub struct WordLookup {
@@ -14,27 +15,64 @@ impl WordLookup {
     pub(crate) fn new(client: &Stands4Client) -> Self {
         Self { stands4_client: client.clone() }
     }
-}
+    fn word_link(&self, word: &str) -> String {
+        format!("https://www.definitions.net/definition/{}", word)
+    }
 
-impl WordLookup {
-    fn compose_word_defs(&self, defs: Vec<WordDefinition>) -> Result<String, std::string::FromUtf8Error> {
-        let mut msg = string_builder::Builder::default();
-        msg.append(format!("Found {} definitions\n\n", defs.len()));
+    fn abbr_link(&self, word: &str) -> String {
+        format!("https://www.abbreviations.com/{}", word)
+    }
 
-        let mut formatter = FullMessageFormatter { builder: msg };
+    fn compose_word_defs(&self, word: &str, defs: Vec<WordDefinition>) -> Result<String, FromUtf8Error> {
+        let mut formatter = FullMessageFormatter::default();
+        formatter.builder.append(format!("Found {} definitions\n\n", defs.len()));
+
         for (i, def) in defs.iter().take(5).enumerate() {
             formatter.visit_word(i, def);
         }
-
+        if defs.len() > 5 {
+            formatter.append_link(self.word_link(word))
+        }
         formatter.build()
     }
-    fn compose_abbr_defs(&self, defs: Vec<AbbreviationDefinition>) -> Result<String, std::string::FromUtf8Error> {
-        let mut msg = string_builder::Builder::default();
-        msg.append(format!("Found {} definitions\n\n", defs.len()));
 
-        let mut formatter = FullMessageFormatter { builder: msg };
+    fn compose_abbr_defs(&self, word: &str, defs: Vec<AbbreviationDefinition>) -> Result<String, FromUtf8Error> {
+        let mut formatter = FullMessageFormatter::default();
+        formatter.builder.append(format!("Found {} definitions\n\n", defs.len()));
+
         for (i, def) in defs.iter().take(5).enumerate() {
             formatter.visit_abbreviation(i, def);
+        }
+        if defs.len() > 5 {
+            formatter.append_link(self.abbr_link(word))
+        }
+        formatter.build()
+    }
+
+    fn compose_words_with_abbrs(
+        &self,
+        word: &String,
+        words: Vec<WordDefinition>,
+        abbrs: Vec<AbbreviationDefinition>,
+    ) -> Result<String, FromUtf8Error> {
+        let mut formatter = FullMessageFormatter::default();
+        formatter.builder.append(format!("Found {} definitions\n\n", words.len()));
+
+        for (i, def) in words.iter().take(5).enumerate() {
+            formatter.visit_word(i, def);
+        }
+        if words.len() > 5 {
+            formatter.append_link(self.word_link(word))
+        }
+
+        formatter.builder.append("And also");
+        formatter.builder.append(format!("Fount {} abbreviations\n\n", abbrs.len()));
+        
+        for (i, def) in abbrs.iter().take(5).enumerate() {
+            formatter.visit_abbreviation(i, def);
+        }
+        if abbrs.len() > 5 {
+            formatter.append_link(self.abbr_link(word))
         }
 
         formatter.build()
@@ -76,15 +114,16 @@ impl Command for WordLookup {
                     (Ok(words), Ok(abbrs)) =>
                         match (words.len(), abbrs.len()) {
                             (0, 0) => "Found 0 definitions".to_string(),
-                            (0, _) => self.compose_abbr_defs(abbrs)?,
-                            (_, _) => self.compose_word_defs(words)?,
+                            (0, _) => self.compose_abbr_defs(word, abbrs)?,
+                            (_, 0) => self.compose_word_defs(word, words)?,
+                            (_, _) => self.compose_words_with_abbrs(word, words, abbrs)?
                         }
 
                     (Ok(words), _) =>
-                        self.compose_word_defs(words)?,
+                        self.compose_word_defs(word, words)?,
 
                     (_, Ok(abbrs)) =>
-                        self.compose_abbr_defs(abbrs)?,
+                        self.compose_abbr_defs(word, abbrs)?,
 
                     (Err(_), Err(_)) =>
                         "Found 0 definitions".to_string(),

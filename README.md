@@ -41,9 +41,9 @@ Can look up English words from Stands4 API.
         <td>Add abbreviations lookup</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.2.1</td>
-        <td>Add link to website in case of 5+ definitions</td>
+        <td>Add link to website in case of 5+ definitions; Display defs & abbrs in word-search</td>
     </tr>
     <tr>
         <td>:x:</td>
