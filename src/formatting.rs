@@ -1,4 +1,5 @@
 use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
+use std::fmt::Debug;
 use std::ops::Not;
 
 pub trait LookupFormatter {
@@ -29,7 +30,7 @@ impl LookupFormatter for FullMessageFormatter {
             false => &def.part_of_speech,
         };
 
-        self.builder.append(format!("\\#{} - {} ({})\n", i + 1, def.term, part_of_speech));
+        self.builder.append(format!("#{} - {} ({})\n", i + 1, def.term, part_of_speech));
         self.builder.append(format!("Meaning \"{}\"\n", def.definition));
         if def.example.is_empty().not() {
             self.builder.append(format!("As in {}\n", def.example));
@@ -38,7 +39,7 @@ impl LookupFormatter for FullMessageFormatter {
     }
 
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
-        self.builder.append(format!("\\#{} - {}\n", i + 1, def.term));
+        self.builder.append(format!("#{} - {}\n", i + 1, def.term));
         self.builder.append(format!("Meaning \"{}\"\n", def.explanation));
         if def.example.is_empty().not() {
             self.builder.append(format!("As in \"{}\n\"", def.example));
@@ -51,7 +52,7 @@ impl LookupFormatter for FullMessageFormatter {
             0 => "uncategorized".to_string(),
             _ => def.category.to_string(),
         };
-        self.builder.append(format!("\\#{} - {} [{}]\n", i + 1, def.term, categories));
+        self.builder.append(format!("#{} - {} [{}]\n", i + 1, def.term, categories));
         self.builder.append(format!("Stands for \"{}\"\n", def.definition));
         self.builder.append("\n");
     }
@@ -62,5 +63,6 @@ impl LookupFormatter for FullMessageFormatter {
 
     fn build(self) -> Result<String, std::string::FromUtf8Error> {
         self.builder.string()
+            .map(|str| teloxide::utils::markdown::escape(&str))
     }
 }

@@ -56,6 +56,11 @@ Can look up English words from Stands4 API.
         <td>Fix markdown formatting</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.2.2.2</td>
+        <td>Fix markdown formatting - 2nd time</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.3.0</td>
         <td>Introduce inline lookups</td>
