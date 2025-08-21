@@ -1,9 +1,10 @@
-use crate::stands4::entities::{PhraseDefinition, WordDefinition};
+use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
 use std::ops::Not;
 
 pub trait LookupFormatter {
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
+    fn visit_abbreviation(&mut self, i: usize, def: &AbbreviationDefinition);
 
     fn build(self) -> Result<String, std::string::FromUtf8Error>;
 }
@@ -33,6 +34,16 @@ impl LookupFormatter for FullMessageFormatter {
         if def.example.is_empty().not() {
             self.builder.append(format!("As in \"{}\n\"", def.example));
         }
+        self.builder.append("\n");
+    }
+
+    fn visit_abbreviation(&mut self, i: usize, def: &AbbreviationDefinition) {
+        let categories = match def.category.len() {
+            0 => "uncategorized".to_string(),
+            _ => def.category.to_string(),
+        };
+        self.builder.append(format!("#{} - {} [{}]\n", i + 1, def.term, categories));
+        self.builder.append(format!("Stands for \"{}\"\n", def.definition));
         self.builder.append("\n");
     }
 

@@ -17,3 +17,10 @@ pub struct PhraseDefinition {
     pub(crate) example: String,
     pub(crate) explanation: String,
 }
+
+#[derive(Debug)]
+pub struct AbbreviationDefinition {
+    pub(crate) term: String,
+    pub(crate) definition: String,
+    pub(crate) category: String,
+}

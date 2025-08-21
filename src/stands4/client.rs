@@ -1,10 +1,12 @@
-use crate::stands4::entities::{PhraseDefinition, ToEntity, WordDefinition};
-use crate::stands4::responses::{PhraseResult, Results, WordResult};
-use reqwest::Client;
+use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition};
+use crate::stands4::responses::{AbbreviationResult, PhraseResult, Results, WordResult};
+use reqwest::{Client, RequestBuilder};
+use serde::de::DeserializeOwned;
 use shuttle_runtime::__internals::serde_json;
 
 const WORDS_API_URL: &str = "https://www.stands4.com/services/v2/defs.php";
 const PHRASES_API_URL: &str = "https://www.stands4.com/services/v2/phrases.php";
+const ABBR_API_URL: &str = "https://www.stands4.com/services/v2/abbr.php";
 
 #[derive(Clone)]
 pub struct Stands4Client {
@@ -22,14 +24,12 @@ impl Stands4Client {
             token,
         }
     }
-    pub async fn search_word(&self, word: &str) -> anyhow::Result<Vec<WordDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("word", word),
-        ];
-        let request = self.client.get(WORDS_API_URL).query(query);
+
+    async fn handle_request<Response>(&self, request: RequestBuilder) -> anyhow::Result<Vec<Response::Output>>
+    where
+        Response: DeserializeOwned,
+        Response: ToEntity,
+    {
         let request = request.build()?;
         let url = request.url().to_string();
         log::info!("REQUEST URL {:?}", url);
@@ -42,10 +42,31 @@ impl Stands4Client {
             return Ok(Vec::default());
         }
 
-        let vec = serde_json::from_slice::<Results<WordResult>>(txt.as_bytes())
+        let vec = serde_json::from_slice::<Results<Response>>(txt.as_bytes())
             .map_err(anyhow::Error::msg)?
             .to_entity()?;
         Ok(vec)
+    }
+    pub async fn search_word(&self, word: &str) -> anyhow::Result<Vec<WordDefinition>> {
+        let query = &[
+            ("uid", self.user_id.as_str()),
+            ("tokenid", self.token.as_str()),
+            ("format", "json"),
+            ("word", word),
+        ];
+        let request = self.client.get(WORDS_API_URL).query(query);
+        self.handle_request::<WordResult>(request).await
+    }
+
+    pub async fn search_abbreviation(&self, abbreviation: &str) -> anyhow::Result<Vec<AbbreviationDefinition>> {
+        let query = &[
+            ("uid", self.user_id.as_str()),
+            ("tokenid", self.token.as_str()),
+            ("format", "json"),
+            ("term", abbreviation),
+        ];
+        let request = self.client.get(ABBR_API_URL).query(query);
+        self.handle_request::<AbbreviationResult>(request).await
     }
 
     pub async fn search_phrase(&self, phrase: &str) -> anyhow::Result<Vec<PhraseDefinition>> {
@@ -56,22 +77,7 @@ impl Stands4Client {
             ("phrase", phrase),
         ];
         let request = self.client.get(PHRASES_API_URL).query(query);
-        let request = request.build()?;
-        let url = request.url().to_string();
-        log::info!("REQUEST URL {:?}", url);
-
-        let response = self.client.execute(request).await?;
-        let txt = response.text().await?;
-        log::info!("RESPONSE={:?}", txt);
-
-        if txt.is_empty() {
-            return Ok(Vec::default());
-        }
-
-        let vec = serde_json::from_slice::<Results<PhraseResult>>(txt.as_bytes())
-            .map_err(anyhow::Error::msg)?
-            .to_entity()?;
-        Ok(vec)
+        self.handle_request::<PhraseResult>(request).await
     }
 }
 

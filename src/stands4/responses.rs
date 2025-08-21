@@ -1,4 +1,4 @@
-use crate::stands4::entities::{PhraseDefinition, ToEntity, WordDefinition};
+use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition};
 use serde::Deserialize;
 use shuttle_runtime::__internals::serde_json;
 use std::fmt::Display;
@@ -26,6 +26,12 @@ pub struct PhraseResult {
     term: StringMixedType,
     explanation: StringMixedType,
     example: StringMixedType,
+}
+#[derive(Deserialize, Debug)]
+pub struct AbbreviationResult {
+    term: StringMixedType,
+    definition: StringMixedType,
+    category: StringMixedType,
 }
 
 #[derive(Deserialize, Debug)]
@@ -69,6 +75,18 @@ impl ToEntity for PhraseResult {
             term: self.term.to_string(),
             explanation: self.explanation.to_string(),
             example: self.example.to_string(),
+        }
+    }
+}
+
+impl ToEntity for AbbreviationResult {
+    type Output = AbbreviationDefinition;
+
+    fn to_entity(&self) -> Self::Output {
+        AbbreviationDefinition {
+            term: self.term.to_string(),
+            definition: self.definition.to_string(),
+            category: self.category.to_string(),
         }
     }
 }

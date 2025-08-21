@@ -1,6 +1,7 @@
 use crate::commands::{Command, HelpDescriptor, Payload};
 use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
+use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
 use shuttle_runtime::async_trait;
 use teloxide::prelude::Requester;
 
@@ -12,6 +13,31 @@ impl WordLookup {
     pub(crate) const NAME: &'static str = "word";
     pub(crate) fn new(client: &Stands4Client) -> Self {
         Self { stands4_client: client.clone() }
+    }
+}
+
+impl WordLookup {
+    fn compose_word_defs(&self, defs: Vec<WordDefinition>) -> Result<String, std::string::FromUtf8Error> {
+        let mut msg = string_builder::Builder::default();
+        msg.append(format!("Found {} definitions\n\n", defs.len()));
+
+        let mut formatter = FullMessageFormatter { builder: msg };
+        for (i, def) in defs.iter().take(5).enumerate() {
+            formatter.visit_word(i, def);
+        }
+
+        formatter.build()
+    }
+    fn compose_abbr_defs(&self, defs: Vec<AbbreviationDefinition>) -> Result<String, std::string::FromUtf8Error> {
+        let mut msg = string_builder::Builder::default();
+        msg.append(format!("Found {} definitions\n\n", defs.len()));
+
+        let mut formatter = FullMessageFormatter { builder: msg };
+        for (i, def) in defs.iter().take(5).enumerate() {
+            formatter.visit_abbreviation(i, def);
+        }
+
+        formatter.build()
     }
 }
 
@@ -29,6 +55,7 @@ impl Command for WordLookup {
         })
     }
 
+
     async fn handle(&self, &Payload { bot, message, args, .. }: &Payload) -> anyhow::Result<()> {
         match args.first() {
             None => {
@@ -40,16 +67,29 @@ impl Command for WordLookup {
             Some(word) => {
                 log::info!("Looking up word {}", word);
 
-                let defs = self.stands4_client.search_word(word).await?;
-                let mut msg = string_builder::Builder::default();
-                msg.append(format!("Found {} definitions\n\n", defs.len()));
+                let results = futures::future::join(
+                    self.stands4_client.search_word(word),
+                    self.stands4_client.search_abbreviation(word),
+                ).await;
 
-                let mut formatter = FullMessageFormatter { builder: msg };
-                for (i, def) in defs.iter().take(5).enumerate() {
-                    formatter.visit_word(i, def);
-                }
+                let msg = match results {
+                    (Ok(words), Ok(abbrs)) =>
+                        match (words.len(), abbrs.len()) {
+                            (0, 0) => "Found 0 definitions".to_string(),
+                            (0, _) => self.compose_abbr_defs(abbrs)?,
+                            (_, _) => self.compose_word_defs(words)?,
+                        }
 
-                let msg = formatter.build()?;
+                    (Ok(words), _) =>
+                        self.compose_word_defs(words)?,
+
+                    (_, Ok(abbrs)) =>
+                        self.compose_abbr_defs(abbrs)?,
+
+                    (Err(_), Err(_)) =>
+                        "Found 0 definitions".to_string(),
+                };
+
                 bot.send_message(message.chat.id, msg).await?;
             }
         }

@@ -36,28 +36,33 @@ Can look up English words from Stands4 API.
         <td>Fix `help` not printing all the help; Handle empty inputs for words and phrases
     </tr>
     <tr>
+        <td>:white_check_mark:</td>
+        <td>0.2.0</td>
+        <td>Add abbreviations lookup</td>
+    </tr>
+    <tr>
         <td>:x:</td>
-        <td>0.1.4</td>
+        <td>0.2.1</td>
         <td>Add link to website in case of 5+ definitions</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.2.0</td>
+        <td>0.3.0</td>
         <td>Introduce inline lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.3.0</td>
+        <td>0.4.0</td>
         <td>Add support for urban dictionary lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.4.0</td>
+        <td>0.5.0</td>
         <td>Add synonims/antonims lookup
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.5.0</td>
+        <td>0.6.0</td>
         <td>Add in-place buttons for contextual synonims/antonims look-up
     </tr>
     <tr>
