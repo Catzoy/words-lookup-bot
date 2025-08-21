@@ -164,7 +164,7 @@ impl VecAbbreviationsExt for Vec<AbbreviationDefinition> {
         let mut common = categorized
             .drain()
             .collect::<Vec<_>>();
-        common.sort_by_cached_key(|(_, value)| value.len());
+        common.sort_by(|(_, v1), (_, v2)| v2.len().cmp(&v1.len()));
         common
     }
 }

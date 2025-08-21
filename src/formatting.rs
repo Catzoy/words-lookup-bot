@@ -53,8 +53,16 @@ impl LookupFormatter for FullMessageFormatter {
         };
 
         self.builder.append(format!("#{} in [{}] stands for: ", i + 1, category));
-        for def in defs.iter() {
-            self.builder.append(format!("{}, ", def.definition));
+        if let Some(d1) = defs.first() {
+            self.builder.append(d1.definition.as_str());
+
+            let len = defs.len();
+            if len > 1 {
+                for def in defs.iter().skip(1) {
+                    self.builder.append(", ");
+                    self.builder.append(def.definition.as_str());
+                }
+            }
         }
         self.builder.append("\n");
     }

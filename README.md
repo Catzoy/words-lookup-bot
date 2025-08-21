@@ -66,6 +66,11 @@ Can look up English words from Stands4 API.
         <td>Display abbreviations in a categorized style</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.2.3.1</td>
+        <td>Fix abbreviations ordering; Fix abbreviations incorrectly joined sentence</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.3.0</td>
         <td>Introduce inline lookups</td>
