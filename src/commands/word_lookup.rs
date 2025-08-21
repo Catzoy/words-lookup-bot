@@ -5,6 +5,7 @@ use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
 use shuttle_runtime::async_trait;
 use std::string::FromUtf8Error;
 use teloxide::prelude::Requester;
+use teloxide::types::ParseMode;
 
 pub struct WordLookup {
     stands4_client: Stands4Client,
@@ -65,9 +66,9 @@ impl WordLookup {
             formatter.append_link(self.word_link(word))
         }
 
-        formatter.builder.append("And also");
-        formatter.builder.append(format!("Fount {} abbreviations\n\n", abbrs.len()));
-        
+        formatter.builder.append("And also\n");
+        formatter.builder.append(format!("Found {} abbreviations\n\n", abbrs.len()));
+
         for (i, def) in abbrs.iter().take(5).enumerate() {
             formatter.visit_abbreviation(i, def);
         }
@@ -97,10 +98,12 @@ impl Command for WordLookup {
     async fn handle(&self, &Payload { bot, message, args, .. }: &Payload) -> anyhow::Result<()> {
         match args.first() {
             None => {
-                bot.send_message(
+                let mut msg = bot.send_message(
                     message.chat.id,
                     "You need to specify a word to look up, like so: `\\word cookies`",
-                ).await?;
+                );
+                msg.parse_mode = Some(ParseMode::MarkdownV2);
+                msg.await?;
             }
             Some(word) => {
                 log::info!("Looking up word {}", word);
@@ -129,7 +132,9 @@ impl Command for WordLookup {
                         "Found 0 definitions".to_string(),
                 };
 
-                bot.send_message(message.chat.id, msg).await?;
+                let mut msg = bot.send_message(message.chat.id, msg);
+                msg.parse_mode = Some(ParseMode::MarkdownV2);
+                msg.await?;
             }
         }
         Ok(())

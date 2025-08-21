@@ -1,6 +1,7 @@
 use crate::commands::{Command, Payload};
 use shuttle_runtime::async_trait;
 use teloxide::prelude::Requester;
+use teloxide::types::ParseMode;
 
 pub struct HelpCommand {}
 
@@ -38,7 +39,10 @@ impl Command for HelpCommand {
                 builder
             });
         let msg = msg.string()?;
-        bot.send_message(message.chat.id, msg).await?;
+        let mut msg = bot.send_message(message.chat.id, msg);
+        msg.parse_mode = Some(ParseMode::MarkdownV2);
+        msg.await?;
+        
         Ok(())
     }
 }

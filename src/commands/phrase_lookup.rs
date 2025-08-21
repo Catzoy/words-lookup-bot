@@ -5,6 +5,7 @@ use crate::stands4::entities::PhraseDefinition;
 use shuttle_runtime::async_trait;
 use std::string::FromUtf8Error;
 use teloxide::prelude::Requester;
+use teloxide::types::ParseMode;
 
 pub struct PhraseLookup {
     stands4_client: Stands4Client,
@@ -22,7 +23,7 @@ impl PhraseLookup {
     fn compose_phrase_defs(&self, components: &Vec<String>, defs: Vec<PhraseDefinition>) -> Result<String, FromUtf8Error> {
         let mut formatter = FullMessageFormatter::default();
         formatter.builder.append(format!("Found {} definitions\n\n", defs.len()));
-        
+
         for (i, def) in defs.iter().take(5).enumerate() {
             formatter.visit_phrase(i, def);
         }
@@ -52,10 +53,12 @@ impl Command for PhraseLookup {
     async fn handle(&self, &Payload { bot, message, args, .. }: &Payload) -> anyhow::Result<()> {
         match args.join(" ").as_str() {
             "" => {
-                bot.send_message(
+                let mut msg = bot.send_message(
                     message.chat.id,
                     "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
-                ).await?;
+                );
+                msg.parse_mode = Some(ParseMode::MarkdownV2);
+                msg.await?;
             }
             phrase => {
                 log::info!("Looking up phrase {}", phrase);
