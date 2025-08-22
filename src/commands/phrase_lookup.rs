@@ -53,12 +53,10 @@ impl Command for PhraseLookup {
     async fn handle(&self, &Payload { bot, message, args, .. }: &Payload) -> anyhow::Result<()> {
         match args.join(" ").as_str() {
             "" => {
-                let mut msg = bot.send_message(
+                bot.send_message(
                     message.chat.id,
                     "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
-                );
-                msg.parse_mode = Some(ParseMode::MarkdownV2);
-                msg.await?;
+                ).await?;
             }
             phrase => {
                 log::info!("Looking up phrase {}", phrase);

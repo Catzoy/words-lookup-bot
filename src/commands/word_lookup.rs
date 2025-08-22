@@ -102,12 +102,10 @@ impl Command for WordLookup {
     async fn handle(&self, &Payload { bot, message, args, .. }: &Payload) -> anyhow::Result<()> {
         match args.first() {
             None => {
-                let mut msg = bot.send_message(
+                bot.send_message(
                     message.chat.id,
                     "You need to specify a word to look up, like so: `\\word cookies`",
-                );
-                msg.parse_mode = Some(ParseMode::MarkdownV2);
-                msg.await?;
+                ).await?;
             }
             Some(word) => {
                 log::info!("Looking up word {}", word);
@@ -136,9 +134,7 @@ impl Command for WordLookup {
                         "Found 0 definitions".to_string(),
                 };
 
-                let mut msg = bot.send_message(message.chat.id, msg);
-                msg.parse_mode = Some(ParseMode::MarkdownV2);
-                msg.await?;
+                bot.send_message(message.chat.id, msg).await?;
             }
         }
         Ok(())
