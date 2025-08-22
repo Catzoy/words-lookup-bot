@@ -4,6 +4,7 @@ use crate::stands4::client::Stands4Client;
 use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
 use shuttle_runtime::async_trait;
 use std::collections::HashMap;
+use std::ops::Not;
 use std::string::FromUtf8Error;
 use teloxide::prelude::Requester;
 use teloxide::types::ParseMode;
@@ -145,21 +146,24 @@ impl Command for WordLookup {
 }
 
 trait VecAbbreviationsExt {
+    const UNFILLED: &'static str = "UNFILED";
     fn categorized(&self) -> Vec<(&str, Vec<&AbbreviationDefinition>)>;
 }
 
 impl VecAbbreviationsExt for Vec<AbbreviationDefinition> {
     fn categorized(&self) -> Vec<(&str, Vec<&AbbreviationDefinition>)> {
-        let categorized = &mut self.iter().fold(
-            HashMap::<&str, Vec<&AbbreviationDefinition>>::new(), |mut map, def| {
-                let category = def.category.as_str();
-                match map.get_mut(category) {
-                    Some(v) => { v.push(def); }
-                    None => { map.insert(category, vec![def]); }
-                };
-                map
-            },
-        );
+        let categorized = &mut self.iter()
+            .filter(|def| def.category.eq(Self::UNFILLED).not())
+            .fold(
+                HashMap::<&str, Vec<&AbbreviationDefinition>>::new(), |mut map, def| {
+                    let category = def.category.as_str();
+                    match map.get_mut(category) {
+                        Some(v) => { v.push(def); }
+                        None => { map.insert(category, vec![def]); }
+                    };
+                    map
+                },
+            );
 
         let mut common = categorized
             .drain()
