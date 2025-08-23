@@ -1,19 +1,15 @@
-use crate::commands::{Command, Payload};
-use shuttle_runtime::async_trait;
-use teloxide::prelude::Requester;
+use crate::commands::{BotExt, CommandHandler, MessageCommands};
+use teloxide::prelude::{Message, Requester};
+use teloxide::Bot;
 
-pub struct TeapotCommand {}
-impl TeapotCommand {
-    pub(crate) const NAME: &'static str = "teapot";
+async fn teapot_handler(bot: Bot, message: Message) -> anyhow::Result<()> {
+    bot.send_message(message.chat.id, "I'm a teapot").await?;
+    Ok(())
 }
-#[async_trait]
-impl Command for TeapotCommand {
-    fn name(&self) -> &'static str {
-        TeapotCommand::NAME
-    }
 
-    async fn handle(&self, &Payload { bot, message, .. }: &Payload) -> anyhow::Result<()> {
-        bot.send_message(message.chat.id, "I'm a teapot").await?;
-        Ok(())
-    }
+pub fn teapot() -> CommandHandler {
+    teloxide::dptree::case![MessageCommands::Teapot]
+        .endpoint(|bot: Bot, message: Message| async move {
+            bot.with_err_response(message, teapot_handler).await
+        })
 }

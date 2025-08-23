@@ -26,7 +26,10 @@ async fn telegram(
         stands4_token,
     );
 
-    let service = TelegramService::new(token, stands4_client);
+    let service = TelegramService {
+        token,
+        stands4_client,
+    };
 
     Ok(service)
 }
