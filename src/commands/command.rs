@@ -9,19 +9,21 @@ use teloxide::Bot;
 #[derive(Clone, BotCommands, Debug)]
 #[command(rename_rule = "lowercase", description = "Here are the supported commands:")]
 pub enum MessageCommands {
+    #[command(hide)]
     Unknown,
     #[command(description = "Print this helpful message")]
     Help,
     #[command(description = "Doesn't really do anything, is just here to greet you.")]
     Start,
+    #[command(hide)]
     Teapot,
     #[command(
-        alias = "word",
+        rename = "word",
         description = "Find definition of the specified phrase.\nAny message containing at most 1 word, even with hyphens, will be looked up."
     )]
     WordLookup(String),
     #[command(
-        alias = "phrase",
+        rename = "phrase",
         description = "Find definition of the specified phrase.\nAny message with more than 1 word is considered to be a phrase"
     )]
     PhraseLookup(String),
