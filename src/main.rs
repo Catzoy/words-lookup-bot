@@ -2,6 +2,7 @@ mod stands4;
 mod formatting;
 mod commands;
 mod service;
+mod inlines;
 
 use crate::service::TelegramService;
 use anyhow::Context as _;
