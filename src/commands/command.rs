@@ -7,7 +7,7 @@ use teloxide::utils::command::{BotCommands, ParseError};
 use teloxide::Bot;
 
 #[derive(Clone, BotCommands, Debug)]
-#[command(rename_rule = "lowercase", description = "Here are the supported commands:\n\n")]
+#[command(rename_rule = "lowercase", description = "Here are the supported commands:")]
 pub enum MessageCommands {
     Unknown,
     #[command(description = "Print this helpful message")]
@@ -41,7 +41,8 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     let username = me.username.clone().unwrap_or_default();
     let cmd = MessageCommands::parse(text, &username)
         .unwrap_or_else(|err| match err {
-            ParseError::UnknownCommand(_) => MessageCommands::Unknown,
+            ParseError::UnknownCommand(cmd) if cmd.starts_with("/")
+            => MessageCommands::Unknown,
             _ => extract_text_command(text)
         });
 

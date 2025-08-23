@@ -73,7 +73,7 @@ fn compose_abbr_defs(word: &str, defs: Vec<AbbreviationDefinition>) -> Result<St
 }
 
 fn compose_words_with_abbrs(
-    word: &String,
+    word: &str,
     words: Vec<WordDefinition>,
     abbrs: Vec<AbbreviationDefinition>,
 ) -> Result<String, FromUtf8Error> {
@@ -101,15 +101,15 @@ fn compose_words_with_abbrs(
     formatter.build()
 }
 
-async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4Client, args: Vec<String>) -> anyhow::Result<()> {
-    match args.first() {
-        None => {
+async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4Client, word: String) -> anyhow::Result<()> {
+    match word.as_str() {
+        "" => {
             bot.send_message(
                 message.chat.id,
                 "You need to specify a word to look up, like so: `\\word cookies`",
             ).await?;
         }
-        Some(word) => {
+        word => {
             log::info!("Looking up word {}", word);
 
             let results = futures::future::join(
@@ -143,9 +143,9 @@ async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4
 }
 pub fn word_lookup() -> CommandHandler {
     teloxide::dptree::case![MessageCommands::WordLookup(args)]
-        .endpoint(|args: Vec<String>, bot: Bot, message: Message, stands4_client: Stands4Client| async move {
+        .endpoint(|word: String, bot: Bot, message: Message, stands4_client: Stands4Client| async move {
             bot.with_err_response(message, move |bot, message| async {
-                word_lookup_handler(bot, message, stands4_client, args).await
+                word_lookup_handler(bot, message, stands4_client, word).await
             }).await
         })
 }

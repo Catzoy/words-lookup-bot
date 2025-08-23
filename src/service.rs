@@ -18,7 +18,9 @@ pub struct TelegramService {
 #[shuttle_runtime::async_trait]
 impl shuttle_runtime::Service for TelegramService {
     async fn bind(self, _: SocketAddr) -> Result<(), Error> {
-        let bot = Bot::new(self.token.clone()).parse_mode(ParseMode::MarkdownV2);
+        let bot = Bot::new(self.token.clone())
+            .parse_mode(ParseMode::MarkdownV2)
+            .into_inner();
         let cloned_bot = bot.clone();
 
         // Other update types are of no interest to use since this REPL is only for
