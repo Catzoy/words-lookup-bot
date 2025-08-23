@@ -1,6 +1,7 @@
 use crate::commands::{BotExt, CommandHandler, MessageCommands};
+use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
-use teloxide::types::Message;
+use teloxide::types::{Message, ParseMode};
 use teloxide::Bot;
 
 async fn start_handler(bot: Bot, message: Message) -> anyhow::Result<()> {
@@ -10,7 +11,9 @@ async fn start_handler(bot: Bot, message: Message) -> anyhow::Result<()> {
         I'm a bot that can look up words and phrases.\n\
         Simply send me a message and I'll search for the definition of the text."
             .to_string(),
-    ).await?;
+    )
+        .parse_mode(ParseMode::MarkdownV2)
+        .await?;
     Ok(())
 }
 

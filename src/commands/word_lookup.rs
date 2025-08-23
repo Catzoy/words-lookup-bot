@@ -5,8 +5,9 @@ use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
 use std::collections::HashMap;
 use std::ops::Not;
 use std::string::FromUtf8Error;
+use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
-use teloxide::types::Message;
+use teloxide::types::{Message, ParseMode};
 use teloxide::Bot;
 
 trait VecAbbreviationsExt {
@@ -107,7 +108,9 @@ async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4
             bot.send_message(
                 message.chat.id,
                 "You need to specify a word to look up, like so: `\\word cookies`",
-            ).await?;
+            )
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
         }
         word => {
             log::info!("Looking up word {}", word);
@@ -136,7 +139,9 @@ async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4
                     "Found 0 definitions".to_string(),
             };
 
-            bot.send_message(message.chat.id, msg).await?;
+            bot.send_message(message.chat.id, msg)
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
         }
     }
     Ok(())

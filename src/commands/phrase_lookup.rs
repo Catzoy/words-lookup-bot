@@ -3,7 +3,9 @@ use crate::formatting::{FullMessageFormatter, LookupFormatter};
 use crate::stands4::client::Stands4Client;
 use crate::stands4::entities::PhraseDefinition;
 use std::string::FromUtf8Error;
+use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::{Message, Requester};
+use teloxide::types::ParseMode;
 use teloxide::Bot;
 
 fn phrase_link(phrase: &str) -> String {
@@ -33,14 +35,18 @@ async fn phrase_lookup_handler(bot: Bot, message: Message, stands4_client: Stand
             bot.send_message(
                 message.chat.id,
                 "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
-            ).await?;
+            )
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
         }
         phrase => {
             log::info!("Looking up phrase {}", phrase);
 
             let defs = stands4_client.search_phrase(phrase).await?;
             let msg = compose_phrase_defs(phrase, defs)?;
-            bot.send_message(message.chat.id, msg).await?;
+            bot.send_message(message.chat.id, msg)
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
         }
     };
     Ok(())
