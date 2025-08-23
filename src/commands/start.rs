@@ -1,32 +1,25 @@
-use crate::commands::{Command, HelpDescriptor, Payload};
-use shuttle_runtime::async_trait;
+use crate::commands::{BotExt, CommandHandler, MessageCommands};
+use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
+use teloxide::types::{Message, ParseMode};
+use teloxide::Bot;
 
-pub struct StartCommand {}
-impl StartCommand {
-    const NAME: &'static str = "start";
+async fn start_handler(bot: Bot, message: Message) -> anyhow::Result<()> {
+    bot.send_message(
+        message.chat.id,
+        "Hi!\n\
+        I'm a bot that can look up words and phrases.\n\
+        Simply send me a message and I'll search for the definition of the text."
+            .to_string(),
+    )
+        .parse_mode(ParseMode::MarkdownV2)
+        .await?;
+    Ok(())
 }
-#[async_trait]
-impl Command for StartCommand {
-    fn name(&self) -> &'static str {
-        Self::NAME
-    }
 
-    fn descriptor(&self) -> Option<HelpDescriptor> {
-        Some(HelpDescriptor {
-            name: StartCommand::NAME,
-            description: "Doesn't really do anything, is just here to greet you.",
+pub fn start() -> CommandHandler {
+    teloxide::dptree::case![MessageCommands::Start]
+        .endpoint(|bot: Bot, message: Message| async move {
+            bot.with_err_response(message, start_handler).await
         })
-    }
-
-    async fn handle(&self, &Payload { bot, message, .. }: &Payload) -> anyhow::Result<()> {
-        bot.send_message(
-            message.chat.id,
-            "Hi!\n\
-            I'm a bot that can look up words and phrases.\n\
-            Simply send me a message and I'll search for the definition of the text."
-                .to_string(),
-        ).await?;
-        Ok(())
-    }
 }

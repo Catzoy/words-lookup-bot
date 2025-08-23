@@ -76,23 +76,28 @@ Can look up English words from Stands4 API.
         <td>Remove UNFILLED category to fix "Message to long" error</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.3.0</td>
-        <td>Introduce inline lookups</td>
+        <td>Refactor to functional style in preparations for inlines</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.4.0</td>
-        <td>Add support for urban dictionary lookups</td>
+        <td>Introduce inline lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.5.0</td>
-        <td>Add synonims/antonims lookup
+        <td>Add support for urban dictionary lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.6.0</td>
+        <td>Add synonims/antonims lookup
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.7.0</td>
         <td>Add in-place buttons for contextual synonims/antonims look-up
     </tr>
     <tr>
