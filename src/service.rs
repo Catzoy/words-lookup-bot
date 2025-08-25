@@ -1,5 +1,5 @@
 use crate::commands::*;
-use crate::inlines::inlines::inlines_tree;
+use crate::inlines::inlines::{inlines_tree, Debouncer};
 use crate::stands4::client::Stands4Client;
 use shuttle_runtime::Error;
 use std::net::SocketAddr;
@@ -24,7 +24,8 @@ impl shuttle_runtime::Service for TelegramService {
         // messages. See <https://github.com/teloxide/teloxide/issues/557>.
         let ignore_update = |_upd| Box::pin(async {});
         let deps = deps![
-            self.stands4_client.clone()
+            self.stands4_client.clone(),
+            Debouncer::default()
         ];
 
         let tree = entry()

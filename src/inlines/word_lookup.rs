@@ -3,6 +3,7 @@ use crate::{
     inlines::QueryCommands,
     stands4::client::Stands4Client,
 };
+use teloxide::payloads::AnswerInlineQuerySetters;
 use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText};
 use teloxide::{
     prelude::{InlineQuery, Requester},
@@ -52,7 +53,9 @@ pub fn word_lookup() -> InlineHandler {
                             ),
                         ),
                     );
-                    bot.answer_inline_query(query.id, vec![msg]).await?;
+                    bot.answer_inline_query(query.id, vec![msg])
+                        .cache_time(0)
+                        .await?;
                     Ok(())
                 }
             }
