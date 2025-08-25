@@ -1,42 +1,20 @@
-use crate::commands::{BotExt, CommandHandler, MessageCommands};
-use crate::formatting::{FullMessageFormatter, LookupFormatter};
-use crate::stands4::client::Stands4Client;
-use crate::stands4::entities::{AbbreviationDefinition, WordDefinition};
-use std::collections::HashMap;
-use std::ops::Not;
+use crate::{
+    commands::{BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
+    formatting::LookupFormatter,
+    stands4::{
+        AbbreviationDefinition,
+        Stands4Client,
+        VecAbbreviationsExt,
+        WordDefinition,
+    },
+};
 use std::string::FromUtf8Error;
-use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::Requester;
-use teloxide::types::{Message, ParseMode};
-use teloxide::Bot;
-
-trait VecAbbreviationsExt {
-    const UNFILLED: &'static str = "UNFILED";
-    fn categorized(&self) -> Vec<(&str, Vec<&AbbreviationDefinition>)>;
-}
-
-impl VecAbbreviationsExt for Vec<AbbreviationDefinition> {
-    fn categorized(&self) -> Vec<(&str, Vec<&AbbreviationDefinition>)> {
-        let categorized = &mut self.iter()
-            .filter(|def| def.category.eq(Self::UNFILLED).not())
-            .fold(
-                HashMap::<&str, Vec<&AbbreviationDefinition>>::new(), |mut map, def| {
-                    let category = def.category.as_str();
-                    match map.get_mut(category) {
-                        Some(v) => { v.push(def); }
-                        None => { map.insert(category, vec![def]); }
-                    };
-                    map
-                },
-            );
-
-        let mut common = categorized
-            .drain()
-            .collect::<Vec<_>>();
-        common.sort_by(|(_, v1), (_, v2)| v2.len().cmp(&v1.len()));
-        common
-    }
-}
+use teloxide::{
+    payloads::SendMessageSetters,
+    prelude::Requester,
+    types::{Message, ParseMode},
+    Bot,
+};
 
 fn word_link(word: &str) -> String {
     format!("https://www.definitions.net/definition/{}", word)

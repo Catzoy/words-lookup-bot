@@ -1,5 +1,6 @@
+use crate::commands::FullMessageFormatter;
 use crate::commands::{BotExt, CommandHandler, MessageCommands};
-use crate::formatting::{FullMessageFormatter, LookupFormatter};
+use crate::formatting::LookupFormatter;
 use crate::stands4::client::Stands4Client;
 use crate::stands4::entities::PhraseDefinition;
 use std::string::FromUtf8Error;
