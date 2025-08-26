@@ -86,7 +86,7 @@ Can look up English words from Stands4 API.
         <td>Fix `\start` misbehaving</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.4.0</td>
         <td>Introduce inline lookups</td>
     </tr>
@@ -114,6 +114,11 @@ Can look up English words from Stands4 API.
         <td>:x:</td>
         <td>0.9.0</td>
         <td>Add single api inline lookups</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.10.0</td>
+        <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
     </tr>
     <tr>
         <td>...</td>
