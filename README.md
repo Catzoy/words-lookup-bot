@@ -86,7 +86,7 @@ Can look up English words from Stands4 API.
         <td>Fix `\start` misbehaving</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.4.0</td>
         <td>Introduce inline lookups</td>
     </tr>
@@ -103,7 +103,22 @@ Can look up English words from Stands4 API.
     <tr>
         <td>:x:</td>
         <td>0.7.0</td>
-        <td>Add in-place buttons for contextual synonims/antonims look-up
+        <td>Add in-place buttons for contextual synonims/antonims look-up</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.8.0</td>
+        <td>Add caching of frequent requests per API route</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.9.0</td>
+        <td>Add single api inline lookups</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.10.0</td>
+        <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
     </tr>
     <tr>
         <td>...</td>

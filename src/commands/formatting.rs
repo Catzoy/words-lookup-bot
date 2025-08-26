@@ -1,28 +1,27 @@
+use crate::format::formatter::{LinkProvider, LookupFormatter};
 use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
 use std::ops::Not;
 
-pub trait LookupFormatter {
-    fn visit_word(&mut self, i: usize, def: &WordDefinition);
-    fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
-    fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &Vec<&AbbreviationDefinition>);
-    fn append_link(&mut self, link: String);
-
-    fn build(self) -> Result<String, std::string::FromUtf8Error>;
+pub struct FullMessageFormatter<T: LinkProvider> {
+    builder: string_builder::Builder,
+    link_provider: T,
 }
 
-pub struct FullMessageFormatter {
-    pub(crate) builder: string_builder::Builder,
-}
-
-impl Default for FullMessageFormatter {
-    fn default() -> Self {
+impl<T: LinkProvider> FullMessageFormatter<T> {
+    pub fn new(link_provider: T) -> FullMessageFormatter<T> {
         FullMessageFormatter {
-            builder: string_builder::Builder::default()
+            builder: string_builder::Builder::default(),
+            link_provider,
         }
     }
 }
 
-impl LookupFormatter for FullMessageFormatter {
+impl<T: LinkProvider> LookupFormatter<Result<String, std::string::FromUtf8Error>>
+for FullMessageFormatter<T> {
+    fn link_provider(&self) -> &dyn LinkProvider {
+        &self.link_provider
+    }
+
     fn visit_word(&mut self, i: usize, def: &WordDefinition) {
         let part_of_speech = match def.part_of_speech.is_empty() {
             true => &"?".to_string(),
@@ -67,8 +66,12 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append("\n");
     }
 
+    fn append_title(&mut self, title: String) {
+        self.builder.append(format!("{}\n\n", title));
+    }
+
     fn append_link(&mut self, link: String) {
-        self.builder.append(format!("Check out other definitions at {}", link));
+        self.builder.append(format!("Check out other definitions at {}\n\n", link));
     }
 
     fn build(self) -> Result<String, std::string::FromUtf8Error> {
