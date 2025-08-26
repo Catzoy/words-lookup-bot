@@ -1,11 +1,13 @@
-use crate::stands4::VecAbbreviationsExt;
+use crate::format::formatter::{compose_abbr_defs, compose_word_defs, compose_words_with_abbrs};
+use crate::stands4::{Stands4LinksProvider, VecAbbreviationsExt};
 use crate::{
-    formatting::LookupFormatter,
-    inlines::drop_empty,
-    inlines::formatting::InlineFormatter,
-    inlines::InlineHandler,
-    inlines::QueryCommands,
-    stands4::{AbbreviationDefinition, Stands4Client, WordDefinition},
+    inlines::{
+        drop_empty,
+        formatting::InlineFormatter,
+        InlineHandler,
+        QueryCommands,
+    },
+    stands4::{Stands4Client, WordDefinition},
 };
 use teloxide::{
     payloads::AnswerInlineQuerySetters,
@@ -14,42 +16,6 @@ use teloxide::{
     Bot,
 };
 
-fn compose_word_defs(defs: Vec<WordDefinition>) -> Vec<InlineQueryResult> {
-    let mut formatter = InlineFormatter::default();
-
-    for (i, def) in defs.iter().take(5).enumerate() {
-        formatter.visit_word(i, def);
-    }
-    formatter.build()
-}
-
-fn compose_abbr_defs(defs: Vec<AbbreviationDefinition>) -> Vec<InlineQueryResult> {
-    let mut formatter = InlineFormatter::default();
-
-    let categorized = defs.categorized();
-    for (i, (category, defs)) in categorized.iter().take(5).enumerate() {
-        formatter.visit_abbreviations(i, category, defs);
-    }
-    formatter.build()
-}
-
-fn compose_words_with_abbrs(
-    words: Vec<WordDefinition>,
-    abbrs: Vec<AbbreviationDefinition>,
-) -> Vec<InlineQueryResult> {
-    let mut formatter = InlineFormatter::default();
-
-    for (i, def) in words.iter().take(5).enumerate() {
-        formatter.visit_word(i, def);
-    }
-
-    let categorized = abbrs.categorized();
-    for (i, (category, defs)) in categorized.iter().take(5).enumerate() {
-        formatter.visit_abbreviations(i, category, defs);
-    }
-
-    formatter.build()
-}
 fn empty_result() -> Vec<InlineQueryResult> {
     vec![]
 }
@@ -65,20 +31,21 @@ pub fn word_lookup() -> InlineHandler {
                 stands4_client.search_abbreviation(word),
             ).await;
 
+            let formatter = InlineFormatter::new(Stands4LinksProvider {});
             let msg = match results {
                 (Ok(words), Ok(abbrs)) =>
                     match (words.len(), abbrs.len()) {
                         (0, 0) => empty_result(),
-                        (0, _) => compose_abbr_defs(abbrs),
-                        (_, 0) => compose_word_defs(words),
-                        (_, _) => compose_words_with_abbrs(words, abbrs)
+                        (0, _) => compose_abbr_defs(formatter, word, abbrs),
+                        (_, 0) => compose_word_defs(formatter, word, words),
+                        (_, _) => compose_words_with_abbrs(formatter, word, words, abbrs)
                     }
 
                 (Ok(words), _) =>
-                    compose_word_defs(words),
+                    compose_word_defs(formatter, word, words),
 
                 (_, Ok(abbrs)) =>
-                    compose_abbr_defs(abbrs),
+                    compose_abbr_defs(formatter, word, abbrs),
 
                 (Err(_), Err(_)) =>
                     empty_result(),

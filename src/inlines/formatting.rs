@@ -1,4 +1,4 @@
-use crate::formatting::LookupFormatter;
+use crate::format::formatter::{LinkProvider, LookupFormatter};
 use crate::stands4::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
 use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
 
@@ -7,25 +7,25 @@ struct InlineAnswer {
     meaning: String,
     description: Option<String>,
 }
-pub struct InlineFormatter {
+pub struct InlineFormatter<T: LinkProvider> {
     answers: Vec<InlineAnswer>,
+    link_provider: T,
 }
 
-impl InlineFormatter {
-    pub fn new() -> Self {
+impl<T: LinkProvider> InlineFormatter<T> {
+    pub fn new(link_provider: T) -> Self {
         InlineFormatter {
             answers: Vec::new(),
+            link_provider,
         }
     }
 }
 
-impl Default for InlineFormatter {
-    fn default() -> Self {
-        Self::new()
+impl<T: LinkProvider> LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter<T> {
+    fn link_provider(&self) -> &dyn LinkProvider {
+        &self.link_provider
     }
-}
 
-impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
     fn visit_word(&mut self, i: usize, def: &WordDefinition) {
         let part_of_speech = match def.part_of_speech.is_empty() {
             true => &"?".to_string(),
@@ -81,6 +81,10 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             description: None,
         };
         self.answers.push(answer);
+    }
+
+    fn append_title(&mut self, title: String) {
+        // no support for now
     }
 
     fn append_link(&mut self, _link: String) {

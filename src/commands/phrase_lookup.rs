@@ -1,34 +1,18 @@
-use crate::commands::FullMessageFormatter;
-use crate::commands::{BotExt, CommandHandler, MessageCommands};
-use crate::formatting::LookupFormatter;
-use crate::stands4::client::Stands4Client;
-use crate::stands4::entities::PhraseDefinition;
-use std::string::FromUtf8Error;
-use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::{Message, Requester};
-use teloxide::types::ParseMode;
-use teloxide::Bot;
-
-fn phrase_link(phrase: &str) -> String {
-    format!(
-        "https://www.phrases.com/psearch/{}",
-        phrase.replace(" ", "+")
-    )
-}
-
-fn compose_phrase_defs(phrase: &str, defs: Vec<PhraseDefinition>) -> Result<String, FromUtf8Error> {
-    let mut formatter = FullMessageFormatter::default();
-    formatter.builder.append(format!("Found {} definitions\n\n", defs.len()));
-
-    for (i, def) in defs.iter().take(5).enumerate() {
-        formatter.visit_phrase(i, def);
-    }
-    if defs.len() > 5 {
-        formatter.append_link(phrase_link(phrase));
-    }
-
-    formatter.build()
-}
+use crate::{
+    commands::FullMessageFormatter,
+    commands::{BotExt, CommandHandler, MessageCommands},
+    format::formatter::compose_phrase_defs,
+    stands4::{
+        client::Stands4Client,
+        Stands4LinksProvider,
+    },
+};
+use teloxide::{
+    payloads::SendMessageSetters,
+    prelude::{Message, Requester},
+    types::ParseMode,
+    Bot,
+};
 
 async fn phrase_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4Client, phrase: String) -> anyhow::Result<()> {
     match phrase.as_str() {
@@ -44,7 +28,8 @@ async fn phrase_lookup_handler(bot: Bot, message: Message, stands4_client: Stand
             log::info!("Looking up phrase {}", phrase);
 
             let defs = stands4_client.search_phrase(phrase).await?;
-            let msg = compose_phrase_defs(phrase, defs)?;
+            let formatter = FullMessageFormatter::new(Stands4LinksProvider {});
+            let msg = compose_phrase_defs(formatter, &phrase, defs)?;
             bot.send_message(message.chat.id, msg)
                 .parse_mode(ParseMode::MarkdownV2)
                 .await?;
