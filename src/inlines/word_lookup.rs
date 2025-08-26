@@ -1,5 +1,5 @@
 use crate::format::formatter::{compose_abbr_defs, compose_word_defs, compose_words_with_abbrs};
-use crate::stands4::{Stands4LinksProvider, VecAbbreviationsExt};
+use crate::stands4::Stands4LinksProvider;
 use crate::{
     inlines::{
         drop_empty,
@@ -7,10 +7,9 @@ use crate::{
         InlineHandler,
         QueryCommands,
     },
-    stands4::{Stands4Client, WordDefinition},
+    stands4::Stands4Client,
 };
 use teloxide::{
-    payloads::AnswerInlineQuerySetters,
     prelude::{InlineQuery, Requester},
     types::InlineQueryResult,
     Bot,
@@ -36,24 +35,22 @@ pub fn word_lookup() -> InlineHandler {
                 (Ok(words), Ok(abbrs)) =>
                     match (words.len(), abbrs.len()) {
                         (0, 0) => empty_result(),
-                        (0, _) => compose_abbr_defs(formatter, word, abbrs),
-                        (_, 0) => compose_word_defs(formatter, word, words),
-                        (_, _) => compose_words_with_abbrs(formatter, word, words, abbrs)
+                        (0, _) => compose_abbr_defs(formatter, word, abbrs)?,
+                        (_, 0) => compose_word_defs(formatter, word, words)?,
+                        (_, _) => compose_words_with_abbrs(formatter, word, words, abbrs)?
                     }
 
                 (Ok(words), _) =>
-                    compose_word_defs(formatter, word, words),
+                    compose_word_defs(formatter, word, words)?,
 
                 (_, Ok(abbrs)) =>
-                    compose_abbr_defs(formatter, word, abbrs),
+                    compose_abbr_defs(formatter, word, abbrs)?,
 
                 (Err(_), Err(_)) =>
                     empty_result(),
             };
 
-            bot.answer_inline_query(query.id, msg)
-                .cache_time(0)
-                .await?;
+            bot.answer_inline_query(query.id, msg).await?;
             Ok(())
         })
 }

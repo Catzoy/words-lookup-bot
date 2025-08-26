@@ -21,7 +21,7 @@ impl<T: LinkProvider> InlineFormatter<T> {
     }
 }
 
-impl<T: LinkProvider> LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter<T> {
+impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>> for InlineFormatter<T> {
     fn link_provider(&self) -> &dyn LinkProvider {
         &self.link_provider
     }
@@ -83,7 +83,7 @@ impl<T: LinkProvider> LookupFormatter<Vec<InlineQueryResult>> for InlineFormatte
         self.answers.push(answer);
     }
 
-    fn append_title(&mut self, title: String) {
+    fn append_title(&mut self, _title: String) {
         // no support for now
     }
 
@@ -91,22 +91,31 @@ impl<T: LinkProvider> LookupFormatter<Vec<InlineQueryResult>> for InlineFormatte
         // no support for now
     }
 
-    fn build(self) -> Vec<InlineQueryResult> {
+    fn build(self) -> Result<Vec<InlineQueryResult>, std::string::FromUtf8Error> {
         let mut articles = Vec::new();
         for (i, answer) in self.answers.into_iter().enumerate() {
-            let description = answer.description.unwrap_or_else(|| answer.meaning.clone());
-            let description = teloxide::utils::markdown::escape(description.as_str());
-            let description = InputMessageContentText::new(description)
-                .parse_mode(ParseMode::MarkdownV2);
+            let mut full_text = string_builder::Builder::default();
+            full_text.append(answer.title.as_str());
+            full_text.append("\n\n");
+            full_text.append(answer.meaning.as_str());
+            if let Some(description) = answer.description {
+                full_text.append("\n");
+                full_text.append(description);
+            }
+            let full_text = full_text.string()?;
             let article = InlineQueryResultArticle::new(
                 format!("answer-{}", i),
                 answer.title,
-                InputMessageContent::Text(description),
+                InputMessageContent::Text(
+                    InputMessageContentText::new(
+                        teloxide::utils::markdown::escape(full_text.as_str())
+                    ).parse_mode(ParseMode::MarkdownV2)
+                ),
             ).description(
-                teloxide::utils::markdown::escape(answer.meaning.as_str())
+                answer.meaning.as_str()
             );
             articles.push(InlineQueryResult::Article(article));
         }
-        articles
+        Ok(articles)
     }
 }
