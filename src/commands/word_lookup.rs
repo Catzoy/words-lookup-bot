@@ -1,11 +1,9 @@
 use crate::{
     commands::{BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
-    format::formatter::{compose_abbr_defs, compose_word_defs, compose_words_with_abbrs},
-    stands4::Stands4LinksProvider,
+    format::word_with_abbr_ext::compose_word_with_abbrs_determined,
     stands4::{
         Stands4Client,
-        VecAbbreviationsExt,
-        WordDefinition,
+        Stands4LinksProvider,
     },
 };
 use teloxide::{
@@ -34,25 +32,9 @@ async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4
             ).await;
 
             let formatter = FullMessageFormatter::new(Stands4LinksProvider {});
-
-            let msg = match results {
-                (Ok(words), Ok(abbrs)) =>
-                    match (words.len(), abbrs.len()) {
-                        (0, 0) => "Found 0 definitions".to_string(),
-                        (0, _) => compose_abbr_defs(formatter, word, abbrs)?,
-                        (_, 0) => compose_word_defs(formatter, word, words)?,
-                        (_, _) => compose_words_with_abbrs(formatter, word, words, abbrs)?
-                    }
-
-                (Ok(words), _) =>
-                    compose_word_defs(formatter, word, words)?,
-
-                (_, Ok(abbrs)) =>
-                    compose_abbr_defs(formatter, word, abbrs)?,
-
-                (Err(_), Err(_)) =>
-                    "Found 0 definitions".to_string(),
-            };
+            let msg = compose_word_with_abbrs_determined(
+                formatter, word, results, || "Found 0 definitions".to_string(),
+            )?;
 
             bot.send_message(message.chat.id, msg)
                 .parse_mode(ParseMode::MarkdownV2)
