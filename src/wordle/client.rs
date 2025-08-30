@@ -21,3 +21,10 @@ impl WordleClient {
         Ok(res.json::<WordleAnswer>().await?)
     }
 }
+
+impl Default for WordleClient {
+    fn default() -> WordleClient {
+        let client = Client::new();
+        WordleClient { client }
+    }
+}

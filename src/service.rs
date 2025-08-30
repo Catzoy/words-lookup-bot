@@ -2,6 +2,8 @@ use crate::commands::*;
 use crate::inlines::debouncer::InlineQueryDebouncer;
 use crate::inlines::inlines::inlines_tree;
 use crate::stands4::client::Stands4Client;
+use crate::wordle::cache::WordleCache;
+use crate::wordle::WordleClient;
 use shuttle_runtime::Error;
 use std::net::SocketAddr;
 use teloxide::dispatching::Dispatcher;
@@ -26,7 +28,11 @@ impl shuttle_runtime::Service for TelegramService {
         let ignore_update = |_upd| Box::pin(async {});
         let deps = deps![
             self.stands4_client.clone(),
-            InlineQueryDebouncer::default()
+            InlineQueryDebouncer::default(),
+            WordleCache::new(
+                WordleClient::default(),
+                self.stands4_client.clone(),
+            )
         ];
 
         let tree = entry()
