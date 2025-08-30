@@ -6,7 +6,7 @@ pub mod word_lookup;
 pub mod phrase_lookup;
 pub mod help;
 mod formatting;
-mod wordle;
+pub mod wordle;
 
 pub use command::*;
 pub use formatting::*;
