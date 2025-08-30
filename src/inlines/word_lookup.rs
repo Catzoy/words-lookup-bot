@@ -1,5 +1,4 @@
 use crate::{
-    format::formatter::{compose_word_defs, compose_words_with_abbrs},
     format::word_with_abbr_ext::compose_word_with_abbrs_determined,
     inlines::{
         drop_empty,

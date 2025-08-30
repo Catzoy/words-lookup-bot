@@ -15,7 +15,7 @@ async fn wordle_lookup_handler(bot: Bot, message: Message, cache: WordleCache) -
     Ok(())
 }
 
-pub async fn ensure_wordle_answer(bot: Bot, message: Message, mut cache: WordleCache) -> anyhow::Result<()> {
+async fn ensure_wordle_answer(bot: Bot, message: Message, mut cache: WordleCache) -> anyhow::Result<()> {
     let cached = cache.require_fresh_answer().await;
     match cached {
         Ok(_) => Ok(()),
