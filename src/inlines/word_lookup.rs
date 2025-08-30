@@ -1,5 +1,4 @@
 use crate::{
-    format::formatter::{compose_word_defs, compose_words_with_abbrs},
     format::word_with_abbr_ext::compose_word_with_abbrs_determined,
     inlines::{
         drop_empty,
@@ -31,7 +30,7 @@ pub fn word_lookup() -> InlineHandler {
 
             let formatter = InlineFormatter::new(Stands4LinksProvider {});
             let msg = compose_word_with_abbrs_determined(
-                formatter, word, results, || vec![],
+                formatter, word, &results, || vec![],
             )?;
 
             bot.answer_inline_query(query.id, msg).await?;

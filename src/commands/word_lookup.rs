@@ -33,7 +33,7 @@ async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4
 
             let formatter = FullMessageFormatter::new(Stands4LinksProvider {});
             let msg = compose_word_with_abbrs_determined(
-                formatter, word, results, || "Found 0 definitions".to_string(),
+                formatter, word, &results, || "Found 0 definitions".to_string(),
             )?;
 
             bot.send_message(message.chat.id, msg)

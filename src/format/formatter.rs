@@ -19,7 +19,7 @@ pub trait LookupFormatter<T> {
 pub fn compose_word_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,
-    defs: Vec<WordDefinition>,
+    defs: &Vec<WordDefinition>,
 ) -> R {
     formatter.append_title(format!("Found {} definitions", defs.len()));
 
@@ -35,7 +35,7 @@ pub fn compose_word_defs<R, Formatter: LookupFormatter<R>>(
 pub fn compose_abbr_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,
-    defs: Vec<AbbreviationDefinition>,
+    defs: &Vec<AbbreviationDefinition>,
 ) -> R {
     formatter.append_title(format!("Found {} definitions", defs.len()));
 
@@ -52,8 +52,8 @@ pub fn compose_abbr_defs<R, Formatter: LookupFormatter<R>>(
 pub fn compose_words_with_abbrs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,
-    words: Vec<WordDefinition>,
-    abbrs: Vec<AbbreviationDefinition>,
+    words: &Vec<WordDefinition>,
+    abbrs: &Vec<AbbreviationDefinition>,
 ) -> R {
     formatter.append_title(format!("Found {} definitions", words.len()));
 
@@ -80,7 +80,7 @@ pub fn compose_words_with_abbrs<R, Formatter: LookupFormatter<R>>(
 pub fn compose_phrase_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     phrase: &str,
-    defs: Vec<PhraseDefinition>,
+    defs: &Vec<PhraseDefinition>,
 ) -> R {
     formatter.append_title(format!("Found {} definitions", defs.len()));
 

@@ -4,7 +4,7 @@ use crate::stands4::{AbbreviationDefinition, WordDefinition};
 pub fn compose_word_with_abbrs_determined<V, E, Formatter: LookupFormatter<Result<V, E>>>(
     formatter: Formatter,
     word: &str,
-    results: (anyhow::Result<Vec<WordDefinition>>, anyhow::Result<Vec<AbbreviationDefinition>>),
+    results: &(anyhow::Result<Vec<WordDefinition>>, anyhow::Result<Vec<AbbreviationDefinition>>),
     on_empty: fn() -> V,
 ) -> Result<V, E> {
     match results {

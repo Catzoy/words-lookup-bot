@@ -91,33 +91,38 @@ Can look up English words from Stands4 API.
         <td>Introduce inline lookups</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.5.0</td>
-        <td>Add support for urban dictionary lookups</td>
+        <td>Add wordle look-ups</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.6.0</td>
-        <td>Add synonims/antonims lookup
+        <td>Add support for urban dictionary lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.7.0</td>
-        <td>Add in-place buttons for contextual synonims/antonims look-up</td>
+        <td>Add synonims/antonims lookup
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.8.0</td>
-        <td>Add caching of frequent requests per API route</td>
+        <td>Add in-place buttons for contextual synonims/antonims look-up</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.9.0</td>
-        <td>Add single api inline lookups</td>
+        <td>Add caching of frequent requests per API route</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.10.0</td>
+        <td>Add single api inline lookups</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.11.0</td>
         <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
     </tr>
     <tr>

@@ -27,7 +27,7 @@ pub fn phrase_lookup() -> InlineHandler {
 
             let defs = stands4_client.search_phrase(phrase.as_str()).await?;
             let formatter = InlineFormatter::new(Stands4LinksProvider {});
-            let msg = compose_phrase_defs(formatter, phrase.as_str(), defs)?;
+            let msg = compose_phrase_defs(formatter, phrase.as_str(), &defs)?;
             bot.answer_inline_query(query.id, msg).await?;
             Ok(())
         })
