@@ -31,7 +31,7 @@ pub fn word_lookup() -> InlineHandler {
 
             let formatter = InlineFormatter::new(Stands4LinksProvider {});
             let msg = compose_word_with_abbrs_determined(
-                formatter, word, results, || vec![],
+                formatter, word, &results, || vec![],
             )?;
 
             bot.answer_inline_query(query.id, msg).await?;

@@ -3011,6 +3011,7 @@ name = "words-lookup-bot"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "futures",
  "log",
  "reqwest",

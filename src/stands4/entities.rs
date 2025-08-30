@@ -3,7 +3,7 @@ pub trait ToEntity {
     fn to_entity(&self) -> Self::Output;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct WordDefinition {
     pub(crate) term: String,
     pub(crate) definition: String,

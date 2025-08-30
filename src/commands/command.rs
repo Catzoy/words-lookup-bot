@@ -1,3 +1,4 @@
+use crate::commands::wordle::wordle_lookup;
 use crate::commands::{help, phrase_lookup, start, teapot, unknown, word_lookup};
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
@@ -27,6 +28,7 @@ pub enum MessageCommands {
         description = "Find definition of the specified phrase.\nAny message with more than 1 word is considered to be a phrase"
     )]
     PhraseLookup(String),
+    Wordle,
 }
 fn extract_text_command(text: &str) -> MessageCommands {
     let words = text.split_whitespace()
@@ -58,6 +60,7 @@ pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescrip
 pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_message()
         .map(extract_command)
+        .branch(wordle_lookup())
         .branch(word_lookup())
         .branch(phrase_lookup())
         .branch(help())

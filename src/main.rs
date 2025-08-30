@@ -3,6 +3,7 @@ mod commands;
 mod service;
 mod inlines;
 mod format;
+mod wordle;
 
 use crate::service::TelegramService;
 use anyhow::Context as _;
