@@ -28,6 +28,9 @@ pub enum MessageCommands {
         description = "Find definition of the specified phrase.\nAny message with more than 1 word is considered to be a phrase"
     )]
     PhraseLookup(String),
+    #[command(
+        description = "Get definition(s) of today's wordle!"
+    )]
     Wordle,
 }
 fn extract_text_command(text: &str) -> MessageCommands {
