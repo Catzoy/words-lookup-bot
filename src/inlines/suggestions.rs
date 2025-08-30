@@ -7,7 +7,7 @@ use crate::{
     stands4::Stands4LinksProvider,
     wordle::cache::WordleCache,
 };
-use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText};
+use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
 use teloxide::{
     prelude::Requester,
     types::InlineQuery,
@@ -36,7 +36,8 @@ pub fn suggestions() -> InlineHandler {
             }).await;
             if let Ok(Ok(wordle_message)) = msg {
                 let msg = InputMessageContent::Text(
-                    InputMessageContentText::new(wordle_message),
+                    InputMessageContentText::new(wordle_message)
+                        .parse_mode(ParseMode::MarkdownV2),
                 );
                 let answer = InlineQueryResult::Article(
                     InlineQueryResultArticle::new(

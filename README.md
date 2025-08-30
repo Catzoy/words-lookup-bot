@@ -96,6 +96,11 @@ Can look up English words from Stands4 API.
         <td>Add wordle look-ups</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.5.1</td>
+        <td>Fix escaping of the special characters</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.6.0</td>
         <td>Add support for urban dictionary lookups</td>
