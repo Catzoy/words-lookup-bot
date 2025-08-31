@@ -33,20 +33,27 @@ pub enum MessageCommands {
     Teapot,
     #[command(
         rename = "word",
-        description = "Find definition of the specified phrase.\nAny message containing at most 1 word, even with hyphens, will be looked up."
+        description = "Find definition of the specified word.\n\
+        Any message containing at most 1 word, even with hyphens, will be looked up.\n\
+        Also you can request to look up a word in any chat by writing `@WordsLookupBot look`"
     )]
     WordLookup(String),
     #[command(
         rename = "phrase",
-        description = "Find definition of the specified phrase.\nAny message with more than 1 word is considered to be a phrase."
+        description = "Find definition of the specified phrase.\n\
+        Any message with more than 1 word is considered to be a phrase.\n\
+        Also you can request to look up a phrase in any chat just by writing `@WordsLookupBot look up`"
     )]
     PhraseLookup(String),
     #[command(
-        description = "Get definition(s) of today's wordle."
+        description = "Get definition(s) of today's wordle.\n\
+        Can also be sent in any chat tagging the bot and picking \"Send Today's wordle definition\""
     )]
     Wordle,
     #[command(
-        description = "Get definition(s) of a word or a phrase from UrbanDictionary."
+        description = "Get definition(s) of a word or a phrase from UrbanDictionary.\n\
+        You can also look up words right in the chat by writing `@WordsLookupBot u.word`,\
+        where `u.` will point to look in the UrbanDictionary"
     )]
     Urban(String),
 }

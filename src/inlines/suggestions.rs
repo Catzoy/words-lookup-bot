@@ -1,4 +1,4 @@
-use crate::commands::FullMessageFormatter;
+use crate::commands::{FullMessageFormatter, MessageCommands};
 use crate::format::formatter::LookupFormatter;
 use crate::wordle::WordleAnswer;
 use crate::{
@@ -8,6 +8,7 @@ use crate::{
     wordle::cache::WordleCache,
 };
 use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
+use teloxide::utils::command::BotCommands;
 use teloxide::{
     prelude::Requester,
     types::InlineQuery,
@@ -24,6 +25,22 @@ async fn ensure_wordle_answer(mut cache: WordleCache) -> anyhow::Result<()> {
 
 async fn suggestions_handler(bot: Bot, query: InlineQuery, cache: WordleCache) -> anyhow::Result<()> {
     let mut answers = Vec::<InlineQueryResult>::new();
+    let help = {
+        let msg = MessageCommands::descriptions().to_string();
+        let msg = teloxide::utils::markdown::escape(&msg);
+        let msg = InputMessageContent::Text(
+            InputMessageContentText::new(msg)
+        );
+        InlineQueryResult::Article(
+            InlineQueryResultArticle::new(
+                "help",
+                "Continue writing to look up a word.\nOr write \"u.word\" to find definitions in UrbanDictionary.",
+                msg,
+            )
+        )
+    };
+    answers.push(help);
+
     let msg = cache.with_answer(|it| {
         let WordleAnswer { solution, editor, days_since_launch } = &it.answer;
         let mut formatter = FullMessageFormatter::new(DefaultLinksProvider {});

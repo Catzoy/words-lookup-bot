@@ -117,8 +117,13 @@ Can look up English words from Stands4 API.
     </tr>
     <tr>
         <td>:white_check_mark:</td>
-        <td>0.6.1</td>
+        <td>0.6.2</td>
         <td>Use "u." for urban lookups</td>
+    </tr>
+    <tr>
+        <td>:white_check_mark:</td>
+        <td>0.6.3</td>
+        <td>Describe help on inlines</td>
     </tr>
     <tr>
         <td>:x:</td>

@@ -27,6 +27,10 @@ static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(||
 );
 pub type InlineHandler = Handler<'static, anyhow::Result<()>, DpHandlerDescription>;
 fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryCommands> {
+    if query.is_empty() {
+        return Some(QueryCommands::Suggestions);
+    }
+    
     let captures = COMMAND_PATTERN.captures(&query)?;
     let cmd = match (captures.get(1), captures.get(2)) {
         (None, Some(input)) => {
