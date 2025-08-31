@@ -4,6 +4,7 @@ mod service;
 mod inlines;
 mod format;
 mod wordle;
+mod urban;
 
 use crate::service::TelegramService;
 use anyhow::Context as _;

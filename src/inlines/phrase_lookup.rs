@@ -7,8 +7,8 @@ use crate::{
         QueryCommands,
     },
     stands4::{
+        DefaultLinksProvider,
         Stands4Client,
-        Stands4LinksProvider,
     },
 };
 use teloxide::{
@@ -23,7 +23,7 @@ async fn phrase_lookup_handler(bot: Bot, query: InlineQuery, stands4_client: Sta
     log::info!("Looking up phrase {}", phrase);
 
     let defs = stands4_client.search_phrase(phrase.as_str()).await?;
-    let formatter = InlineFormatter::new(Stands4LinksProvider {});
+    let formatter = InlineFormatter::new(DefaultLinksProvider {});
     let msg = compose_phrase_defs(formatter, phrase.as_str(), &defs)?;
     bot.answer_inline_query(query.id, msg).await?;
     Ok(())

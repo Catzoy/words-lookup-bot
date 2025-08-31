@@ -1,6 +1,6 @@
 use crate::commands::{BotExt, CommandHandler, FullMessageFormatter, MessageCommands};
 use crate::format::formatter::compose_word_defs;
-use crate::stands4::Stands4LinksProvider;
+use crate::stands4::DefaultLinksProvider;
 use crate::wordle::cache::WordleCache;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::{Message, Requester};
@@ -9,7 +9,7 @@ use teloxide::Bot;
 
 async fn wordle_lookup_handler(bot: Bot, message: Message, cache: WordleCache) -> anyhow::Result<()> {
     let msg = cache.with_answer(|answer| {
-        let formatter = FullMessageFormatter::new(Stands4LinksProvider {});
+        let formatter = FullMessageFormatter::new(DefaultLinksProvider {});
         compose_word_defs(formatter, &answer.answer.solution, &answer.definitions)
     }).await??;
 

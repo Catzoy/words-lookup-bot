@@ -8,8 +8,8 @@ use crate::{
         QueryCommands,
     },
     stands4::{
+        DefaultLinksProvider,
         Stands4Client,
-        Stands4LinksProvider,
     },
 };
 use teloxide::{
@@ -25,7 +25,7 @@ async fn word_lookup_handler(bot: Bot, query: InlineQuery, stands4_client: Stand
         stands4_client.search_abbreviation(&word),
     ).await;
 
-    let formatter = InlineFormatter::new(Stands4LinksProvider {});
+    let formatter = InlineFormatter::new(DefaultLinksProvider {});
     let msg = compose_word_with_abbrs_determined(
         formatter, &word, &results, || vec![],
     )?;

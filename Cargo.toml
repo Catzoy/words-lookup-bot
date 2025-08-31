@@ -1,6 +1,6 @@
 [package]
 name = "words-lookup-bot"
-version = "0.5.2"
+version = "0.6.0"
 edition = "2021"
 
 [dependencies]
@@ -14,3 +14,4 @@ log = "0.4.27"
 string-builder = "0.2.0"
 futures = "0.3.31"
 chrono = "0.4.41"
+urlencoding = "2.1.3"

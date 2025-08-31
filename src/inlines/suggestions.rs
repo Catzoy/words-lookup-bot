@@ -4,7 +4,7 @@ use crate::wordle::WordleAnswer;
 use crate::{
     format::formatter::compose_word_defs,
     inlines::inlines::{InlineHandler, QueryCommands},
-    stands4::Stands4LinksProvider,
+    stands4::DefaultLinksProvider,
     wordle::cache::WordleCache,
 };
 use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
@@ -26,7 +26,7 @@ async fn suggestions_handler(bot: Bot, query: InlineQuery, cache: WordleCache) -
     let mut answers = Vec::<InlineQueryResult>::new();
     let msg = cache.with_answer(|it| {
         let WordleAnswer { solution, editor, days_since_launch } = &it.answer;
-        let mut formatter = FullMessageFormatter::new(Stands4LinksProvider {});
+        let mut formatter = FullMessageFormatter::new(DefaultLinksProvider {});
         let wordle_title = format!("#{} WORDLE solution:\n{}, by {}", days_since_launch, solution, editor);
         formatter.append_title(wordle_title);
         compose_word_defs(formatter, &it.answer.solution, &it.definitions)

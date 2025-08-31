@@ -1,5 +1,6 @@
 use crate::format::formatter::{LinkProvider, LookupFormatter};
 use crate::stands4::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
+use crate::urban::UrbanDefinition;
 use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
 
 struct InlineAnswer {
@@ -79,6 +80,16 @@ impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string
                 "Cannot describe, try this word in bot's chat".to_string()
             ),
             description: None,
+        };
+        self.answers.push(answer);
+    }
+
+    fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
+        let answer = InlineAnswer {
+            title: format!("#{} - {}", i + 1, def.word),
+            meaning: format!("Meaning \"{}\"", def.meaning),
+            description: def.example.as_ref()
+                .map(|e| format!("As in \"{}\"", e)),
         };
         self.answers.push(answer);
     }

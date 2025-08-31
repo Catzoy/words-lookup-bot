@@ -9,7 +9,7 @@ use crate::{
     format::formatter::compose_phrase_defs,
     stands4::{
         client::Stands4Client,
-        Stands4LinksProvider,
+        DefaultLinksProvider,
     },
 };
 use teloxide::{
@@ -23,7 +23,7 @@ async fn phrase_lookup_handler(bot: Bot, message: Message, stands4_client: Stand
     log::info!("Looking up phrase {}", phrase);
 
     let defs = stands4_client.search_phrase(&phrase).await?;
-    let formatter = FullMessageFormatter::new(Stands4LinksProvider {});
+    let formatter = FullMessageFormatter::new(DefaultLinksProvider {});
     let msg = compose_phrase_defs(formatter, &phrase, &defs)?;
     bot.send_message(message.chat.id, msg)
         .parse_mode(ParseMode::MarkdownV2)

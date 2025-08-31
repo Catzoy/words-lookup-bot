@@ -8,8 +8,8 @@ use crate::{
     },
     format::word_with_abbr_ext::compose_word_with_abbrs_determined,
     stands4::{
+        DefaultLinksProvider,
         Stands4Client,
-        Stands4LinksProvider,
     },
 };
 use teloxide::{
@@ -27,7 +27,7 @@ async fn word_lookup_handler(bot: Bot, message: Message, stands4_client: Stands4
         stands4_client.search_abbreviation(&word),
     ).await;
 
-    let formatter = FullMessageFormatter::new(Stands4LinksProvider {});
+    let formatter = FullMessageFormatter::new(DefaultLinksProvider {});
     let msg = compose_word_with_abbrs_determined(
         formatter, &word, &results, || "Found 0 definitions".to_string(),
     )?;

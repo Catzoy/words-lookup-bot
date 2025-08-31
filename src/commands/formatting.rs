@@ -1,5 +1,6 @@
 use crate::format::formatter::{LinkProvider, LookupFormatter};
 use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
+use crate::urban::UrbanDefinition;
 use std::ops::Not;
 
 pub struct FullMessageFormatter<T: LinkProvider> {
@@ -62,6 +63,15 @@ for FullMessageFormatter<T> {
                     self.builder.append(def.definition.as_str());
                 }
             }
+        }
+        self.builder.append("\n");
+    }
+
+    fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
+        self.builder.append(format!("#{} - {}\n", i + 1, def.word));
+        self.builder.append(format!("Meaning \"{}\"\n", def.meaning));
+        if let Some(example) = &def.example {
+            self.builder.append(format!("As in {}\n", example));
         }
         self.builder.append("\n");
     }

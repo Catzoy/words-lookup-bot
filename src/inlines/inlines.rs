@@ -1,21 +1,27 @@
-use crate::inlines::debounce_inline_queries;
-use crate::{
-    inlines::phrase_lookup,
-    inlines::suggestions,
-    inlines::word_lookup,
+use crate::inlines::{
+    debounce_inline_queries,
+    phrase_lookup,
+    suggestions,
+    urban_lookup,
+    word_lookup,
 };
-use teloxide::prelude::Requester;
-use teloxide::{dispatching::{DpHandlerDescription, UpdateFilterExt}, dptree::Handler, prelude::{InlineQuery, Update}, Bot};
+use teloxide::{
+    dispatching::{DpHandlerDescription, UpdateFilterExt},
+    dptree::Handler,
+    prelude::Requester,
+    prelude::{InlineQuery, Update},
+    Bot,
+};
 
 #[derive(Debug, Clone)]
 pub enum QueryCommands {
     Suggestions,
     WordLookup(String),
     PhraseLookup(String),
+    UrbanLookup(String),
 }
 
 pub type InlineHandler = Handler<'static, anyhow::Result<()>, DpHandlerDescription>;
-
 fn extract_command(query: InlineQuery) -> QueryCommands {
     let words = query.query.split_whitespace()
         .map(|s| s.to_lowercase())
@@ -23,6 +29,7 @@ fn extract_command(query: InlineQuery) -> QueryCommands {
     match &words[..] {
         [] => QueryCommands::Suggestions,
         [word] => QueryCommands::WordLookup(word.to_owned()),
+        [first, rest @ .. ] if first == "u" => QueryCommands::UrbanLookup(rest.join(" ")),
         _ => QueryCommands::PhraseLookup(words.join(" ")),
     }
 }
@@ -45,4 +52,5 @@ pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescripti
         .branch(suggestions())
         .branch(word_lookup())
         .branch(phrase_lookup())
+        .branch(urban_lookup())
 }

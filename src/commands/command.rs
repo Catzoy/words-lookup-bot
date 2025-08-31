@@ -1,5 +1,13 @@
-use crate::commands::wordle::wordle_lookup;
-use crate::commands::{help, phrase_lookup, start, teapot, unknown, word_lookup};
+use crate::commands::{
+    help,
+    phrase_lookup,
+    start,
+    teapot,
+    unknown,
+    urban_lookup,
+    word_lookup,
+    wordle_lookup,
+};
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
 use teloxide::payloads::SendMessageSetters;
@@ -13,9 +21,13 @@ use teloxide::Bot;
 pub enum MessageCommands {
     #[command(hide)]
     Unknown,
-    #[command(description = "Print this helpful message")]
+    #[command(
+        description = "Print this helpful message"
+    )]
     Help,
-    #[command(description = "Doesn't really do anything, is just here to greet you.")]
+    #[command(
+        description = "Doesn't really do anything, is just here to greet you."
+    )]
     Start,
     #[command(hide)]
     Teapot,
@@ -26,13 +38,17 @@ pub enum MessageCommands {
     WordLookup(String),
     #[command(
         rename = "phrase",
-        description = "Find definition of the specified phrase.\nAny message with more than 1 word is considered to be a phrase"
+        description = "Find definition of the specified phrase.\nAny message with more than 1 word is considered to be a phrase."
     )]
     PhraseLookup(String),
     #[command(
-        description = "Get definition(s) of today's wordle!"
+        description = "Get definition(s) of today's wordle."
     )]
     Wordle,
+    #[command(
+        description = "Get definition(s) of a word or a phrase from UrbanDictionary."
+    )]
+    Urban(String),
 }
 fn extract_text_command(text: &str) -> MessageCommands {
     let words = text.split_whitespace()
@@ -81,6 +97,7 @@ pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescript
         .branch(wordle_lookup())
         .branch(word_lookup())
         .branch(phrase_lookup())
+        .branch(urban_lookup())
         .branch(help())
         .branch(unknown())
         .branch(start())

@@ -101,12 +101,12 @@ Can look up English words from Stands4 API.
         <td>Fix escaping of the special characters</td>
     </tr>
     <tr>
-        <td>:bug:</td>
+        <td>:white_check_mark:</td>
         <td>0.5.2</td>
         <td>Minor formatting of the existing code</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.6.0</td>
         <td>Add support for urban dictionary lookups</td>
     </tr>
