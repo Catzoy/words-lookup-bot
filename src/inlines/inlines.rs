@@ -20,16 +20,17 @@ pub enum QueryCommands {
     PhraseLookup(String),
     UrbanLookup(String),
 }
-
+const URBAN_IDENTIFIER: &str = "u";
 pub type InlineHandler = Handler<'static, anyhow::Result<()>, DpHandlerDescription>;
-fn extract_command(query: InlineQuery) -> QueryCommands {
-    let words = query.query.split_whitespace()
+fn extract_command(InlineQuery { query, .. }: InlineQuery) -> QueryCommands {
+    let words = query.split_whitespace()
         .map(|s| s.to_lowercase())
         .collect::<Vec<String>>();
     match &words[..] {
         [] => QueryCommands::Suggestions,
+        [first] if first == URBAN_IDENTIFIER && query.len() > 1 => QueryCommands::UrbanLookup(String::default()),
         [word] => QueryCommands::WordLookup(word.to_owned()),
-        [first, rest @ .. ] if first == "u" => QueryCommands::UrbanLookup(rest.join(" ")),
+        [first, rest @ .. ] if first == URBAN_IDENTIFIER => QueryCommands::UrbanLookup(rest.join(" ")),
         _ => QueryCommands::PhraseLookup(words.join(" ")),
     }
 }
