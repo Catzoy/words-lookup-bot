@@ -20,17 +20,15 @@ async fn wordle_lookup_handler(bot: Bot, message: Message, cache: WordleCache) -
 }
 
 async fn ensure_wordle_answer(bot: Bot, message: Message, mut cache: WordleCache) -> anyhow::Result<()> {
-    let cached = cache.require_fresh_answer().await;
-    match cached {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            log::error!("Failed to get today's wordle, err: {}", err);
-            bot.send_message(
-                message.chat.id,
-                "Could not get today's wordle, sorry, try again in an hour or so.",
-            ).await?;
-            Ok(())
-        }
+    if let Err(err) = cache.require_fresh_answer().await {
+        log::error!("Failed to get today's wordle, err: {}", err);
+        bot.send_message(
+            message.chat.id,
+            "Could not get today's wordle, sorry, try again in an hour or so.",
+        ).await?;
+        Err(err)
+    } else {
+        Ok(())
     }
 }
 pub fn wordle_lookup() -> CommandHandler {

@@ -2,8 +2,9 @@ use crate::commands::wordle::wordle_lookup;
 use crate::commands::{help, phrase_lookup, start, teapot, unknown, word_lookup};
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
+use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::{Message, Requester, Update};
-use teloxide::types::Me;
+use teloxide::types::{Me, ParseMode};
 use teloxide::utils::command::{BotCommands, ParseError};
 use teloxide::Bot;
 
@@ -58,6 +59,20 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     cmd
 }
 
+pub async fn drop_empty(bot: Bot, message: Message, phrase: String) -> bool {
+    if phrase.is_empty() {
+        let _ = bot.send_message(
+            message.chat.id,
+            "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
+        )
+            .parse_mode(ParseMode::MarkdownV2)
+            .await;
+        false
+    } else {
+        true
+    }
+}
+
 pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescription>;
 
 pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
@@ -87,20 +102,17 @@ impl BotExt for Bot {
         handle: impl AsyncFnOnce(Bot, Message) -> anyhow::Result<()>,
     ) -> anyhow::Result<()> {
         let chat_id = message.chat.id;
-        match handle(self.clone(), message.clone()).await {
-            Ok(_) => {
-                Ok(())
+        if let Err(err) = handle(self.clone(), message.clone()).await {
+            let send_res = self.send_message(
+                chat_id,
+                "There was an error processing your query, try again later, sorry.",
+            ).await;
+            if let Err(err) = send_res {
+                log::error!("Couldn't send error-response: {}", err);
             }
-            Err(err) => {
-                let send_res = self.send_message(
-                    chat_id,
-                    "There was an error processing your query, try again later, sorry.",
-                ).await;
-                if let Err(err) = send_res {
-                    log::error!("Couldn't send error-response: {}", err);
-                }
-                Err(err)
-            }
+            Err(err)
+        } else {
+            Ok(())
         }
     }
 }
