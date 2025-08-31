@@ -1,4 +1,3 @@
-use crate::commands::FullMessageFormatter;
 use crate::{
     format::word_with_abbr_ext::compose_word_with_abbrs_determined,
     inlines::{

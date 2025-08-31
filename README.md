@@ -116,6 +116,11 @@ Can look up English words from Stands4 API.
         <td>Optimise urban dictionary inline lookup</td>
     </tr>
     <tr>
+        <td>:white_check_mark:</td>
+        <td>0.6.1</td>
+        <td>Use "u." for urban lookups</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.7.0</td>
         <td>Add synonims/antonims lookup

@@ -24,7 +24,6 @@ impl WordleClient {
 
 impl Default for WordleClient {
     fn default() -> WordleClient {
-        let client = Client::new();
-        WordleClient { client }
+        WordleClient::new(Client::new())
     }
 }

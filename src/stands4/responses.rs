@@ -29,7 +29,6 @@ pub struct PhraseResult {
 }
 #[derive(Deserialize, Debug)]
 pub struct AbbreviationResult {
-    term: StringMixedType,
     definition: StringMixedType,
     category: StringMixedType,
 }
@@ -84,7 +83,6 @@ impl ToEntity for AbbreviationResult {
 
     fn to_entity(&self) -> Self::Output {
         AbbreviationDefinition {
-            term: self.term.to_string(),
             definition: self.definition.to_string(),
             category: self.category.to_string(),
         }

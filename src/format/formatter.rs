@@ -41,7 +41,7 @@ pub fn compose_urban_defs<R, Formatter: LookupFormatter<R>>(
     word: &str,
     defs: &Vec<UrbanDefinition>,
 ) -> R {
-    formatter.append_title(format!("Found {} definitions", defs.len()));
+    formatter.append_title(format!("Found {} definitions from Urban Dictionary", defs.len()));
 
     for (i, def) in defs.iter().take(5).enumerate() {
         formatter.visit_urban_definition(i, def);

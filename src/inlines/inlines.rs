@@ -5,6 +5,8 @@ use crate::inlines::{
     urban_lookup,
     word_lookup,
 };
+use regex::Regex;
+use std::sync::LazyLock;
 use teloxide::{
     dispatching::{DpHandlerDescription, UpdateFilterExt},
     dptree::Handler,
@@ -20,19 +22,28 @@ pub enum QueryCommands {
     PhraseLookup(String),
     UrbanLookup(String),
 }
-const URBAN_IDENTIFIER: &str = "u";
+static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(||
+    Regex::new(r"(u.)?(.+)").unwrap()
+);
 pub type InlineHandler = Handler<'static, anyhow::Result<()>, DpHandlerDescription>;
-fn extract_command(InlineQuery { query, .. }: InlineQuery) -> QueryCommands {
-    let words = query.split_whitespace()
-        .map(|s| s.to_lowercase())
-        .collect::<Vec<String>>();
-    match &words[..] {
-        [] => QueryCommands::Suggestions,
-        [first] if first == URBAN_IDENTIFIER && query.len() > 1 => QueryCommands::UrbanLookup(String::default()),
-        [word] => QueryCommands::WordLookup(word.to_owned()),
-        [first, rest @ .. ] if first == URBAN_IDENTIFIER => QueryCommands::UrbanLookup(rest.join(" ")),
-        _ => QueryCommands::PhraseLookup(words.join(" ")),
-    }
+fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryCommands> {
+    let captures = COMMAND_PATTERN.captures(&query)?;
+    let cmd = match (captures.get(1), captures.get(2)) {
+        (None, Some(input)) => {
+            let words = input.as_str().split_whitespace()
+                .map(|s| s.to_lowercase())
+                .collect::<Vec<String>>();
+            match &words[..] {
+                [] => QueryCommands::Suggestions,
+                [word] => QueryCommands::WordLookup(word.to_owned()),
+                _ => QueryCommands::PhraseLookup(words.join(" ")),
+            }
+        }
+        (Some(m), Some(phrase)) if m.as_str().eq("u.") =>
+            QueryCommands::UrbanLookup(phrase.as_str().to_string()),
+        _ => QueryCommands::Suggestions,
+    };
+    Some(cmd)
 }
 
 pub async fn drop_empty(bot: Bot, InlineQuery { id, .. }: InlineQuery, input: String) -> bool {
@@ -48,7 +59,7 @@ pub async fn drop_empty(bot: Bot, InlineQuery { id, .. }: InlineQuery, input: St
 
 pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_inline_query()
-        .map(extract_command)
+        .filter_map(extract_command)
         .filter_async(debounce_inline_queries)
         .branch(suggestions())
         .branch(word_lookup())
