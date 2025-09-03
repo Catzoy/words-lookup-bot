@@ -1,16 +1,9 @@
-use crate::stands4::{AbbreviationDefinition, PhraseDefinition, VecAbbreviationsExt, WordDefinition};
+use crate::stands4::{AbbreviationDefinition, LinksProvider, PhraseDefinition, VecAbbreviationsExt, WordDefinition};
 use crate::urban::UrbanDefinition;
 
-pub trait LinkProvider {
-    fn word_link(&self, word: &str) -> String;
-    fn abbr_link(&self, abbr: &str) -> String;
-    fn phrase_link(&self, phrase: &str) -> String;
-
-    fn urban_link(&self, term: &str) -> String;
-}
 
 pub trait LookupFormatter<T> {
-    fn link_provider(&self) -> &dyn LinkProvider;
+    fn link_provider(&self) -> &LinksProvider;
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
     fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &Vec<&AbbreviationDefinition>);

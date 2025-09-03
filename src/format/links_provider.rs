@@ -1,24 +1,23 @@
-use crate::format::formatter::LinkProvider;
+#[derive(Default)]
+pub struct LinksProvider {}
 
-pub struct DefaultLinksProvider {}
-
-impl LinkProvider for DefaultLinksProvider {
-    fn word_link(&self, word: &str) -> String {
+impl LinksProvider {
+    pub(crate) fn word_link(&self, word: &str) -> String {
         format!("https://www.definitions.net/definition/{}", word)
     }
 
-    fn abbr_link(&self, word: &str) -> String {
+    pub(crate) fn abbr_link(&self, word: &str) -> String {
         format!("https://www.abbreviations.com/{}", word)
     }
 
-    fn phrase_link(&self, phrase: &str) -> String {
+    pub(crate) fn phrase_link(&self, phrase: &str) -> String {
         format!(
             "https://www.phrases.com/psearch/{}",
             phrase.replace(" ", "+")
         )
     }
 
-    fn urban_link(&self, term: &str) -> String {
+    pub(crate) fn urban_link(&self, term: &str) -> String {
         format!(
             "https://www.urbandictionary.com/define.php?term={}",
             urlencoding::encode(term),

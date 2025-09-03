@@ -4,16 +4,15 @@ use crate::wordle::WordleAnswer;
 use crate::{
     format::formatter::compose_word_defs,
     inlines::inlines::{InlineHandler, QueryCommands},
-    stands4::DefaultLinksProvider,
+    stands4::LinksProvider,
     wordle::cache::WordleCache,
 };
-use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
-use teloxide::utils::command::BotCommands;
-use teloxide::{
-    prelude::Requester,
-    types::InlineQuery,
-    Bot,
+use teloxide::types::{
+    InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
+    ParseMode,
 };
+use teloxide::utils::command::BotCommands;
+use teloxide::{prelude::Requester, types::InlineQuery, Bot};
 
 async fn ensure_wordle_answer(mut cache: WordleCache) -> anyhow::Result<()> {
     let fresh_result = cache.require_fresh_answer().await;
@@ -23,14 +22,16 @@ async fn ensure_wordle_answer(mut cache: WordleCache) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn suggestions_handler(bot: Bot, query: InlineQuery, cache: WordleCache) -> anyhow::Result<()> {
+async fn suggestions_handler(
+    bot: Bot,
+    query: InlineQuery,
+    cache: WordleCache,
+) -> anyhow::Result<()> {
     let mut answers = Vec::<InlineQueryResult>::new();
     let help = {
         let msg = MessageCommands::descriptions().to_string();
         let msg = teloxide::utils::markdown::escape(&msg);
-        let msg = InputMessageContent::Text(
-            InputMessageContentText::new(msg)
-        );
+        let msg = InputMessageContent::Text(InputMessageContentText::new(msg));
         InlineQueryResult::Article(
             InlineQueryResultArticle::new(
                 "help",
@@ -41,25 +42,31 @@ async fn suggestions_handler(bot: Bot, query: InlineQuery, cache: WordleCache) -
     };
     answers.push(help);
 
-    let msg = cache.with_answer(|it| {
-        let WordleAnswer { solution, editor, days_since_launch } = &it.answer;
-        let mut formatter = FullMessageFormatter::new(DefaultLinksProvider {});
-        let wordle_title = format!("#{} WORDLE solution:\n{}, by {}", days_since_launch, solution, editor);
-        formatter.append_title(wordle_title);
-        compose_word_defs(formatter, &it.answer.solution, &it.definitions)
-    }).await;
+    let msg = cache
+        .with_answer(|it| {
+            let WordleAnswer {
+                solution,
+                editor,
+                days_since_launch,
+            } = &it.answer;
+            let mut formatter = FullMessageFormatter::default();
+            let wordle_title = format!(
+                "#{} WORDLE solution:\n{}, by {}",
+                days_since_launch, solution, editor
+            );
+            formatter.append_title(wordle_title);
+            compose_word_defs(formatter, &it.answer.solution, &it.definitions)
+        })
+        .await;
     if let Ok(Ok(wordle_message)) = msg {
         let msg = InputMessageContent::Text(
-            InputMessageContentText::new(wordle_message)
-                .parse_mode(ParseMode::MarkdownV2),
+            InputMessageContentText::new(wordle_message).parse_mode(ParseMode::MarkdownV2),
         );
-        let answer = InlineQueryResult::Article(
-            InlineQueryResultArticle::new(
-                "wordle_answer",
-                "Send definition of today's wordle answer!",
-                msg,
-            )
-        );
+        let answer = InlineQueryResult::Article(InlineQueryResultArticle::new(
+            "wordle_answer",
+            "Send definition of today's wordle answer!",
+            msg,
+        ));
         answers.push(answer);
     }
 

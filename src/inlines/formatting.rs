@@ -1,29 +1,26 @@
-use crate::format::formatter::{LinkProvider, LookupFormatter};
-use crate::stands4::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
+use crate::format::formatter::LookupFormatter;
+use crate::stands4::{AbbreviationDefinition, LinksProvider, PhraseDefinition, WordDefinition};
 use crate::urban::UrbanDefinition;
-use teloxide::types::{InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText, ParseMode};
+use teloxide::types::{
+    InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
+    ParseMode,
+};
 
 struct InlineAnswer {
     title: String,
     meaning: String,
     description: Option<String>,
 }
-pub struct InlineFormatter<T: LinkProvider> {
+#[derive(Default)]
+pub struct InlineFormatter {
     answers: Vec<InlineAnswer>,
-    link_provider: T,
+    link_provider: LinksProvider,
 }
 
-impl<T: LinkProvider> InlineFormatter<T> {
-    pub fn new(link_provider: T) -> Self {
-        InlineFormatter {
-            answers: Vec::new(),
-            link_provider,
-        }
-    }
-}
-
-impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>> for InlineFormatter<T> {
-    fn link_provider(&self) -> &dyn LinkProvider {
+impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
+    for InlineFormatter
+{
+    fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
     }
 
@@ -56,7 +53,12 @@ impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string
         self.answers.push(answer);
     }
 
-    fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &Vec<&AbbreviationDefinition>) {
+    fn visit_abbreviations(
+        &mut self,
+        i: usize,
+        category: &str,
+        defs: &Vec<&AbbreviationDefinition>,
+    ) {
         let category = match category.len() {
             0 => "uncategorized".to_string(),
             _ => category.to_string(),
@@ -76,9 +78,9 @@ impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string
 
         let answer = InlineAnswer {
             title: format!("#{} in [{}] stands for: ", i + 1, category),
-            meaning: meaning.string().unwrap_or_else(|_|
-                "Cannot describe, try this word in bot's chat".to_string()
-            ),
+            meaning: meaning
+                .string()
+                .unwrap_or_else(|_| "Cannot describe, try this word in bot's chat".to_string()),
             description: None,
         };
         self.answers.push(answer);
@@ -88,8 +90,7 @@ impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string
         let answer = InlineAnswer {
             title: format!("#{} - {}", i + 1, def.word),
             meaning: format!("Meaning \"{}\"", def.meaning),
-            description: def.example.as_ref()
-                .map(|e| format!("As in \"{}\"", e)),
+            description: def.example.as_ref().map(|e| format!("As in \"{}\"", e)),
         };
         self.answers.push(answer);
     }
@@ -118,13 +119,13 @@ impl<T: LinkProvider> LookupFormatter<Result<Vec<InlineQueryResult>, std::string
                 format!("answer-{}", i),
                 answer.title,
                 InputMessageContent::Text(
-                    InputMessageContentText::new(
-                        teloxide::utils::markdown::escape(full_text.as_str())
-                    ).parse_mode(ParseMode::MarkdownV2)
+                    InputMessageContentText::new(teloxide::utils::markdown::escape(
+                        full_text.as_str(),
+                    ))
+                    .parse_mode(ParseMode::MarkdownV2),
                 ),
-            ).description(
-                answer.meaning.as_str()
-            );
+            )
+            .description(answer.meaning.as_str());
             articles.push(InlineQueryResult::Article(article));
         }
         Ok(articles)

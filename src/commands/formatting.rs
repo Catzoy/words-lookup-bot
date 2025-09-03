@@ -1,25 +1,18 @@
-use crate::format::formatter::{LinkProvider, LookupFormatter};
+use crate::format::formatter::{ LookupFormatter};
 use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
 use crate::urban::UrbanDefinition;
 use std::ops::Not;
+use crate::stands4::LinksProvider;
 
-pub struct FullMessageFormatter<T: LinkProvider> {
+#[derive(Default)]
+pub struct FullMessageFormatter {
     builder: string_builder::Builder,
-    link_provider: T,
+    link_provider: LinksProvider,
 }
 
-impl<T: LinkProvider> FullMessageFormatter<T> {
-    pub fn new(link_provider: T) -> FullMessageFormatter<T> {
-        FullMessageFormatter {
-            builder: string_builder::Builder::default(),
-            link_provider,
-        }
-    }
-}
-
-impl<T: LinkProvider> LookupFormatter<Result<String, std::string::FromUtf8Error>>
-for FullMessageFormatter<T> {
-    fn link_provider(&self) -> &dyn LinkProvider {
+impl LookupFormatter<Result<String, std::string::FromUtf8Error>>
+for FullMessageFormatter {
+    fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
     }
 
