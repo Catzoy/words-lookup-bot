@@ -1,5 +1,7 @@
 use crate::format::formatter::LookupFormatter;
-use crate::stands4::{AbbreviationDefinition, LinksProvider, PhraseDefinition, WordDefinition};
+use crate::stands4::{
+    AbbreviationDefinition, LinksProvider, PhraseDefinition, SynAntDefinitions, WordDefinition,
+};
 use crate::urban::UrbanDefinition;
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
@@ -84,6 +86,10 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
             description: None,
         };
         self.answers.push(answer);
+    }
+
+    fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions) {
+        // not supported rn
     }
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {

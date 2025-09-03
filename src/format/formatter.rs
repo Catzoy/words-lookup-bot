@@ -1,12 +1,20 @@
-use crate::stands4::{AbbreviationDefinition, LinksProvider, PhraseDefinition, VecAbbreviationsExt, WordDefinition};
+use crate::stands4::{
+    AbbreviationDefinition, LinksProvider, PhraseDefinition, SynAntDefinitions,
+    VecAbbreviationsExt, WordDefinition,
+};
 use crate::urban::UrbanDefinition;
-
 
 pub trait LookupFormatter<T> {
     fn link_provider(&self) -> &LinksProvider;
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
-    fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &Vec<&AbbreviationDefinition>);
+    fn visit_abbreviations(
+        &mut self,
+        i: usize,
+        category: &str,
+        defs: &Vec<&AbbreviationDefinition>,
+    );
+    fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions);
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition);
     fn append_title(&mut self, title: String);
     fn append_link(&mut self, link: String);
@@ -34,7 +42,10 @@ pub fn compose_urban_defs<R, Formatter: LookupFormatter<R>>(
     word: &str,
     defs: &Vec<UrbanDefinition>,
 ) -> R {
-    formatter.append_title(format!("Found {} definitions from Urban Dictionary", defs.len()));
+    formatter.append_title(format!(
+        "Found {} definitions from Urban Dictionary",
+        defs.len()
+    ));
 
     for (i, def) in defs.iter().take(5).enumerate() {
         formatter.visit_urban_definition(i, def);
@@ -102,6 +113,25 @@ pub fn compose_phrase_defs<R, Formatter: LookupFormatter<R>>(
     }
     if defs.len() > 5 {
         formatter.append_link(formatter.link_provider().phrase_link(phrase));
+    }
+
+    formatter.build()
+}
+
+pub fn compose_syn_ant_defs<R, Formatter: LookupFormatter<R>>(
+    mut formatter: Formatter,
+    term: &str,
+    defs: &Vec<SynAntDefinitions>,
+) -> R {
+    formatter.append_title(format!(
+        "Found {} different definitions with respective information",
+        defs.len()
+    ));
+    for (i, def) in defs.iter().take(5).enumerate() {
+        formatter.visit_syn_ant(i, def)
+    }
+    if defs.len() > 5 {
+        formatter.append_link(formatter.link_provider().syn_ant_link(term))
     }
 
     formatter.build()

@@ -1,5 +1,10 @@
-use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition};
-use crate::stands4::responses::{AbbreviationResult, PhraseResult, Results, WordResult};
+use crate::stands4::entities::{
+    AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
+};
+use crate::stands4::responses::{
+    AbbreviationResult, PhraseResult, Results, SynAntResult, WordResult,
+};
+use crate::stands4::SynAntDefinitions;
 use reqwest::{Client, RequestBuilder};
 use serde::de::DeserializeOwned;
 use shuttle_runtime::__internals::serde_json;
@@ -7,6 +12,7 @@ use shuttle_runtime::__internals::serde_json;
 const WORDS_API_URL: &str = "https://www.stands4.com/services/v2/defs.php";
 const PHRASES_API_URL: &str = "https://www.stands4.com/services/v2/phrases.php";
 const ABBR_API_URL: &str = "https://www.stands4.com/services/v2/abbr.php";
+const SYNO_API_URL: &str = "https://www.stands4.com/services/v2/syno.php";
 
 #[derive(Clone)]
 pub struct Stands4Client {
@@ -14,7 +20,6 @@ pub struct Stands4Client {
     user_id: String,
     token: String,
 }
-
 
 impl Stands4Client {
     pub fn new(user_id: String, token: String) -> Self {
@@ -25,7 +30,10 @@ impl Stands4Client {
         }
     }
 
-    async fn handle_request<Response>(&self, request: RequestBuilder) -> anyhow::Result<Vec<Response::Output>>
+    async fn handle_request<Response>(
+        &self,
+        request: RequestBuilder,
+    ) -> anyhow::Result<Vec<Response::Output>>
     where
         Response: DeserializeOwned,
         Response: ToEntity,
@@ -58,7 +66,10 @@ impl Stands4Client {
         self.handle_request::<WordResult>(request).await
     }
 
-    pub async fn search_abbreviation(&self, abbreviation: &str) -> anyhow::Result<Vec<AbbreviationDefinition>> {
+    pub async fn search_abbreviation(
+        &self,
+        abbreviation: &str,
+    ) -> anyhow::Result<Vec<AbbreviationDefinition>> {
         let query = &[
             ("uid", self.user_id.as_str()),
             ("tokenid", self.token.as_str()),
@@ -78,6 +89,17 @@ impl Stands4Client {
         ];
         let request = self.client.get(PHRASES_API_URL).query(query);
         self.handle_request::<PhraseResult>(request).await
+    }
+
+    pub async fn search_syn_ant(&self, term: &str) -> anyhow::Result<Vec<SynAntDefinitions>> {
+        let query = &[
+            ("uid", self.user_id.as_str()),
+            ("tokenid", self.token.as_str()),
+            ("format", "json"),
+            ("word", term),
+        ];
+        let request = self.client.get(PHRASES_API_URL).query(query);
+        self.handle_request::<SynAntResult>(request).await
     }
 }
 

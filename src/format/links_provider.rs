@@ -23,4 +23,11 @@ impl LinksProvider {
             urlencoding::encode(term),
         )
     }
+
+    pub(crate) fn syn_ant_link(&self, term: &str) -> String {
+        format!(
+            "https://www.synonyms.com/synonym/{}",
+            term.replace(" ", "+")
+        )
+    }
 }

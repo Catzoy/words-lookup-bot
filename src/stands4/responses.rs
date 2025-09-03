@@ -1,7 +1,9 @@
-use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition};
+use crate::stands4::entities::{
+    AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
+};
+use crate::stands4::SynAntDefinitions;
 use serde::Deserialize;
 use shuttle_runtime::__internals::serde_json;
-use std::fmt::Display;
 
 #[derive(Deserialize, Debug)]
 pub struct Results<T>
@@ -34,6 +36,16 @@ pub struct AbbreviationResult {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct SynAntResult {
+    term: StringMixedType,
+    definition: StringMixedType,
+    #[serde(rename = "partofspeech")]
+    part_of_speech: StringMixedType,
+    synonyms: VecMixedType<StringMixedType>,
+    antonyms: VecMixedType<StringMixedType>,
+}
+
+#[derive(Deserialize, Debug)]
 // note, this causes deserialization to try the variants top-to-bottom
 #[serde(untagged)]
 pub enum StringMixedType {
@@ -59,10 +71,10 @@ impl ToEntity for WordResult {
     type Output = WordDefinition;
     fn to_entity(&self) -> Self::Output {
         WordDefinition {
-            term: self.term.to_string(),
-            definition: self.definition.to_string(),
-            part_of_speech: self.part_of_speech.to_string(),
-            example: self.example.to_string(),
+            term: self.term.to_entity(),
+            definition: self.definition.to_entity(),
+            part_of_speech: self.part_of_speech.to_entity(),
+            example: self.example.to_entity(),
         }
     }
 }
@@ -71,9 +83,9 @@ impl ToEntity for PhraseResult {
     type Output = PhraseDefinition;
     fn to_entity(&self) -> Self::Output {
         PhraseDefinition {
-            term: self.term.to_string(),
-            explanation: self.explanation.to_string(),
-            example: self.example.to_string(),
+            term: self.term.to_entity(),
+            explanation: self.explanation.to_entity(),
+            example: self.example.to_entity(),
         }
     }
 }
@@ -83,8 +95,22 @@ impl ToEntity for AbbreviationResult {
 
     fn to_entity(&self) -> Self::Output {
         AbbreviationDefinition {
-            definition: self.definition.to_string(),
-            category: self.category.to_string(),
+            definition: self.definition.to_entity(),
+            category: self.category.to_entity(),
+        }
+    }
+}
+
+impl ToEntity for SynAntResult {
+    type Output = SynAntDefinitions;
+
+    fn to_entity(&self) -> Self::Output {
+        SynAntDefinitions {
+            term: self.term.to_entity(),
+            definition: self.definition.to_entity(),
+            part_of_speech: self.part_of_speech.to_entity(),
+            synonyms: self.synonyms.to_entity(),
+            antonyms: self.antonyms.to_entity(),
         }
     }
 }
@@ -112,19 +138,20 @@ where
         if let Some(result) = &self.result {
             Ok(result.to_entity())
         } else if let Some(error) = &self.error {
-            Err(anyhow::anyhow!("{}", error))
+            Err(anyhow::anyhow!("{}", error.to_entity()))
         } else {
             Ok(Vec::default()) // such bullshit
         }
     }
 }
 
-impl Display for StringMixedType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
+impl ToEntity for StringMixedType {
+    type Output = String;
+
+    fn to_entity(&self) -> Self::Output {
+        match self {
             StringMixedType::String(it) => it.into(),
             StringMixedType::Other(_) => String::default(),
-        };
-        write!(f, "{}", str)
+        }
     }
 }

@@ -1,11 +1,5 @@
 use crate::commands::{
-    help,
-    phrase_lookup,
-    start,
-    teapot,
-    unknown,
-    urban_lookup,
-    word_lookup,
+    help, phrase_lookup, start, teapot, thesaurus_lookup, unknown, urban_lookup, word_lookup,
     wordle_lookup,
 };
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
@@ -17,17 +11,16 @@ use teloxide::utils::command::{BotCommands, ParseError};
 use teloxide::Bot;
 
 #[derive(Clone, BotCommands, Debug)]
-#[command(rename_rule = "lowercase", description = "Here are the supported commands:")]
+#[command(
+    rename_rule = "lowercase",
+    description = "Here are the supported commands:"
+)]
 pub enum MessageCommands {
     #[command(hide)]
     Unknown,
-    #[command(
-        description = "Print this helpful message"
-    )]
+    #[command(description = "Print this helpful message")]
     Help,
-    #[command(
-        description = "Doesn't really do anything, is just here to greet you."
-    )]
+    #[command(description = "Doesn't really do anything, is just here to greet you.")]
     Start,
     #[command(hide)]
     Teapot,
@@ -45,10 +38,8 @@ pub enum MessageCommands {
         Also you can request to look up a phrase in any chat just by writing `@WordsLookupBot look up`"
     )]
     PhraseLookup(String),
-    #[command(
-        description = "Get definition(s) of today's wordle.\n\
-        Can also be sent in any chat tagging the bot and picking \"Send Today's wordle definition\""
-    )]
+    #[command(description = "Get definition(s) of today's wordle.\n\
+        Can also be sent in any chat tagging the bot and picking \"Send Today's wordle definition\"")]
     Wordle,
     #[command(
         description = "Get definition(s) of a word or a phrase from UrbanDictionary.\n\
@@ -56,9 +47,16 @@ pub enum MessageCommands {
         where `u.` will point to look in the UrbanDictionary"
     )]
     Urban(String),
+    #[command(
+        description = "Get synonyms, antonyms, and a definition of a given word or a phrase.\n\
+        You can also look up these things right in the chat by writing `@WordsLookupBot sa.word`,\
+        where `sa.` will point to look in the Thesaurus"
+    )]
+    Thesaurus(String),
 }
 fn extract_text_command(text: &str) -> MessageCommands {
-    let words = text.split_whitespace()
+    let words = text
+        .split_whitespace()
         .map(|s| s.to_lowercase())
         .collect::<Vec<String>>();
     match &words[..] {
@@ -70,12 +68,10 @@ fn extract_text_command(text: &str) -> MessageCommands {
 fn extract_command(message: Message, me: Me) -> MessageCommands {
     let text = message.text().unwrap_or_default();
     let username = me.username.clone().unwrap_or_default();
-    let cmd = MessageCommands::parse(text, &username)
-        .unwrap_or_else(|err| match err {
-            ParseError::UnknownCommand(cmd) if cmd.starts_with("/")
-            => MessageCommands::Unknown,
-            _ => extract_text_command(text)
-        });
+    let cmd = MessageCommands::parse(text, &username).unwrap_or_else(|err| match err {
+        ParseError::UnknownCommand(cmd) if cmd.starts_with("/") => MessageCommands::Unknown,
+        _ => extract_text_command(text),
+    });
 
     log::info!("Received message: {:?}", text);
     log::info!("Processing command {:?}", cmd);
@@ -84,10 +80,11 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
 
 pub async fn drop_empty(bot: Bot, message: Message, phrase: String) -> bool {
     if phrase.is_empty() {
-        let _ = bot.send_message(
-            message.chat.id,
-            "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
-        )
+        let _ = bot
+            .send_message(
+                message.chat.id,
+                "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
+            )
             .parse_mode(ParseMode::MarkdownV2)
             .await;
         false
@@ -105,12 +102,12 @@ pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescript
         .branch(word_lookup())
         .branch(phrase_lookup())
         .branch(urban_lookup())
+        .branch(thesaurus_lookup())
         .branch(help())
         .branch(unknown())
         .branch(start())
         .branch(teapot())
 }
-
 
 pub trait BotExt {
     async fn with_err_response(
@@ -127,10 +124,12 @@ impl BotExt for Bot {
     ) -> anyhow::Result<()> {
         let chat_id = message.chat.id;
         if let Err(err) = handle(self.clone(), message.clone()).await {
-            let send_res = self.send_message(
-                chat_id,
-                "There was an error processing your query, try again later, sorry.",
-            ).await;
+            let send_res = self
+                .send_message(
+                    chat_id,
+                    "There was an error processing your query, try again later, sorry.",
+                )
+                .await;
             if let Err(err) = send_res {
                 log::error!("Couldn't send error-response: {}", err);
             }
