@@ -1,11 +1,14 @@
-use crate::commands::{BotExt, CommandHandler, FullMessageFormatter, MessageCommands};
-use crate::format::formatter::compose_word_defs;
-use crate::stands4::LinksProvider;
-use crate::wordle::cache::WordleCache;
-use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::{Message, Requester};
-use teloxide::types::ParseMode;
-use teloxide::Bot;
+use crate::{
+    commands::{BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
+    format::compose_word_defs,
+    wordle::cache::WordleCache,
+};
+use teloxide::{
+    payloads::SendMessageSetters,
+    prelude::{Message, Requester},
+    types::ParseMode,
+    Bot,
+};
 
 async fn wordle_lookup_handler(
     bot: Bot,

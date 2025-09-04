@@ -1,6 +1,6 @@
 use crate::{
     commands::{drop_empty, BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
-    format::word_with_abbr_ext::compose_word_with_abbrs_determined,
+    format::compose_word_with_abbrs_determined,
     stands4::Stands4Client,
 };
 use teloxide::{

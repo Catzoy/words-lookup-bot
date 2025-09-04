@@ -1,6 +1,7 @@
+use crate::format::{LinksProvider, StringBuilderExt};
 use crate::stands4::{
-    AbbreviationDefinition, LinksProvider, PhraseDefinition, SynAntDefinitions,
-    VecAbbreviationsExt, WordDefinition,
+    AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, VecAbbreviationsExt,
+    WordDefinition,
 };
 use crate::urban::UrbanDefinition;
 
@@ -135,4 +136,35 @@ pub fn compose_syn_ant_defs<R, Formatter: LookupFormatter<R>>(
     }
 
     formatter.build()
+}
+
+pub fn push_syn_ant(
+    builder: &mut string_builder::Builder,
+    def: &SynAntDefinitions,
+    on_empty: fn() -> String,
+) {
+    let mut cmds: Vec<Box<dyn FnMut(&mut string_builder::Builder)>> = vec![];
+    if !def.synonyms.is_empty() {
+        let handler = |builder: &mut string_builder::Builder| {
+            builder.append("Synonyms: ");
+            builder.list_words(&def.synonyms);
+            builder.append("\n");
+        };
+        cmds.push(Box::new(handler));
+    }
+    if !def.antonyms.is_empty() {
+        let handler = |builder: &mut string_builder::Builder| {
+            builder.append("Antonyms: ");
+            builder.list_words(&def.antonyms);
+            builder.append("\n");
+        };
+        cmds.push(Box::new(handler));
+    }
+    if cmds.is_empty() {
+        builder.append(on_empty())
+    } else {
+        for mut expr in cmds {
+            expr(builder);
+        }
+    }
 }

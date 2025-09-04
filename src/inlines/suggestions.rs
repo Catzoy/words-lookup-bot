@@ -1,11 +1,9 @@
-use crate::commands::{FullMessageFormatter, MessageCommands};
-use crate::format::formatter::LookupFormatter;
-use crate::wordle::WordleAnswer;
 use crate::{
-    format::formatter::compose_word_defs,
+    commands::{FullMessageFormatter, MessageCommands},
+    format::{compose_word_defs, LookupFormatter},
     inlines::inlines::{InlineHandler, QueryCommands},
-    stands4::LinksProvider,
     wordle::cache::WordleCache,
+    wordle::WordleAnswer,
 };
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,

@@ -1,5 +1,5 @@
-use crate::format::formatter::compose_phrase_defs;
 use crate::{
+    format::compose_phrase_defs,
     inlines::{formatting::InlineFormatter, inlines::drop_empty, InlineHandler, QueryCommands},
     stands4::Stands4Client,
 };

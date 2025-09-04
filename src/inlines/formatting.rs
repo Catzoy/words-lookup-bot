@@ -1,8 +1,9 @@
-use crate::format::formatter::LookupFormatter;
-use crate::stands4::{
-    AbbreviationDefinition, LinksProvider, PhraseDefinition, SynAntDefinitions, WordDefinition,
+use crate::format::push_syn_ant;
+use crate::{
+    format::{LinksProvider, LookupFormatter},
+    stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
+    urban::UrbanDefinition,
 };
-use crate::urban::UrbanDefinition;
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
     ParseMode,
@@ -89,7 +90,16 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
     }
 
     fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions) {
-        // not supported rn
+        let mut description = string_builder::Builder::default();
+        push_syn_ant(&mut description, def, || {
+            "Surprisingly, there are no synonyms or antonyms to this!".to_string()
+        });
+        let answer = InlineAnswer {
+            title: format!("#{} {} [{}]", i, def.term, def.part_of_speech),
+            meaning: def.definition.clone(),
+            description: description.string().ok(),
+        };
+        self.answers.push(answer);
     }
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {

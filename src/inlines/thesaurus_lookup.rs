@@ -1,30 +1,31 @@
 use crate::{
-    format::compose_urban_defs,
+    format::compose_syn_ant_defs,
     inlines::{drop_empty, formatting::InlineFormatter, InlineHandler, QueryCommands},
-    urban::UrbanDictionaryClient,
+    stands4::Stands4Client,
 };
 use teloxide::{
     prelude::{InlineQuery, Requester},
     Bot,
 };
 
-async fn urban_lookup_handler(
+async fn thesaurus_lookup_handler(
     bot: Bot,
     query: InlineQuery,
-    client: UrbanDictionaryClient,
+    stands4_client: Stands4Client,
     term: String,
 ) -> anyhow::Result<()> {
     log::info!("Looking up word {}", term);
 
-    let defs = client.search_term(&term).await?;
+    let results = stands4_client.search_syn_ant(&term).await?;
+
     let formatter = InlineFormatter::default();
-    let msg = compose_urban_defs(formatter, &term, &defs)?;
+    let msg = compose_syn_ant_defs(formatter, &term, &results)?;
 
     bot.answer_inline_query(query.id, msg).await?;
     Ok(())
 }
-pub fn urban_lookup() -> InlineHandler {
-    teloxide::dptree::case![QueryCommands::UrbanLookup(word)]
+pub fn thesaurus_lookup() -> InlineHandler {
+    teloxide::dptree::case![QueryCommands::ThesaurusLookup(term)]
         .filter_async(drop_empty)
-        .endpoint(urban_lookup_handler)
+        .endpoint(thesaurus_lookup_handler)
 }

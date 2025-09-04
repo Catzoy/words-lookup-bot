@@ -1,7 +1,10 @@
-use crate::format::formatter::LookupFormatter;
-use crate::stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition};
-use crate::stands4::{LinksProvider, SynAntDefinitions};
-use crate::urban::UrbanDefinition;
+use crate::format::push_syn_ant;
+use crate::{
+    format::{LinksProvider, LookupFormatter, StringBuilderExt},
+    stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition},
+    stands4::SynAntDefinitions,
+    urban::UrbanDefinition,
+};
 use std::ops::Not;
 
 #[derive(Default)]
@@ -88,32 +91,9 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
         self.builder.append(format!("#{} - {}\n", i + 1, def.term));
         self.builder
             .append(format!("Meaning \"{}\"\n", def.definition));
-        let mut cmds: Vec<Box<dyn FnMut(&mut string_builder::Builder)>> = vec![];
-        if !def.synonyms.is_empty() {
-            let handler = |builder: &mut string_builder::Builder| {
-                builder.append("Synonyms: ");
-                builder.list_words(&def.synonyms);
-                builder.append("\n");
-            };
-            cmds.push(Box::new(handler));
-        }
-        if !def.antonyms.is_empty() {
-            let handler = |builder: &mut string_builder::Builder| {
-                builder.append("Antonyms: ");
-                builder.list_words(&def.antonyms);
-                builder.append("\n");
-            };
-            cmds.push(Box::new(handler));
-        }
-        if cmds.is_empty() {
-            self.builder.append(
-                "Surprisingly, there are no other ways to express neither something similar, nor the opposite!"
-            )
-        } else {
-            for mut expr in cmds {
-                expr(&mut self.builder);
-            }
-        }
+        push_syn_ant(&mut self.builder, def, || {
+            "Surprisingly, there are no other ways to express neither something similar, nor the opposite!".to_string()
+        });
     }
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
@@ -139,44 +119,5 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
         self.builder
             .string()
             .map(|str| teloxide::utils::markdown::escape(&str))
-    }
-}
-
-trait StringBuilderExt {
-    fn join<T, Action, Separator>(&mut self, arr: &Vec<T>, action: Action, separator: Separator)
-    where
-        Action: FnMut(&mut Self, &T),
-        Separator: FnMut(&mut Self);
-
-    fn list_words(&mut self, arr: &Vec<String>);
-}
-
-impl StringBuilderExt for string_builder::Builder {
-    fn join<T, Action, Separator>(
-        &mut self,
-        arr: &Vec<T>,
-        mut action: Action,
-        mut separator: Separator,
-    ) where
-        Action: FnMut(&mut Self, &T),
-        Separator: FnMut(&mut Self),
-    {
-        if let Some(first) = arr.first() {
-            action(self, first);
-            if arr.len() > 1 {
-                for item in arr.iter().skip(1) {
-                    separator(self);
-                    action(self, &item);
-                }
-            }
-        }
-    }
-
-    fn list_words(&mut self, arr: &Vec<String>) {
-        self.join(
-            arr,
-            |it, word| it.append(format!("`{}`", word)),
-            |it| it.append(", "),
-        )
     }
 }

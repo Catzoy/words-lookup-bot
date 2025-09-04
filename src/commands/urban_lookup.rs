@@ -1,6 +1,6 @@
 use crate::{
     commands::{drop_empty, BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
-    format::formatter::compose_urban_defs,
+    format::compose_urban_defs,
     urban::UrbanDictionaryClient,
 };
 use teloxide::{

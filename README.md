@@ -136,7 +136,12 @@ Can look up English words from Stands4 API.
         <td>Add synonyms/antonyms lookup (for commands only)</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:bug:</td>
+        <td>0.7.1</td>
+        <td>Fix thesaurus lookup url</td>
+    </tr>
+    <tr>
+        <td>:white_check_mark:</td>
         <td>0.7.1</td>
         <td>Add synonyms/antonyms lookup (for inlines too)</td>
     </tr>

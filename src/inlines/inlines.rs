@@ -1,8 +1,5 @@
 use crate::inlines::{
-    debounce_inline_queries,
-    phrase_lookup,
-    suggestions,
-    urban_lookup,
+    debounce_inline_queries, phrase_lookup, suggestions, thesaurus_lookup, urban_lookup,
     word_lookup,
 };
 use regex::Regex;
@@ -21,20 +18,21 @@ pub enum QueryCommands {
     WordLookup(String),
     PhraseLookup(String),
     UrbanLookup(String),
+    ThesaurusLookup(String),
 }
-static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(||
-    Regex::new(r"(u.)?(.+)").unwrap()
-);
+static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(u.|sa.)?(.+)").unwrap());
 pub type InlineHandler = Handler<'static, anyhow::Result<()>, DpHandlerDescription>;
 fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryCommands> {
     if query.is_empty() {
         return Some(QueryCommands::Suggestions);
     }
-    
+
     let captures = COMMAND_PATTERN.captures(&query)?;
     let cmd = match (captures.get(1), captures.get(2)) {
         (None, Some(input)) => {
-            let words = input.as_str().split_whitespace()
+            let words = input
+                .as_str()
+                .split_whitespace()
                 .map(|s| s.to_lowercase())
                 .collect::<Vec<String>>();
             match &words[..] {
@@ -43,8 +41,12 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
                 _ => QueryCommands::PhraseLookup(words.join(" ")),
             }
         }
-        (Some(m), Some(phrase)) if m.as_str().eq("u.") =>
-            QueryCommands::UrbanLookup(phrase.as_str().to_string()),
+        (Some(m), Some(phrase)) if m.as_str().eq("u.") => {
+            QueryCommands::UrbanLookup(phrase.as_str().to_string())
+        }
+        (Some(m), Some(phrase)) if m.as_str().eq("sa.") => {
+            QueryCommands::ThesaurusLookup(phrase.as_str().to_string())
+        }
         _ => QueryCommands::Suggestions,
     };
     Some(cmd)
@@ -56,10 +58,9 @@ pub async fn drop_empty(bot: Bot, InlineQuery { id, .. }: InlineQuery, input: St
             let _ = bot.answer_inline_query(id, vec![]).await;
             false
         }
-        _ => true
+        _ => true,
     }
 }
-
 
 pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_inline_query()
@@ -69,4 +70,5 @@ pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescripti
         .branch(word_lookup())
         .branch(phrase_lookup())
         .branch(urban_lookup())
+        .branch(thesaurus_lookup())
 }

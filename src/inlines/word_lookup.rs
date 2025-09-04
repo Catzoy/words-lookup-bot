@@ -1,7 +1,7 @@
 use crate::{
-    format::word_with_abbr_ext::compose_word_with_abbrs_determined,
+    format::compose_word_with_abbrs_determined,
     inlines::{drop_empty, formatting::InlineFormatter, InlineHandler, QueryCommands},
-    stands4::{LinksProvider, Stands4Client},
+    stands4::Stands4Client,
 };
 use teloxide::{
     prelude::{InlineQuery, Requester},

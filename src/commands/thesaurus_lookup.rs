@@ -1,6 +1,6 @@
-use crate::format::formatter::compose_syn_ant_defs;
 use crate::{
     commands::{drop_empty, BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
+    format::compose_syn_ant_defs,
     stands4::Stands4Client,
 };
 use teloxide::{
