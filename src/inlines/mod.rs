@@ -1,4 +1,4 @@
-pub mod debouncer;
+mod debouncer;
 mod formatting;
 mod inlines;
 mod phrase_lookup;
@@ -7,8 +7,8 @@ mod thesaurus_lookup;
 mod urban_lookup;
 mod word_lookup;
 
-use debouncer::*;
-use inlines::*;
+pub use debouncer::*;
+pub use inlines::*;
 use phrase_lookup::*;
 use suggestions::*;
 use thesaurus_lookup::*;

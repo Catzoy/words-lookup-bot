@@ -1,6 +1,5 @@
 use crate::commands::*;
-use crate::inlines::debouncer::InlineQueryDebouncer;
-use crate::inlines::inlines::inlines_tree;
+use crate::inlines::*;
 use crate::stands4::client::Stands4Client;
 use crate::urban::UrbanDictionaryClient;
 use crate::wordle::cache::WordleCache;
@@ -31,15 +30,10 @@ impl shuttle_runtime::Service for TelegramService {
             self.stands4_client.clone(),
             InlineQueryDebouncer::default(),
             UrbanDictionaryClient::default(),
-            WordleCache::new(
-                WordleClient::default(),
-                self.stands4_client.clone(),
-            )
+            WordleCache::new(WordleClient::default(), self.stands4_client.clone(),)
         ];
 
-        let tree = entry()
-            .branch(inlines_tree())
-            .branch(commands_tree());
+        let tree = entry().branch(inlines_tree()).branch(commands_tree());
         Dispatcher::builder(bot, tree)
             .default_handler(ignore_update)
             .dependencies(deps)
