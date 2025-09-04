@@ -98,7 +98,7 @@ impl Stands4Client {
             ("format", "json"),
             ("word", term),
         ];
-        let request = self.client.get(PHRASES_API_URL).query(query);
+        let request = self.client.get(SYNO_API_URL).query(query);
         self.handle_request::<SynAntResult>(request).await
     }
 }
