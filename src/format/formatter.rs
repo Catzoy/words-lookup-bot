@@ -4,6 +4,9 @@ use crate::stands4::{
     WordDefinition,
 };
 use crate::urban::UrbanDefinition;
+use regex::Regex;
+use std::ops::Index;
+use std::sync::LazyLock;
 
 pub trait LookupFormatter<T> {
     fn link_provider(&self) -> &LinksProvider;
@@ -22,12 +25,30 @@ pub trait LookupFormatter<T> {
     fn build(self) -> T;
 }
 
+static LINE_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.+)\n*").unwrap());
+
+fn lines_of(str: &String) -> Vec<String> {
+    LINE_PATTERN
+        .captures_iter(&str)
+        .map(|c| c.index(1).to_string())
+        .collect()
+}
+
+fn compose_multiline(header: &str, str: &String) -> String {
+    let lines = lines_of(str);
+    let mut delimiter = "";
+    if lines.len() > 1 {
+        delimiter = "\n";
+    }
+    format!("{}{}{}", header, delimiter, lines.join(delimiter))
+}
+
 pub fn meaning(definition: &String) -> String {
-    format!("*Meaning*: {}", definition)
+    compose_multiline("*Meaning*: ", definition)
 }
 
 pub fn as_in(example: &String) -> String {
-    format!("*As in*: {}", example)
+    compose_multiline("*As in*: ", example)
 }
 
 pub fn compose_word_defs<R, Formatter: LookupFormatter<R>>(
@@ -174,5 +195,58 @@ pub fn push_syn_ant(
         for mut expr in cmds {
             expr(builder);
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::format::formatter::lines_of;
+    use crate::format::meaning;
+
+    #[test]
+    fn parsing_multiline() {
+        // GIVEN
+        let text = r#"
+1) "Stonewall" Jackson
+
+
+
+2) Formerly a mafia-run gay bar the is famous for the riots that took place in 1969.
+
+3) Short for the Stonewall riots, which occured in 1969 and helped to shape the modern GLBT rights movement."
+"#.to_string();
+        // WHEN
+        let lines = lines_of(&text);
+
+        // THEN
+        assert_eq!(lines.len(), 3);
+    }
+
+    #[test]
+    fn proper_multiline_meaning() {
+        // GIVEN
+        let text = r#"
+1) "Stonewall" Jackson
+
+
+
+2) Formerly a mafia-run gay bar the is famous for the riots that took place in 1969.
+
+3) Short for the Stonewall riots, which occured in 1969 and helped to shape the modern GLBT rights movement."
+"#.to_string();
+        // WHEN
+        let meaning = meaning(&text);
+
+        // THEN
+        assert!(meaning.starts_with("*Meaning*: \n"));
+    }
+    #[test]
+    fn proper_single_line_meaning() {
+        // GIVEN
+        let text = "made or constructed by interlacing threads or strips of material or other elements into a whole".to_string();
+        // WHEN
+        let meaning = meaning(&text);
+        // THEN
+        let expected = format!("*Meaning*: {}", text);
+        assert_eq!(expected, meaning);
     }
 }
