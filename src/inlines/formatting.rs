@@ -1,4 +1,4 @@
-use crate::format::push_syn_ant;
+use crate::format::{as_in, meaning, push_syn_ant};
 use crate::{
     format::{LinksProvider, LookupFormatter},
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
@@ -35,10 +35,10 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
 
         let answer = InlineAnswer {
             title: format!("#{} - {} ({})", i + 1, def.term, part_of_speech),
-            meaning: format!("Meaning \"{}\"", def.definition),
+            meaning: meaning(&def.definition),
             description: match def.example.is_empty() {
                 true => None,
-                false => Some(format!("As in {}", def.example)),
+                false => Some(as_in(&def.example)),
             },
         };
         self.answers.push(answer);
@@ -47,10 +47,10 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
         let answer = InlineAnswer {
             title: format!("#{} - {}", i + 1, def.term),
-            meaning: format!("Meaning \"{}\"", def.explanation),
+            meaning: meaning(&def.explanation),
             description: match def.example.is_empty() {
                 true => None,
-                false => Some(format!("As in {}", def.example)),
+                false => Some(as_in(&def.example)),
             },
         };
         self.answers.push(answer);
@@ -105,8 +105,8 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
         let answer = InlineAnswer {
             title: format!("#{} - {}", i + 1, def.word),
-            meaning: format!("Meaning \"{}\"", def.meaning),
-            description: def.example.as_ref().map(|e| format!("As in \"{}\"", e)),
+            meaning: meaning(&def.meaning),
+            description: def.example.as_ref().map(as_in),
         };
         self.answers.push(answer);
     }

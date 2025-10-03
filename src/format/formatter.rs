@@ -22,6 +22,14 @@ pub trait LookupFormatter<T> {
     fn build(self) -> T;
 }
 
+pub fn meaning(definition: &String) -> String {
+    format!("*Meaning*: {}", definition)
+}
+
+pub fn as_in(example: &String) -> String {
+    format!("*As in*: {}", example)
+}
+
 pub fn compose_word_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,

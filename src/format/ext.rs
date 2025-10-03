@@ -5,6 +5,8 @@ pub trait StringBuilderExt {
         Separator: FnMut(&mut Self);
 
     fn list_words(&mut self, arr: &Vec<String>);
+
+    fn appendl(&mut self, string: String);
 }
 
 impl StringBuilderExt for string_builder::Builder {
@@ -34,5 +36,10 @@ impl StringBuilderExt for string_builder::Builder {
             |it, word| it.append(format!("`{}`", word)),
             |it| it.append(", "),
         )
+    }
+
+    fn appendl(&mut self, string: String) {
+        self.append(string);
+        self.append("\n")
     }
 }
