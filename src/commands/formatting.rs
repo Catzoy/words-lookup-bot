@@ -1,4 +1,4 @@
-use crate::format::push_syn_ant;
+use crate::format::{as_in, meaning, push_syn_ant};
 use crate::{
     format::{LinksProvider, LookupFormatter, StringBuilderExt},
     stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition},
@@ -11,28 +11,6 @@ use std::ops::Not;
 pub struct FullMessageFormatter {
     builder: string_builder::Builder,
     link_provider: LinksProvider,
-}
-
-impl FullMessageFormatter {
-    fn combine_synonyms(&mut self, synonyms: &Vec<String>) {
-        self.builder.append("Synonyms: ");
-        self.builder.join(
-            &synonyms,
-            |builder, syn| builder.append(syn.to_string()),
-            |builder| builder.append(", "),
-        );
-        self.builder.append("\n");
-    }
-
-    fn combine_antonyms(&mut self, synonyms: &Vec<String>) {
-        self.builder.append("Antonyms: ");
-        self.builder.join(
-            &synonyms,
-            |builder, ant| builder.append(ant.to_string()),
-            |builder| builder.append(", "),
-        );
-        self.builder.append("\n");
-    }
 }
 
 impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessageFormatter {
@@ -48,20 +26,18 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
 
         self.builder
             .append(format!("#{} - {} ({})\n", i + 1, def.term, part_of_speech));
-        self.builder
-            .append(format!("Meaning \"{}\"\n", def.definition));
+        self.builder.appendl(meaning(&def.definition));
         if def.example.is_empty().not() {
-            self.builder.append(format!("As in {}\n", def.example));
+            self.builder.appendl(as_in(&def.example));
         }
         self.builder.append("\n");
     }
 
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
         self.builder.append(format!("#{} - {}\n", i + 1, def.term));
-        self.builder
-            .append(format!("Meaning \"{}\"\n", def.explanation));
+        self.builder.appendl(meaning(&def.explanation));
         if def.example.is_empty().not() {
-            self.builder.append(format!("As in \"{}\n\"", def.example));
+            self.builder.appendl(as_in(&def.example));
         }
         self.builder.append("\n");
     }
@@ -89,8 +65,7 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
 
     fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions) {
         self.builder.append(format!("#{} - {}\n", i + 1, def.term));
-        self.builder
-            .append(format!("Meaning \"{}\"\n", def.definition));
+        self.builder.appendl(meaning(&def.definition));
         push_syn_ant(&mut self.builder, def, || {
             "Surprisingly, there are no other ways to express neither something similar, nor the opposite!".to_string()
         });
@@ -98,10 +73,9 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
         self.builder.append(format!("#{} - {}\n", i + 1, def.word));
-        self.builder
-            .append(format!("Meaning \"{}\"\n", def.meaning));
+        self.builder.appendl(meaning(&def.meaning));
         if let Some(example) = &def.example {
-            self.builder.append(format!("As in {}\n", example));
+            self.builder.appendl(as_in(&example));
         }
         self.builder.append("\n");
     }
