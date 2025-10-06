@@ -25,6 +25,19 @@ pub trait LookupFormatter<T> {
     fn build(self) -> T;
 }
 
+pub trait ToEscaped {
+    fn to_escaped(&self) -> Self;
+}
+
+impl<T> ToEscaped for Vec<T>
+where
+    T: ToEscaped,
+{
+    fn to_escaped(&self) -> Self {
+        self.iter().map(|i| i.to_escaped()).collect()
+    }
+}
+
 static LINE_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.+)\n*").unwrap());
 
 fn lines_of(str: &String) -> Vec<String> {
