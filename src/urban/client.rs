@@ -1,3 +1,4 @@
+use crate::format::ToEscaped;
 use crate::urban::{UrbanDefinition, UrbanResponse};
 use reqwest::Client;
 use shuttle_runtime::__internals::serde_json;
@@ -36,7 +37,7 @@ impl UrbanDictionaryClient {
                 .unwrap_or_else(|| "Urban lookup failed without an error!".to_string())
             );
         }
-        Ok(response.data)
+        Ok(response.data.to_escaped())
     }
 }
 

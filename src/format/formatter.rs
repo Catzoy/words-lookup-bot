@@ -25,6 +25,37 @@ pub trait LookupFormatter<T> {
     fn build(self) -> T;
 }
 
+pub trait ToEscaped {
+    fn to_escaped(&self) -> Self;
+}
+
+impl<T> ToEscaped for Vec<T>
+where
+    T: ToEscaped,
+{
+    fn to_escaped(&self) -> Self {
+        self.iter().map(|i| i.to_escaped()).collect()
+    }
+}
+
+impl<T> ToEscaped for Option<T>
+where
+    T: ToEscaped,
+{
+    fn to_escaped(&self) -> Self {
+        match self {
+            None => None,
+            Some(it) => Some(it.to_escaped())
+        }
+    }
+}
+
+impl ToEscaped for String {
+    fn to_escaped(&self) -> Self {
+        teloxide::utils::markdown::escape(self)
+    }
+}
+
 static LINE_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.+)\n*").unwrap());
 
 fn lines_of(str: &String) -> Vec<String> {

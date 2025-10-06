@@ -21,8 +21,7 @@ async fn word_lookup_handler(
     let results = futures::future::join(
         stands4_client.search_word(&word),
         stands4_client.search_abbreviation(&word),
-    )
-    .await;
+    ).await;
 
     let formatter = FullMessageFormatter::default();
     let msg = compose_word_with_abbrs_determined(formatter, &word, &results, || {
@@ -42,8 +41,7 @@ pub fn word_lookup() -> CommandHandler {
             |word: String, bot: Bot, message: Message, stands4_client: Stands4Client| async move {
                 bot.with_err_response(message, move |bot, message| async {
                     word_lookup_handler(bot, message, stands4_client, word).await
-                })
-                .await
+                }).await
             },
         )
 }
