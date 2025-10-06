@@ -120,27 +120,33 @@ for InlineFormatter
     }
 
     fn build(self) -> Result<Vec<InlineQueryResult>, std::string::FromUtf8Error> {
-        let mut articles = Vec::new();
-        for (i, answer) in self.answers.into_iter().enumerate() {
-            let mut full_text = string_builder::Builder::default();
-            full_text.append(answer.title.as_str());
-            full_text.append("\n\n");
-            full_text.append(answer.meaning.as_str());
-            if let Some(description) = answer.description {
-                full_text.append("\n");
-                full_text.append(description);
-            }
-            let full_text = full_text.string()?;
-            let msg_content = InputMessageContentText::new(&full_text)
-                .parse_mode(ParseMode::MarkdownV2);
-            let article = InlineQueryResultArticle::new(
-                format!("answer-{}", i),
-                answer.title,
-                InputMessageContent::Text(msg_content),
-            ).description(answer.meaning.as_str());
-            let article = InlineQueryResult::Article(article);
-            articles.push(article);
-        }
-        Ok(articles)
+        self.answers.iter().enumerate().try_fold(Vec::new(), |mut acc, (i, answer)| {
+            let full_text = compose_inline_answer(answer)?;
+            let article = compose_inline_result(i, answer, full_text);
+            acc.push(article);
+            Ok(acc)
+        })
     }
+}
+
+fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::FromUtf8Error> {
+    let mut full_text = string_builder::Builder::default();
+    full_text.append(answer.title.as_str());
+    full_text.append("\n\n");
+    full_text.append(answer.meaning.as_str());
+    if let Some(description) = &answer.description {
+        full_text.append("\n");
+        full_text.append(description.as_str());
+    }
+    full_text.string()
+}
+
+fn compose_inline_result(i: usize, answer: &InlineAnswer, full_text: String) -> InlineQueryResult {
+    let content = InputMessageContentText::new(&full_text)
+        .parse_mode(ParseMode::MarkdownV2);
+    let content = InputMessageContent::Text(content);
+    let id = format!("answer-{}", i);
+    let article = InlineQueryResultArticle::new(id, &answer.title, content)
+        .description(answer.meaning.as_str());
+    InlineQueryResult::Article(article)
 }

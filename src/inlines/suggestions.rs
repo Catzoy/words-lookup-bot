@@ -28,18 +28,36 @@ async fn suggestions_handler(
 ) -> anyhow::Result<()> {
     let mut answers = Vec::<InlineQueryResult>::new();
     let help = {
+        let text = "Continue writing to look up a word or a phrase";
         let msg = MessageCommands::descriptions().to_string();
         let msg = InputMessageContentText::new(msg.to_escaped());
         let msg = InputMessageContent::Text(msg);
-        InlineQueryResult::Article(
-            InlineQueryResultArticle::new(
-                "help",
-                "Continue writing to look up a word.\nOr write \"u.word\" to find definitions in UrbanDictionary.",
-                msg,
-            )
-        )
+        let msg = InlineQueryResultArticle::new("help", text, msg);
+        InlineQueryResult::Article(msg)
     };
     answers.push(help);
+
+    let urban = {
+        let text = "Or write \"u.PHRASE\" to look up in UrbanDictionary";
+        let msg = InputMessageContentText::new(
+            "Write @WordsLookupBot \"u.PHRASE\" to look up in UrbanDictionary",
+        );
+        let msg = InputMessageContent::Text(msg);
+        let msg = InlineQueryResultArticle::new("urban", text, msg);
+        InlineQueryResult::Article(msg)
+    };
+    answers.push(urban);
+
+    let syn_ant = {
+        let text = "Or write \"sa.WORD\" to look up synonyms & antonyms";
+        let msg = InputMessageContentText::new(
+            "Write @WordsLookupBot \"sa.WORD\" to look up synonyms & antonyms in the Thesaurus",
+        );
+        let msg = InputMessageContent::Text(msg);
+        let msg = InlineQueryResultArticle::new("syn_ant", text, msg);
+        InlineQueryResult::Article(msg)
+    };
+    answers.push(syn_ant);
 
     let msg = cache
         .with_answer(|it| {
@@ -58,14 +76,11 @@ async fn suggestions_handler(
         })
         .await;
     if let Ok(Ok(wordle_message)) = msg {
-        let msg = InputMessageContent::Text(
-            InputMessageContentText::new(wordle_message).parse_mode(ParseMode::MarkdownV2),
-        );
-        let article = InlineQueryResultArticle::new(
-            "wordle_answer",
-            "Send definition of today's wordle answer!",
-            msg,
-        );
+        let title = "Send definition of today's wordle answer!";
+        let msg = InputMessageContentText::new(wordle_message)
+            .parse_mode(ParseMode::MarkdownV2);
+        let msg = InputMessageContent::Text(msg);
+        let article = InlineQueryResultArticle::new("wordle", title, msg);
         let answer = InlineQueryResult::Article(article);
         answers.push(answer);
     }

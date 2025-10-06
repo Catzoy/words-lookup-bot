@@ -151,6 +151,11 @@ Can look up English words from Stands4 API.
         <td>Update formatting of single- and multi-lined texts</td>
     </tr>
     <tr>
+        <td>:white_check_mark:</td>
+        <td>0.7.3</td>
+        <td>Update inline help, refactor inlines composition</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.8.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
