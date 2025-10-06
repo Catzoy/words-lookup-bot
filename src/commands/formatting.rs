@@ -25,7 +25,7 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
         };
 
         self.builder
-            .append(format!("#{} - {} ({})\n", i + 1, def.term, part_of_speech));
+            .append(format!("\\#{} \\- {} \\({}\\)\n", i + 1, def.term, part_of_speech));
         self.builder.appendl(meaning(&def.definition));
         if def.example.is_empty().not() {
             self.builder.appendl(as_in(&def.example));
@@ -34,7 +34,7 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
     }
 
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
-        self.builder.append(format!("#{} - {}\n", i + 1, def.term));
+        self.builder.append(format!("\\#{} \\- {}\n", i + 1, def.term));
         self.builder.appendl(meaning(&def.explanation));
         if def.example.is_empty().not() {
             self.builder.appendl(as_in(&def.example));
@@ -54,7 +54,7 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
         };
 
         self.builder
-            .append(format!("#{} in [{}] stands for: ", i + 1, category));
+            .append(format!("\\#{} in \\[{}\\] stands for: ", i + 1, category));
         self.builder.join(
             defs,
             |builder, def| builder.append(def.definition.as_str()),
@@ -64,7 +64,7 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
     }
 
     fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions) {
-        self.builder.append(format!("#{} - {}\n", i + 1, def.term));
+        self.builder.append(format!("\\#{} \\- {}\n", i + 1, def.term));
         self.builder.appendl(meaning(&def.definition));
         push_syn_ant(&mut self.builder, def, || {
             "Surprisingly, there are no other ways to express neither something similar, nor the opposite!".to_string()
@@ -72,7 +72,7 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
     }
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
-        self.builder.append(format!("#{} - {}\n", i + 1, def.word));
+        self.builder.append(format!("\\#{} \\- {}\n", i + 1, def.word));
         self.builder.appendl(meaning(&def.meaning));
         if let Some(example) = &def.example {
             self.builder.appendl(as_in(&example));
@@ -90,8 +90,6 @@ impl LookupFormatter<Result<String, std::string::FromUtf8Error>> for FullMessage
     }
 
     fn build(self) -> Result<String, std::string::FromUtf8Error> {
-        self.builder
-            .string()
-            .map(|str| teloxide::utils::markdown::escape(&str))
+        self.builder.string()
     }
 }

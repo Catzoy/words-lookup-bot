@@ -21,7 +21,7 @@ pub struct InlineFormatter {
 }
 
 impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
-    for InlineFormatter
+for InlineFormatter
 {
     fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
@@ -34,7 +34,7 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
         };
 
         let answer = InlineAnswer {
-            title: format!("#{} - {} ({})", i + 1, def.term, part_of_speech),
+            title: format!("\\#{} \\- {} \\({}\\)", i + 1, def.term, part_of_speech),
             meaning: meaning(&def.definition),
             description: match def.example.is_empty() {
                 true => None,
@@ -46,7 +46,7 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
 
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
         let answer = InlineAnswer {
-            title: format!("#{} - {}", i + 1, def.term),
+            title: format!("\\#{} \\- {}", i + 1, def.term),
             meaning: meaning(&def.explanation),
             description: match def.example.is_empty() {
                 true => None,
@@ -80,7 +80,7 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
         }
 
         let answer = InlineAnswer {
-            title: format!("#{} in [{}] stands for: ", i + 1, category),
+            title: format!("\\#{} in \\[{}\\] stands for: ", i + 1, category),
             meaning: meaning
                 .string()
                 .unwrap_or_else(|_| "Cannot describe, try this word in bot's chat".to_string()),
@@ -95,7 +95,7 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
             "Surprisingly, there are no synonyms or antonyms to this!".to_string()
         });
         let answer = InlineAnswer {
-            title: format!("#{} {} [{}]", i, def.term, def.part_of_speech),
+            title: format!("\\#{} {} \\[{}\\]", i, def.term, def.part_of_speech),
             meaning: def.definition.clone(),
             description: description.string().ok(),
         };
@@ -104,7 +104,7 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
         let answer = InlineAnswer {
-            title: format!("#{} - {}", i + 1, def.word),
+            title: format!("\\#{} \\- {}", i + 1, def.word),
             meaning: meaning(&def.meaning),
             description: def.example.as_ref().map(as_in),
         };
@@ -131,18 +131,15 @@ impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
                 full_text.append(description);
             }
             let full_text = full_text.string()?;
+            let msg_content = InputMessageContentText::new(&full_text)
+                .parse_mode(ParseMode::MarkdownV2);
             let article = InlineQueryResultArticle::new(
                 format!("answer-{}", i),
                 answer.title,
-                InputMessageContent::Text(
-                    InputMessageContentText::new(teloxide::utils::markdown::escape(
-                        full_text.as_str(),
-                    ))
-                    .parse_mode(ParseMode::MarkdownV2),
-                ),
-            )
-            .description(answer.meaning.as_str());
-            articles.push(InlineQueryResult::Article(article));
+                InputMessageContent::Text(msg_content),
+            ).description(answer.meaning.as_str());
+            let article = InlineQueryResult::Article(article);
+            articles.push(article);
         }
         Ok(articles)
     }

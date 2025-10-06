@@ -1,3 +1,4 @@
+use crate::format::ToEscaped;
 use crate::{
     commands::{FullMessageFormatter, MessageCommands},
     format::{compose_word_defs, LookupFormatter},
@@ -28,8 +29,8 @@ async fn suggestions_handler(
     let mut answers = Vec::<InlineQueryResult>::new();
     let help = {
         let msg = MessageCommands::descriptions().to_string();
-        let msg = teloxide::utils::markdown::escape(&msg);
-        let msg = InputMessageContent::Text(InputMessageContentText::new(msg));
+        let msg = InputMessageContentText::new(msg.to_escaped());
+        let msg = InputMessageContent::Text(msg);
         InlineQueryResult::Article(
             InlineQueryResultArticle::new(
                 "help",
@@ -49,7 +50,7 @@ async fn suggestions_handler(
             } = &it.answer;
             let mut formatter = FullMessageFormatter::default();
             let wordle_title = format!(
-                "#{} WORDLE solution:\n{}, by {}",
+                "\\#{} WORDLE solution:\n{}, by {}",
                 days_since_launch, solution, editor
             );
             formatter.append_title(wordle_title);
@@ -60,11 +61,12 @@ async fn suggestions_handler(
         let msg = InputMessageContent::Text(
             InputMessageContentText::new(wordle_message).parse_mode(ParseMode::MarkdownV2),
         );
-        let answer = InlineQueryResult::Article(InlineQueryResultArticle::new(
+        let article = InlineQueryResultArticle::new(
             "wordle_answer",
             "Send definition of today's wordle answer!",
             msg,
-        ));
+        );
+        let answer = InlineQueryResult::Article(article);
         answers.push(answer);
     }
 

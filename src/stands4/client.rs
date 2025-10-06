@@ -1,3 +1,4 @@
+use crate::format::ToEscaped;
 use crate::stands4::entities::{
     AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
 };
@@ -63,7 +64,8 @@ impl Stands4Client {
             ("word", word),
         ];
         let request = self.client.get(WORDS_API_URL).query(query);
-        self.handle_request::<WordResult>(request).await
+        let defs = self.handle_request::<WordResult>(request).await?;
+        Ok(defs.to_escaped())
     }
 
     pub async fn search_abbreviation(
@@ -77,7 +79,8 @@ impl Stands4Client {
             ("term", abbreviation),
         ];
         let request = self.client.get(ABBR_API_URL).query(query);
-        self.handle_request::<AbbreviationResult>(request).await
+        let defs = self.handle_request::<AbbreviationResult>(request).await?;
+        Ok(defs.to_escaped())
     }
 
     pub async fn search_phrase(&self, phrase: &str) -> anyhow::Result<Vec<PhraseDefinition>> {
@@ -88,7 +91,8 @@ impl Stands4Client {
             ("phrase", phrase),
         ];
         let request = self.client.get(PHRASES_API_URL).query(query);
-        self.handle_request::<PhraseResult>(request).await
+        let defs = self.handle_request::<PhraseResult>(request).await?;
+        Ok(defs.to_escaped())
     }
 
     pub async fn search_syn_ant(&self, term: &str) -> anyhow::Result<Vec<SynAntDefinitions>> {
@@ -99,7 +103,8 @@ impl Stands4Client {
             ("word", term),
         ];
         let request = self.client.get(SYNO_API_URL).query(query);
-        self.handle_request::<SynAntResult>(request).await
+        let defs = self.handle_request::<SynAntResult>(request).await?;
+        Ok(defs.to_escaped())
     }
 }
 
