@@ -1,5 +1,4 @@
 use crate::format::ToEscaped;
-use teloxide::utils::markdown::escape;
 
 pub trait ToEntity {
     type Output;
@@ -17,10 +16,10 @@ pub struct WordDefinition {
 impl ToEscaped for WordDefinition {
     fn to_escaped(&self) -> Self {
         Self {
-            term: escape(&self.term),
-            definition: escape(&self.definition),
-            example: escape(&self.example),
-            part_of_speech: escape(&self.part_of_speech),
+            term: self.term.to_escaped(),
+            definition: self.definition.to_escaped(),
+            example: self.example.to_escaped(),
+            part_of_speech: self.part_of_speech.to_escaped(),
         }
     }
 }
@@ -35,9 +34,9 @@ pub struct PhraseDefinition {
 impl ToEscaped for PhraseDefinition {
     fn to_escaped(&self) -> Self {
         Self {
-            term: escape(&self.term),
-            example: escape(&self.example),
-            explanation: escape(&self.explanation),
+            term: self.term.to_escaped(),
+            example: self.example.to_escaped(),
+            explanation: self.explanation.to_escaped(),
         }
     }
 }
@@ -51,8 +50,8 @@ pub struct AbbreviationDefinition {
 impl ToEscaped for AbbreviationDefinition {
     fn to_escaped(&self) -> Self {
         Self {
-            definition: escape(&self.definition),
-            category: escape(&self.category),
+            definition: self.definition.to_escaped(),
+            category: self.category.to_escaped(),
         }
     }
 }
@@ -69,11 +68,11 @@ pub struct SynAntDefinitions {
 impl ToEscaped for SynAntDefinitions {
     fn to_escaped(&self) -> Self {
         Self {
-            term: escape(&self.term),
-            definition: escape(&self.definition),
-            part_of_speech: escape(&self.part_of_speech),
-            synonyms: self.synonyms.iter().map(|i| escape(i)).collect(),
-            antonyms: self.antonyms.iter().map(|i| escape(i)).collect(),
+            term: self.term.to_escaped(),
+            definition: self.definition.to_escaped(),
+            part_of_speech: self.part_of_speech.to_escaped(),
+            synonyms: self.synonyms.to_escaped(),
+            antonyms: self.antonyms.to_escaped(),
         }
     }
 }

@@ -38,6 +38,24 @@ where
     }
 }
 
+impl<T> ToEscaped for Option<T>
+where
+    T: ToEscaped,
+{
+    fn to_escaped(&self) -> Self {
+        match self {
+            None => None,
+            Some(it) => Some(it.to_escaped())
+        }
+    }
+}
+
+impl ToEscaped for String {
+    fn to_escaped(&self) -> Self {
+        teloxide::utils::markdown::escape(self)
+    }
+}
+
 static LINE_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.+)\n*").unwrap());
 
 fn lines_of(str: &String) -> Vec<String> {

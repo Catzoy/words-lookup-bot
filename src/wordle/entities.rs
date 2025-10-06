@@ -1,7 +1,6 @@
 use crate::format::ToEscaped;
 use crate::stands4::WordDefinition;
 use serde::Deserialize;
-use teloxide::utils::markdown::escape;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct WordleAnswer {
@@ -14,8 +13,8 @@ pub struct WordleAnswer {
 impl ToEscaped for WordleAnswer {
     fn to_escaped(&self) -> Self {
         Self {
-            solution: escape(&self.solution),
-            editor: escape(&self.editor),
+            solution: self.solution.to_escaped(),
+            editor: self.editor.to_escaped(),
             days_since_launch: self.days_since_launch,
         }
     }
