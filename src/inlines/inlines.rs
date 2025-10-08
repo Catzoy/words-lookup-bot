@@ -1,8 +1,9 @@
 use crate::bloc::common::Lookup;
 use crate::inlines::phrase_lookup::InlinePhraseLookup;
 use crate::inlines::thesaurus_lookup::InlineThesaurusLookup;
+use crate::inlines::urban_lookup::InlineUrbanLookup;
 use crate::inlines::word_lookup::InlinesWordLookup;
-use crate::inlines::{debounce_inline_queries, suggestions, urban_lookup};
+use crate::inlines::{debounce_inline_queries, suggestions};
 use regex::Regex;
 use std::sync::LazyLock;
 use teloxide::{
@@ -70,6 +71,6 @@ pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescripti
         .branch(suggestions())
         .branch(InlinesWordLookup::handler())
         .branch(InlinePhraseLookup::handler())
-        .branch(urban_lookup())
+        .branch(InlineUrbanLookup::handler())
         .branch(InlineThesaurusLookup::handler())
 }
