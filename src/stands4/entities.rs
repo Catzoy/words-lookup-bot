@@ -56,7 +56,7 @@ impl ToEscaped for AbbreviationDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SynAntDefinitions {
     pub(crate) term: String,
     pub(crate) definition: String,
