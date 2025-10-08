@@ -114,34 +114,3 @@ pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescript
         .branch(StartOwner::handler())
         .branch(TeapotOwner::handler())
 }
-
-pub trait BotExt {
-    async fn with_err_response(
-        &self,
-        message: Message,
-        handle: impl AsyncFnOnce(Bot, Message) -> anyhow::Result<()>,
-    ) -> anyhow::Result<()>;
-}
-impl BotExt for Bot {
-    async fn with_err_response(
-        &self,
-        message: Message,
-        handle: impl AsyncFnOnce(Bot, Message) -> anyhow::Result<()>,
-    ) -> anyhow::Result<()> {
-        let chat_id = message.chat.id;
-        if let Err(err) = handle(self.clone(), message.clone()).await {
-            let send_res = self
-                .send_message(
-                    chat_id,
-                    "There was an error processing your query, try again later, sorry.",
-                )
-                .await;
-            if let Err(err) = send_res {
-                log::error!("Couldn't send error-response: {}", err);
-            }
-            Err(err)
-        } else {
-            Ok(())
-        }
-    }
-}
