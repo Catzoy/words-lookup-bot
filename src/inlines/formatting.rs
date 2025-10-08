@@ -1,4 +1,5 @@
-use crate::format::{as_in, meaning, push_syn_ant};
+use crate::bloc::formatting::SynAntFormatterExt;
+use crate::format::{as_in, meaning};
 use crate::{
     format::{LinksProvider, LookupFormatter},
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
@@ -90,7 +91,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
 
     fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions) {
         let mut description = string_builder::Builder::default();
-        push_syn_ant(&mut description, def, || {
+        Self::push_syn_ant(&mut description, def, || {
             "Surprisingly, there are no synonyms or antonyms to this!".to_string()
         });
         let answer = InlineAnswer {

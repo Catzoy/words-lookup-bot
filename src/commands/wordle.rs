@@ -1,8 +1,8 @@
 use crate::bloc::common::{HandlerOwner, Lookup, LookupError, MessageLookup};
+use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::wordle::WordleDayAnswer;
 use crate::{
     commands::{CommandHandler, FullMessageFormatter, MessageCommands},
-    format::compose_word_defs,
     wordle::cache::WordleCache,
 };
 use teloxide::{
@@ -38,11 +38,12 @@ impl MessageWordleLookup {
         }
     }
     fn compose_response(answer: WordleDayAnswer) -> Result<String, LookupError> {
-        let formatter = FullMessageFormatter::default();
-        compose_word_defs(formatter, &answer.answer.solution, &answer.definitions).map_err(|err| {
-            log::error!("Failed to build wordle response {:?}", err);
-            LookupError::FailedResponseBuilder
-        })
+        FullMessageFormatter::default()
+            .compose_word_defs(&answer.answer.solution, &answer.definitions)
+            .map_err(|err| {
+                log::error!("Failed to build wordle response {:?}", err);
+                LookupError::FailedResponseBuilder
+            })
     }
 }
 

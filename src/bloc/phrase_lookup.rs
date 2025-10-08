@@ -1,5 +1,5 @@
 use crate::bloc::common::{Lookup, LookupError};
-use crate::format::{compose_phrase_defs, LookupFormatter};
+use crate::format::LookupFormatter;
 use crate::stands4::{PhraseDefinition, Stands4Client};
 use shuttle_runtime::async_trait;
 
@@ -21,8 +21,17 @@ pub trait PhraseLookup: Lookup {
         phrase: String,
         defs: Vec<PhraseDefinition>,
     ) -> Result<Self::Response, LookupError> {
-        let formatter = Self::Formatter::default();
-        compose_phrase_defs(formatter, phrase.as_str(), &defs).map_err(|err| {
+        let mut formatter = Self::Formatter::default();
+        formatter.append_title(format!("Found {} definitions", defs.len()));
+
+        for (i, def) in defs.iter().take(5).enumerate() {
+            formatter.visit_phrase(i, def);
+        }
+        if defs.len() > 5 {
+            formatter.append_link(formatter.link_provider().phrase_link(&phrase));
+        }
+
+        formatter.build().map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })

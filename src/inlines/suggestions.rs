@@ -1,9 +1,9 @@
 use crate::bloc::common::HandlerOwner;
-use crate::commands::CommandHandler;
+use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::format::ToEscaped;
 use crate::{
     commands::{FullMessageFormatter, MessageCommands},
-    format::{compose_word_defs, LookupFormatter},
+    format::LookupFormatter,
     inlines::inlines::{InlineHandler, QueryCommands},
     wordle::cache::WordleCache,
     wordle::WordleAnswer,
@@ -75,7 +75,7 @@ impl SuggestionsOwner {
             days_since_launch, solution, editor
         );
         formatter.append_title(wordle_title);
-        let msg = compose_word_defs(formatter, &solution, &answer.definitions);
+        let msg = formatter.compose_word_defs(&solution, &answer.definitions);
         if let Ok(wordle_message) = msg {
             let title = "Send definition of today's wordle answer!";
             let msg =

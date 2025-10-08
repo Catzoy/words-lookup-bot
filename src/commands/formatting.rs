@@ -1,4 +1,5 @@
-use crate::format::{as_in, meaning, push_syn_ant};
+use crate::bloc::formatting::SynAntFormatterExt;
+use crate::format::{as_in, meaning};
 use crate::{
     format::{LinksProvider, LookupFormatter, StringBuilderExt},
     stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition},
@@ -73,7 +74,7 @@ impl LookupFormatter<String> for FullMessageFormatter {
         self.builder
             .append(format!("\\#{} \\- {}\n", i + 1, def.term));
         self.builder.appendl(meaning(&def.definition));
-        push_syn_ant(&mut self.builder, def, || {
+        Self::push_syn_ant(&mut self.builder, def, || {
             "Surprisingly, there are no other ways to express neither something similar, nor the opposite!".to_string()
         });
     }

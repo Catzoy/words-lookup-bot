@@ -1,5 +1,5 @@
 use crate::bloc::common::{Lookup, LookupError};
-use crate::format::{compose_syn_ant_defs, LookupFormatter};
+use crate::format::{LookupFormatter, StringBuilderExt};
 use crate::stands4::{Stands4Client, SynAntDefinitions};
 use shuttle_runtime::async_trait;
 
@@ -21,8 +21,19 @@ pub trait ThesaurusLookup: Lookup {
         term: String,
         defs: Vec<SynAntDefinitions>,
     ) -> Result<Self::Response, LookupError> {
-        let formatter = Self::Formatter::default();
-        compose_syn_ant_defs(formatter, &term, &defs).map_err(|err| {
+        let mut formatter = Self::Formatter::default();
+        formatter.append_title(format!(
+            "Found {} different definitions with respective information",
+            defs.len()
+        ));
+        for (i, def) in defs.iter().take(5).enumerate() {
+            formatter.visit_syn_ant(i, def)
+        }
+        if defs.len() > 5 {
+            formatter.append_link(formatter.link_provider().syn_ant_link(&term))
+        }
+
+        formatter.build().map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })

@@ -12,7 +12,3 @@ mod wordle;
 
 pub use command::*;
 pub use formatting::*;
-use help::*;
-use start::*;
-use teapot::*;
-use unknown::*;

@@ -1,8 +1,6 @@
 use crate::bloc::common::{Lookup, LookupError};
-use crate::format::{
-    compose_abbr_defs, compose_word_defs, compose_words_with_abbrs, LookupFormatter,
-};
-use crate::stands4::{AbbreviationDefinition, Stands4Client, WordDefinition};
+use crate::format::LookupFormatter;
+use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
 use shuttle_runtime::async_trait;
 
@@ -37,13 +35,83 @@ pub trait WordLookup: Lookup {
         let formatter = Self::Formatter::default();
         let text = match (words.len(), abbrs.len()) {
             (0, 0) => Ok(Self::on_empty()),
-            (0, _) => compose_abbr_defs(formatter, &word, &abbrs),
-            (_, 0) => compose_word_defs(formatter, &word, &words),
-            (_, _) => compose_words_with_abbrs(formatter, &word, &words, &abbrs),
+            (0, _) => formatter.compose_word_defs(&word, &words),
+            (_, 0) => formatter.compose_word_defs(&word, &words),
+            (_, _) => formatter.compose_words_with_abbrs(&word, &words, &abbrs),
         };
         text.map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })
+    }
+}
+
+pub trait WordLookupFormatter<R, E> {
+    fn compose_word_defs(self, word: &str, defs: &Vec<WordDefinition>) -> Result<R, E>;
+    fn compose_abbr_defs(self, word: &str, defs: &Vec<AbbreviationDefinition>) -> Result<R, E>;
+
+    fn compose_words_with_abbrs(
+        self,
+        word: &str,
+        words: &Vec<WordDefinition>,
+        abbrs: &Vec<AbbreviationDefinition>,
+    ) -> Result<R, E>;
+}
+
+impl<T, R, E> WordLookupFormatter<R, E> for T
+where
+    T: LookupFormatter<R, Error = E>,
+{
+    fn compose_word_defs(mut self, word: &str, defs: &Vec<WordDefinition>) -> Result<R, E> {
+        self.append_title(format!("Found {} definitions", defs.len()));
+
+        for (i, def) in defs.iter().take(5).enumerate() {
+            self.visit_word(i, def);
+        }
+        if defs.len() > 5 {
+            self.append_link(self.link_provider().word_link(word))
+        }
+        self.build()
+    }
+
+    fn compose_abbr_defs(mut self, word: &str, defs: &Vec<AbbreviationDefinition>) -> Result<R, E> {
+        self.append_title(format!("Found {} definitions", defs.len()));
+
+        let categorized = defs.categorized();
+        for (i, (category, defs)) in categorized.iter().take(5).enumerate() {
+            self.visit_abbreviations(i, category, defs);
+        }
+        if categorized.len() > 5 {
+            self.append_link(self.link_provider().abbr_link(word))
+        }
+        self.build()
+    }
+
+    fn compose_words_with_abbrs(
+        mut self,
+        word: &str,
+        words: &Vec<WordDefinition>,
+        abbrs: &Vec<AbbreviationDefinition>,
+    ) -> Result<R, E> {
+        self.append_title(format!("Found {} definitions", words.len()));
+
+        for (i, def) in words.iter().take(5).enumerate() {
+            self.visit_word(i, def);
+        }
+        if words.len() > 5 {
+            self.append_link(self.link_provider().word_link(word))
+        }
+
+        self.append_title(format!("Found {} abbreviations", abbrs.len()));
+
+        let categorized = abbrs.categorized();
+        for (i, (category, defs)) in categorized.iter().take(5).enumerate() {
+            self.visit_abbreviations(i, category, defs);
+        }
+        if categorized.len() > 5 {
+            self.append_link(self.link_provider().abbr_link(word))
+        }
+
+        self.build()
     }
 }
