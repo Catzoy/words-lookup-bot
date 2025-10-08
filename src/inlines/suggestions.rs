@@ -24,7 +24,7 @@ async fn ensure_wordle_answer(mut cache: WordleCache) -> anyhow::Result<()> {
 async fn suggestions_handler(
     bot: Bot,
     query: InlineQuery,
-    cache: WordleCache,
+    mut cache: WordleCache,
 ) -> anyhow::Result<()> {
     let mut answers = Vec::<InlineQueryResult>::new();
     let help = {
@@ -59,26 +59,22 @@ async fn suggestions_handler(
     };
     answers.push(syn_ant);
 
-    let msg = cache
-        .with_answer(|it| {
-            let WordleAnswer {
-                solution,
-                editor,
-                days_since_launch,
-            } = &it.answer;
-            let mut formatter = FullMessageFormatter::default();
-            let wordle_title = format!(
-                "\\#{} WORDLE solution:\n{}, by {}",
-                days_since_launch, solution, editor
-            );
-            formatter.append_title(wordle_title);
-            compose_word_defs(formatter, &it.answer.solution, &it.definitions)
-        })
-        .await;
-    if let Ok(Ok(wordle_message)) = msg {
+    let answer = cache.require_fresh_answer().await?;
+    let WordleAnswer {
+        solution,
+        editor,
+        days_since_launch,
+    } = answer.answer;
+    let mut formatter = FullMessageFormatter::default();
+    let wordle_title = format!(
+        "\\#{} WORDLE solution:\n{}, by {}",
+        days_since_launch, solution, editor
+    );
+    formatter.append_title(wordle_title);
+    let msg = compose_word_defs(formatter, &solution, &answer.definitions);
+    if let Ok(wordle_message) = msg {
         let title = "Send definition of today's wordle answer!";
-        let msg = InputMessageContentText::new(wordle_message)
-            .parse_mode(ParseMode::MarkdownV2);
+        let msg = InputMessageContentText::new(wordle_message).parse_mode(ParseMode::MarkdownV2);
         let msg = InputMessageContent::Text(msg);
         let article = InlineQueryResultArticle::new("wordle", title, msg);
         let answer = InlineQueryResult::Article(article);

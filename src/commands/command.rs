@@ -3,7 +3,8 @@ use crate::commands::phrase_lookup::MessagePhraseLookup;
 use crate::commands::thesaurus_lookup::MessageThesaurusLookup;
 use crate::commands::urban_lookup::MessageUrbanLookup;
 use crate::commands::word_lookup::MessageWordLookup;
-use crate::commands::{help, start, teapot, unknown, wordle_lookup};
+use crate::commands::wordle::MessageWordleLookup;
+use crate::commands::{help, start, teapot, unknown};
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
 use teloxide::payloads::SendMessageSetters;
@@ -100,7 +101,7 @@ pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescrip
 pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_message()
         .map(extract_command)
-        .branch(wordle_lookup())
+        .branch(MessageWordleLookup::handler())
         .branch(MessageWordLookup::handler())
         .branch(MessagePhraseLookup::handler())
         .branch(MessageUrbanLookup::handler())
