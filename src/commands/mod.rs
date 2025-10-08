@@ -15,7 +15,4 @@ pub use formatting::*;
 use help::*;
 use start::*;
 use teapot::*;
-use thesaurus_lookup::*;
 use unknown::*;
-use urban_lookup::*;
-use wordle::*;
