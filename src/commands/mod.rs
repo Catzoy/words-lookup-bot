@@ -19,5 +19,4 @@ use teapot::*;
 use thesaurus_lookup::*;
 use unknown::*;
 use urban_lookup::*;
-use word_lookup::*;
 use wordle::*;

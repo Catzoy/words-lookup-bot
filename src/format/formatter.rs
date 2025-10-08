@@ -5,10 +5,12 @@ use crate::stands4::{
 };
 use crate::urban::UrbanDefinition;
 use regex::Regex;
+use std::fmt::Debug;
 use std::ops::Index;
 use std::sync::LazyLock;
 
 pub trait LookupFormatter<T> {
+    type Error: Debug;
     fn link_provider(&self) -> &LinksProvider;
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
@@ -22,7 +24,7 @@ pub trait LookupFormatter<T> {
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition);
     fn append_title(&mut self, title: String);
     fn append_link(&mut self, link: String);
-    fn build(self) -> T;
+    fn build(self) -> Result<T, Self::Error>;
 }
 
 pub trait ToEscaped {
@@ -45,7 +47,7 @@ where
     fn to_escaped(&self) -> Self {
         match self {
             None => None,
-            Some(it) => Some(it.to_escaped())
+            Some(it) => Some(it.to_escaped()),
         }
     }
 }
@@ -86,7 +88,7 @@ pub fn compose_word_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,
     defs: &Vec<WordDefinition>,
-) -> R {
+) -> Result<R, Formatter::Error> {
     formatter.append_title(format!("Found {} definitions", defs.len()));
 
     for (i, def) in defs.iter().take(5).enumerate() {
@@ -102,7 +104,7 @@ pub fn compose_urban_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,
     defs: &Vec<UrbanDefinition>,
-) -> R {
+) -> Result<R, Formatter::Error> {
     formatter.append_title(format!(
         "Found {} definitions from Urban Dictionary",
         defs.len()
@@ -121,7 +123,7 @@ pub fn compose_abbr_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     word: &str,
     defs: &Vec<AbbreviationDefinition>,
-) -> R {
+) -> Result<R, Formatter::Error> {
     formatter.append_title(format!("Found {} definitions", defs.len()));
 
     let categorized = defs.categorized();
@@ -139,7 +141,7 @@ pub fn compose_words_with_abbrs<R, Formatter: LookupFormatter<R>>(
     word: &str,
     words: &Vec<WordDefinition>,
     abbrs: &Vec<AbbreviationDefinition>,
-) -> R {
+) -> Result<R, Formatter::Error> {
     formatter.append_title(format!("Found {} definitions", words.len()));
 
     for (i, def) in words.iter().take(5).enumerate() {
@@ -166,7 +168,7 @@ pub fn compose_phrase_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     phrase: &str,
     defs: &Vec<PhraseDefinition>,
-) -> R {
+) -> Result<R, Formatter::Error> {
     formatter.append_title(format!("Found {} definitions", defs.len()));
 
     for (i, def) in defs.iter().take(5).enumerate() {
@@ -183,7 +185,7 @@ pub fn compose_syn_ant_defs<R, Formatter: LookupFormatter<R>>(
     mut formatter: Formatter,
     term: &str,
     defs: &Vec<SynAntDefinitions>,
-) -> R {
+) -> Result<R, Formatter::Error> {
     formatter.append_title(format!(
         "Found {} different definitions with respective information",
         defs.len()

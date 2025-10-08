@@ -1,6 +1,7 @@
+use crate::bloc::common::Lookup;
+use crate::commands::word_lookup::MessageWordLookup;
 use crate::commands::{
-    help, phrase_lookup, start, teapot, thesaurus_lookup, unknown, urban_lookup, word_lookup,
-    wordle_lookup,
+    help, phrase_lookup, start, teapot, thesaurus_lookup, unknown, urban_lookup, wordle_lookup,
 };
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
@@ -99,7 +100,7 @@ pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescript
     Update::filter_message()
         .map(extract_command)
         .branch(wordle_lookup())
-        .branch(word_lookup())
+        .branch(MessageWordLookup::handler())
         .branch(phrase_lookup())
         .branch(urban_lookup())
         .branch(thesaurus_lookup())

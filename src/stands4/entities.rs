@@ -41,7 +41,7 @@ impl ToEscaped for PhraseDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AbbreviationDefinition {
     pub(crate) definition: String,
     pub(crate) category: String,

@@ -13,4 +13,3 @@ use phrase_lookup::*;
 use suggestions::*;
 use thesaurus_lookup::*;
 use urban_lookup::*;
-use word_lookup::*;

@@ -20,9 +20,8 @@ pub struct InlineFormatter {
     link_provider: LinksProvider,
 }
 
-impl LookupFormatter<Result<Vec<InlineQueryResult>, std::string::FromUtf8Error>>
-for InlineFormatter
-{
+impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
+    type Error = std::string::FromUtf8Error;
     fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
     }
@@ -120,12 +119,15 @@ for InlineFormatter
     }
 
     fn build(self) -> Result<Vec<InlineQueryResult>, std::string::FromUtf8Error> {
-        self.answers.iter().enumerate().try_fold(Vec::new(), |mut acc, (i, answer)| {
-            let full_text = compose_inline_answer(answer)?;
-            let article = compose_inline_result(i, answer, full_text);
-            acc.push(article);
-            Ok(acc)
-        })
+        self.answers
+            .iter()
+            .enumerate()
+            .try_fold(Vec::new(), |mut acc, (i, answer)| {
+                let full_text = compose_inline_answer(answer)?;
+                let article = compose_inline_result(i, answer, full_text);
+                acc.push(article);
+                Ok(acc)
+            })
     }
 }
 
@@ -142,8 +144,7 @@ fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::F
 }
 
 fn compose_inline_result(i: usize, answer: &InlineAnswer, full_text: String) -> InlineQueryResult {
-    let content = InputMessageContentText::new(&full_text)
-        .parse_mode(ParseMode::MarkdownV2);
+    let content = InputMessageContentText::new(&full_text).parse_mode(ParseMode::MarkdownV2);
     let content = InputMessageContent::Text(content);
     let id = format!("answer-{}", i);
     let article = InlineQueryResultArticle::new(id, &answer.title, content)

@@ -1,35 +1,28 @@
-use crate::{
-    format::compose_word_with_abbrs_determined,
-    inlines::{drop_empty, formatting::InlineFormatter, InlineHandler, QueryCommands},
-    stands4::Stands4Client,
-};
-use teloxide::{
-    prelude::{InlineQuery, Requester},
-    Bot,
-};
+use crate::bloc::common::{InlineLookup, Lookup};
+use crate::bloc::word_lookup::WordLookup;
+use crate::commands::{drop_empty, CommandHandler};
+use crate::inlines::{formatting::InlineFormatter, QueryCommands};
+use shuttle_runtime::async_trait;
+use teloxide::prelude::InlineQuery;
+use teloxide::types::InlineQueryResult;
 
-async fn word_lookup_handler(
-    bot: Bot,
-    query: InlineQuery,
-    stands4_client: Stands4Client,
-    word: String,
-) -> anyhow::Result<()> {
-    log::info!("Looking up word {}", word);
+#[derive(Debug, Clone)]
+pub struct InlinesWordLookup;
 
-    let results = futures::future::join(
-        stands4_client.search_word(&word),
-        stands4_client.search_abbreviation(&word),
-    )
-    .await;
-
-    let formatter = InlineFormatter::default();
-    let msg = compose_word_with_abbrs_determined(formatter, &word, &results, || vec![])?;
-
-    bot.answer_inline_query(query.id, msg).await?;
-    Ok(())
+#[async_trait]
+impl WordLookup for InlinesWordLookup {
+    type Formatter = InlineFormatter;
 }
-pub fn word_lookup() -> InlineHandler {
-    teloxide::dptree::case![QueryCommands::WordLookup(word)]
-        .filter_async(drop_empty)
-        .endpoint(word_lookup_handler)
+
+impl Lookup for InlinesWordLookup {
+    type Request = InlineQuery;
+    type Response = Vec<InlineQueryResult>;
+
+    fn handler() -> CommandHandler {
+        teloxide::dptree::case![QueryCommands::WordLookup(args)]
+            .filter_async(drop_empty)
+            .map_async(Self::get_definitions)
+            .map(Self::compose_response)
+            .endpoint(Self::respond_inline)
+    }
 }
