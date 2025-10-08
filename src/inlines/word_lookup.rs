@@ -1,7 +1,6 @@
 use crate::bloc::common::{HandlerOwner, InlineLookup, Lookup};
 use crate::bloc::word_lookup::WordLookup;
-use crate::commands::CommandHandler;
-use crate::inlines::{formatting::InlineFormatter, QueryCommands};
+use crate::inlines::{formatting::InlineFormatter, InlineHandler, QueryCommands};
 use crate::stands4::{AbbreviationDefinition, WordDefinition};
 use shuttle_runtime::async_trait;
 use teloxide::prelude::InlineQuery;
@@ -22,7 +21,7 @@ impl Lookup for InlinesWordLookup {
 }
 
 impl HandlerOwner for InlinesWordLookup {
-    fn handler() -> CommandHandler {
+    fn handler() -> InlineHandler {
         teloxide::dptree::case![QueryCommands::WordLookup(args)]
             .filter_async(crate::inlines::drop_empty)
             .map_async(Self::get_definitions)

@@ -1,7 +1,6 @@
 use crate::bloc::common::{HandlerOwner, InlineLookup, Lookup};
 use crate::bloc::urban_lookup::UrbanLookup;
-use crate::commands::CommandHandler;
-use crate::inlines::{formatting::InlineFormatter, QueryCommands};
+use crate::inlines::{formatting::InlineFormatter, InlineHandler, QueryCommands};
 use crate::urban::UrbanDefinition;
 use teloxide::prelude::InlineQuery;
 use teloxide::types::InlineQueryResult;
@@ -18,7 +17,7 @@ impl Lookup for InlineUrbanLookup {
 }
 
 impl HandlerOwner for InlineUrbanLookup {
-    fn handler() -> CommandHandler {
+    fn handler() -> InlineHandler {
         teloxide::dptree::case![QueryCommands::UrbanLookup(args)]
             .filter_async(crate::inlines::drop_empty)
             .map_async(Self::get_definitions)

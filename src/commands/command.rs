@@ -1,10 +1,13 @@
 use crate::bloc::common::HandlerOwner;
+use crate::commands::help::HelpOwner;
 use crate::commands::phrase_lookup::MessagePhraseLookup;
+use crate::commands::start::StartOwner;
+use crate::commands::teapot::TeapotOwner;
 use crate::commands::thesaurus_lookup::MessageThesaurusLookup;
+use crate::commands::unknown::UnknownOwner;
 use crate::commands::urban_lookup::MessageUrbanLookup;
 use crate::commands::word_lookup::MessageWordLookup;
 use crate::commands::wordle::MessageWordleLookup;
-use crate::commands::{help, start, teapot, unknown};
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
 use teloxide::payloads::SendMessageSetters;
@@ -106,10 +109,10 @@ pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescript
         .branch(MessagePhraseLookup::handler())
         .branch(MessageUrbanLookup::handler())
         .branch(MessageThesaurusLookup::handler())
-        .branch(help())
-        .branch(unknown())
-        .branch(start())
-        .branch(teapot())
+        .branch(HelpOwner::handler())
+        .branch(UnknownOwner::handler())
+        .branch(StartOwner::handler())
+        .branch(TeapotOwner::handler())
 }
 
 pub trait BotExt {

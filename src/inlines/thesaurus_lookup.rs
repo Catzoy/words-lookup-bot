@@ -1,8 +1,7 @@
 use crate::bloc::common::{HandlerOwner, InlineLookup, Lookup};
 use crate::bloc::thesaurus_lookup::ThesaurusLookup;
-use crate::commands::CommandHandler;
 use crate::inlines::formatting::InlineFormatter;
-use crate::inlines::QueryCommands;
+use crate::inlines::{InlineHandler, QueryCommands};
 use crate::stands4::SynAntDefinitions;
 use teloxide::types::{InlineQuery, InlineQueryResult};
 
@@ -19,7 +18,7 @@ impl Lookup for InlineThesaurusLookup {
 }
 
 impl HandlerOwner for InlineThesaurusLookup {
-    fn handler() -> CommandHandler {
+    fn handler() -> InlineHandler {
         teloxide::dptree::case![QueryCommands::ThesaurusLookup(args)]
             .filter_async(crate::inlines::drop_empty)
             .map_async(Self::get_definitions)
