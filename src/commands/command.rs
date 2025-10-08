@@ -1,4 +1,4 @@
-use crate::bloc::common::Lookup;
+use crate::bloc::common::HandlerOwner;
 use crate::commands::phrase_lookup::MessagePhraseLookup;
 use crate::commands::thesaurus_lookup::MessageThesaurusLookup;
 use crate::commands::urban_lookup::MessageUrbanLookup;

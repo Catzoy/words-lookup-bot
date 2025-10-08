@@ -1,4 +1,4 @@
-use crate::bloc::common::{Lookup, MessageLookup};
+use crate::bloc::common::{HandlerOwner, Lookup, MessageLookup};
 use crate::bloc::word_lookup::WordLookup;
 use crate::commands::{drop_empty, CommandHandler, FullMessageFormatter, MessageCommands};
 use crate::stands4::{AbbreviationDefinition, WordDefinition};
@@ -20,7 +20,9 @@ impl Lookup for MessageWordLookup {
     type Request = Message;
     type Entity = (Vec<WordDefinition>, Vec<AbbreviationDefinition>);
     type Response = String;
+}
 
+impl HandlerOwner for MessageWordLookup {
     fn handler() -> CommandHandler {
         teloxide::dptree::case![MessageCommands::WordLookup(args)]
             .filter_async(drop_empty)

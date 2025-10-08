@@ -1,4 +1,4 @@
-use crate::bloc::common::{Lookup, MessageLookup};
+use crate::bloc::common::{HandlerOwner, Lookup, MessageLookup};
 use crate::bloc::urban_lookup::UrbanLookup;
 use crate::commands::{drop_empty, CommandHandler, FullMessageFormatter, MessageCommands};
 use crate::urban::UrbanDefinition;
@@ -15,7 +15,8 @@ impl Lookup for MessageUrbanLookup {
     type Request = Message;
     type Entity = Vec<UrbanDefinition>;
     type Response = String;
-
+}
+impl HandlerOwner for MessageUrbanLookup {
     fn handler() -> CommandHandler {
         teloxide::dptree::case![MessageCommands::Urban(term)]
             .filter_async(drop_empty)

@@ -1,4 +1,4 @@
-use crate::bloc::common::{Lookup, LookupError, MessageLookup};
+use crate::bloc::common::{HandlerOwner, Lookup, LookupError, MessageLookup};
 use crate::wordle::WordleDayAnswer;
 use crate::{
     commands::{CommandHandler, FullMessageFormatter, MessageCommands},
@@ -45,11 +45,14 @@ impl MessageWordleLookup {
         })
     }
 }
+
 impl Lookup for MessageWordleLookup {
     type Request = Message;
     type Entity = WordleDayAnswer;
     type Response = String;
+}
 
+impl HandlerOwner for MessageWordleLookup {
     fn handler() -> CommandHandler {
         teloxide::dptree::case![MessageCommands::Wordle]
             .map_async(Self::ensure_wordle_answer)

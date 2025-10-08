@@ -1,4 +1,4 @@
-use crate::bloc::common::{InlineLookup, Lookup};
+use crate::bloc::common::{HandlerOwner, InlineLookup, Lookup};
 use crate::bloc::phrase_lookup::PhraseLookup;
 use crate::commands::CommandHandler;
 use crate::inlines::{formatting::InlineFormatter, QueryCommands};
@@ -17,7 +17,9 @@ impl Lookup for InlinePhraseLookup {
     type Request = InlineQuery;
     type Entity = Vec<PhraseDefinition>;
     type Response = Vec<InlineQueryResult>;
+}
 
+impl HandlerOwner for InlinePhraseLookup {
     fn handler() -> CommandHandler {
         teloxide::dptree::case![QueryCommands::PhraseLookup(phrase)]
             .filter_async(crate::inlines::drop_empty)

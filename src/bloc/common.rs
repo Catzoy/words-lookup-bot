@@ -27,14 +27,15 @@ impl BotExt for Bot {
         Ok(())
     }
 }
+pub trait HandlerOwner {
+    fn handler() -> CommandHandler;
+}
 
 #[async_trait]
-pub trait Lookup: Clone {
+pub trait Lookup: HandlerOwner + Clone {
     type Request: Clone + Send + Sync;
     type Entity: Clone + Send + Sync;
     type Response: Clone + Send + Sync + Default;
-
-    fn handler() -> CommandHandler;
 }
 
 pub trait MessageLookup<Entity> {

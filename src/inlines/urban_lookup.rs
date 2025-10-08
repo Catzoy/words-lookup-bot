@@ -1,4 +1,4 @@
-use crate::bloc::common::{InlineLookup, Lookup};
+use crate::bloc::common::{HandlerOwner, InlineLookup, Lookup};
 use crate::bloc::urban_lookup::UrbanLookup;
 use crate::commands::CommandHandler;
 use crate::inlines::{formatting::InlineFormatter, QueryCommands};
@@ -15,7 +15,9 @@ impl Lookup for InlineUrbanLookup {
     type Request = InlineQuery;
     type Entity = Vec<UrbanDefinition>;
     type Response = Vec<InlineQueryResult>;
+}
 
+impl HandlerOwner for InlineUrbanLookup {
     fn handler() -> CommandHandler {
         teloxide::dptree::case![QueryCommands::UrbanLookup(args)]
             .filter_async(crate::inlines::drop_empty)
