@@ -13,8 +13,11 @@ use teloxide::{
 #[derive(Clone, Debug)]
 pub struct MessageWordleLookup;
 impl MessageWordleLookup {
-    async fn ensure_wordle_answer(mut cache: WordleCache) -> anyhow::Result<WordleDayAnswer> {
-        cache.require_fresh_answer().await
+    async fn ensure_wordle_answer(mut cache: WordleCache) -> Result<WordleDayAnswer, LookupError> {
+        cache.require_fresh_answer().await.map_err(|e| {
+            log::error!("Couldn't retrieve wordle answer: {:?}", e);
+            LookupError::FailedRequest
+        })
     }
     async fn retrieve_or_failed_cache(
         bot: Bot,
@@ -44,6 +47,7 @@ impl MessageWordleLookup {
 }
 impl Lookup for MessageWordleLookup {
     type Request = Message;
+    type Entity = WordleDayAnswer;
     type Response = String;
 
     fn handler() -> CommandHandler {

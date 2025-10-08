@@ -9,10 +9,7 @@ use shuttle_runtime::async_trait;
 #[async_trait]
 pub trait WordLookup: Lookup {
     type Formatter: LookupFormatter<Self::Response> + Default;
-    fn on_empty(&self) -> Self::Response {
-        Default::default()
-    }
-    fn formatter(&self) -> Self::Formatter {
+    fn on_empty() -> Self::Response {
         Default::default()
     }
 
@@ -34,13 +31,12 @@ pub trait WordLookup: Lookup {
     }
 
     fn compose_response(
-        self,
         word: String,
         (words, abbrs): (Vec<WordDefinition>, Vec<AbbreviationDefinition>),
     ) -> Result<Self::Response, LookupError> {
-        let formatter = self.formatter();
+        let formatter = Self::Formatter::default();
         let text = match (words.len(), abbrs.len()) {
-            (0, 0) => Ok(self.on_empty()),
+            (0, 0) => Ok(Self::on_empty()),
             (0, _) => compose_abbr_defs(formatter, &word, &abbrs),
             (_, 0) => compose_word_defs(formatter, &word, &words),
             (_, _) => compose_words_with_abbrs(formatter, &word, &words, &abbrs),

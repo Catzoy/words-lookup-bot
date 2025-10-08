@@ -10,12 +10,14 @@ pub trait ThesaurusLookup: Lookup {
     async fn get_definitions(
         client: Stands4Client,
         term: String,
-    ) -> anyhow::Result<Vec<SynAntDefinitions>> {
-        client.search_syn_ant(&term).await
+    ) -> Result<Vec<SynAntDefinitions>, LookupError> {
+        client.search_syn_ant(&term).await.map_err(|e| {
+            log::error!("term lookup error: {:?}", e);
+            LookupError::FailedRequest
+        })
     }
 
     fn compose_response(
-        self,
         term: String,
         defs: Vec<SynAntDefinitions>,
     ) -> Result<Self::Response, LookupError> {

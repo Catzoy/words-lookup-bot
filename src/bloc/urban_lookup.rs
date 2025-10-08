@@ -8,12 +8,14 @@ pub trait UrbanLookup: Lookup {
     async fn get_definitions(
         client: UrbanDictionaryClient,
         term: String,
-    ) -> anyhow::Result<Vec<UrbanDefinition>> {
-        client.search_term(&term).await
+    ) -> Result<Vec<UrbanDefinition>, LookupError> {
+        client.search_term(&term).await.map_err(|e| {
+            log::error!("term lookup error: {:?}", e);
+            LookupError::FailedRequest
+        })
     }
 
     fn compose_response(
-        self,
         term: String,
         defs: Vec<UrbanDefinition>,
     ) -> Result<Self::Response, LookupError> {

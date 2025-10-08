@@ -6,23 +6,22 @@ use shuttle_runtime::async_trait;
 #[async_trait]
 pub trait PhraseLookup: Lookup {
     type Formatter: LookupFormatter<Self::Response> + Default;
-    fn formatter(&self) -> Self::Formatter {
-        Default::default()
-    }
 
     async fn get_definitions(
         client: Stands4Client,
         phrase: String,
-    ) -> anyhow::Result<Vec<PhraseDefinition>> {
-        client.search_phrase(phrase.as_str()).await
+    ) -> Result<Vec<PhraseDefinition>, LookupError> {
+        client.search_phrase(phrase.as_str()).await.map_err(|e| {
+            log::error!("phrase search error: {:?}", e);
+            LookupError::FailedRequest
+        })
     }
 
     fn compose_response(
-        self,
         phrase: String,
         defs: Vec<PhraseDefinition>,
     ) -> Result<Self::Response, LookupError> {
-        let formatter = self.formatter();
+        let formatter = Self::Formatter::default();
         compose_phrase_defs(formatter, phrase.as_str(), &defs).map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder

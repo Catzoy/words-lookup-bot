@@ -9,6 +9,7 @@ use teloxide::Bot;
 #[derive(Debug, Clone)]
 pub enum LookupError {
     FailedResponseBuilder,
+    FailedRequest,
 }
 #[async_trait]
 pub trait BotExt {
@@ -30,24 +31,32 @@ impl BotExt for Bot {
 #[async_trait]
 pub trait Lookup: Clone {
     type Request: Clone + Send + Sync;
+    type Entity: Clone + Send + Sync;
     type Response: Clone + Send + Sync + Default;
 
     fn handler() -> CommandHandler;
 }
 
-pub trait MessageLookup {
+pub trait MessageLookup<Entity> {
     async fn retrieve_or_generic_err(
         bot: Bot,
         message: Message,
         response: Result<String, LookupError>,
     ) -> Option<String>;
 
+    async fn ensure_request_success(
+        bot: Bot,
+        message: Message,
+        response: Result<Entity, LookupError>,
+    ) -> Option<Entity>;
+
     async fn respond_message(bot: Bot, message: Message, response: String) -> anyhow::Result<()>;
 }
 
-impl<T> MessageLookup for T
+impl<E, T> MessageLookup<E> for T
 where
-    T: Lookup<Request = Message, Response = String>,
+    E: Clone + Send + Sync,
+    T: Lookup<Request = Message, Entity = E, Response = String>,
 {
     async fn retrieve_or_generic_err(
         bot: Bot,
@@ -64,6 +73,23 @@ where
             }
         }
     }
+    async fn ensure_request_success(
+        bot: Bot,
+        message: Message,
+        response: Result<E, LookupError>,
+    ) -> Option<E> {
+        match response {
+            Ok(values) => Some(values),
+            Err(_) => {
+                let text = "Something went wrong, please try again later";
+                let resp = bot.send_message(message.chat.id, text).await;
+                if let Err(e) = resp {
+                    log::error!("Couldn't send error-response: {:?}", e);
+                }
+                None
+            }
+        }
+    }
 
     async fn respond_message(bot: Bot, message: Message, response: String) -> anyhow::Result<()> {
         bot.send_message(message.chat.id, response)
@@ -73,7 +99,16 @@ where
     }
 }
 
-pub trait InlineLookup {
+pub trait InlineLookup<Entity> {
+    async fn ensure_query_success(
+        bot: Bot,
+        query: InlineQuery,
+        result: Result<Entity, LookupError>,
+    ) -> Option<Entity>;
+    fn ensure_built_response(
+        result: Result<Vec<InlineQueryResult>, LookupError>,
+    ) -> Option<Vec<InlineQueryResult>>;
+
     async fn respond_inline(
         bot: Bot,
         query: InlineQuery,
@@ -81,10 +116,32 @@ pub trait InlineLookup {
     ) -> anyhow::Result<()>;
 }
 
-impl<T> InlineLookup for T
+impl<Entity, T> InlineLookup<Entity> for T
 where
-    T: Lookup<Request = InlineQuery, Response = Vec<InlineQueryResult>>,
+    Entity: Clone + Send + Sync,
+    T: Lookup<Request = InlineQuery, Entity = Entity, Response = Vec<InlineQueryResult>>,
 {
+    async fn ensure_query_success(
+        bot: Bot,
+        query: InlineQuery,
+        result: Result<Entity, LookupError>,
+    ) -> Option<Entity> {
+        match result {
+            Ok(values) => Some(values),
+            Err(_) => {
+                let result = bot.answer_inline_query(query.id, vec![]).await;
+                if let Err(e) = result {
+                    log::error!("Failed to send no results: {:?}", e);
+                }
+                None
+            }
+        }
+    }
+    fn ensure_built_response(
+        result: Result<Vec<InlineQueryResult>, LookupError>,
+    ) -> Option<Vec<InlineQueryResult>> {
+        result.ok()
+    }
     async fn respond_inline(
         bot: Bot,
         query: InlineQuery,

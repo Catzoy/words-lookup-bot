@@ -1,7 +1,8 @@
 use crate::bloc::common::{InlineLookup, Lookup};
 use crate::bloc::phrase_lookup::PhraseLookup;
 use crate::commands::CommandHandler;
-use crate::inlines::{formatting::InlineFormatter, inlines::drop_empty, QueryCommands};
+use crate::inlines::{formatting::InlineFormatter, QueryCommands};
+use crate::stands4::PhraseDefinition;
 use teloxide::prelude::InlineQuery;
 use teloxide::types::InlineQueryResult;
 
@@ -14,13 +15,16 @@ impl PhraseLookup for InlinePhraseLookup {
 
 impl Lookup for InlinePhraseLookup {
     type Request = InlineQuery;
+    type Entity = Vec<PhraseDefinition>;
     type Response = Vec<InlineQueryResult>;
 
     fn handler() -> CommandHandler {
         teloxide::dptree::case![QueryCommands::PhraseLookup(phrase)]
-            .filter_async(drop_empty)
+            .filter_async(crate::inlines::drop_empty)
             .map_async(Self::get_definitions)
+            .filter_map_async(Self::ensure_query_success)
             .map(Self::compose_response)
+            .filter_map(Self::ensure_built_response)
             .endpoint(Self::respond_inline)
     }
 }
