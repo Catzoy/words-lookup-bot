@@ -1,41 +1,24 @@
-use crate::{
-    commands::{drop_empty, BotExt, CommandHandler, FullMessageFormatter, MessageCommands},
-    format::compose_phrase_defs,
-    stands4::client::Stands4Client,
-};
-use teloxide::{
-    payloads::SendMessageSetters,
-    prelude::{Message, Requester},
-    types::ParseMode,
-    Bot,
-};
+use crate::bloc::common::{Lookup, MessageLookup};
+use crate::bloc::phrase_lookup::PhraseLookup;
+use crate::commands::{drop_empty, CommandHandler, FullMessageFormatter, MessageCommands};
+use teloxide::prelude::Message;
 
-async fn phrase_lookup_handler(
-    bot: Bot,
-    message: Message,
-    stands4_client: Stands4Client,
-    phrase: String,
-) -> anyhow::Result<()> {
-    log::info!("Looking up phrase {}", phrase);
+#[derive(Clone, Debug)]
+pub struct MessagePhraseLookup;
 
-    let defs = stands4_client.search_phrase(&phrase).await?;
-    let formatter = FullMessageFormatter::default();
-    let msg = compose_phrase_defs(formatter, &phrase, &defs)?;
-    bot.send_message(message.chat.id, msg)
-        .parse_mode(ParseMode::MarkdownV2)
-        .await?;
-    Ok(())
+impl PhraseLookup for MessagePhraseLookup {
+    type Formatter = FullMessageFormatter;
 }
+impl Lookup for MessagePhraseLookup {
+    type Request = Message;
+    type Response = String;
 
-pub fn phrase_lookup() -> CommandHandler {
-    teloxide::dptree::case![MessageCommands::PhraseLookup(args)]
-        .filter_async(drop_empty)
-        .endpoint(
-            |bot: Bot, message: Message, stands4client: Stands4Client, phrase: String| async move {
-                bot.with_err_response(message, move |bot, message| async {
-                    phrase_lookup_handler(bot, message, stands4client, phrase).await
-                })
-                .await
-            },
-        )
+    fn handler() -> CommandHandler {
+        teloxide::dptree::case![MessageCommands::PhraseLookup(args)]
+            .filter_async(drop_empty)
+            .map_async(Self::get_definitions)
+            .map(Self::compose_response)
+            .filter_map_async(Self::retrieve_or_generic_err)
+            .endpoint(Self::respond_message)
+    }
 }

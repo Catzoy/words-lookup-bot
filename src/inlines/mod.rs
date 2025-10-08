@@ -9,7 +9,6 @@ mod word_lookup;
 
 pub use debouncer::*;
 pub use inlines::*;
-use phrase_lookup::*;
 use suggestions::*;
 use thesaurus_lookup::*;
 use urban_lookup::*;

@@ -24,7 +24,7 @@ impl ToEscaped for WordDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PhraseDefinition {
     pub(crate) term: String,
     pub(crate) example: String,

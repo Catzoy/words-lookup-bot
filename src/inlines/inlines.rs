@@ -1,7 +1,8 @@
 use crate::bloc::common::Lookup;
+use crate::inlines::phrase_lookup::InlinePhraseLookup;
 use crate::inlines::word_lookup::InlinesWordLookup;
 use crate::inlines::{
-    debounce_inline_queries, phrase_lookup, suggestions, thesaurus_lookup, urban_lookup,
+    debounce_inline_queries, suggestions, thesaurus_lookup, urban_lookup,
 };
 use regex::Regex;
 use std::sync::LazyLock;
@@ -69,7 +70,7 @@ pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescripti
         .filter_async(debounce_inline_queries)
         .branch(suggestions())
         .branch(InlinesWordLookup::handler())
-        .branch(phrase_lookup())
+        .branch(InlinePhraseLookup::handler())
         .branch(urban_lookup())
         .branch(thesaurus_lookup())
 }
