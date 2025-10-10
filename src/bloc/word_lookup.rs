@@ -36,7 +36,7 @@ pub trait WordLookup: Lookup {
         let text = match (words.len(), abbrs.len()) {
             (0, 0) => Ok(Self::on_empty()),
             (0, _) => formatter.compose_word_defs(&word, &words),
-            (_, 0) => formatter.compose_word_defs(&word, &words),
+            (_, 0) => formatter.compose_abbr_defs(&word, &abbrs),
             (_, _) => formatter.compose_words_with_abbrs(&word, &words, &abbrs),
         };
         text.map_err(|err| {
