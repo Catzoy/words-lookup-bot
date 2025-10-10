@@ -19,14 +19,7 @@ impl WordleCache {
         }
     }
 
-    pub async fn with_answer<T>(&self, mapper: fn(&WordleDayAnswer) -> T) -> anyhow::Result<T> {
-        match self.latest.lock().await.as_ref() {
-            Some(value) => Ok(mapper(value)),
-            None => anyhow::bail!("Cache doesn't contain an answer to the wordle!"),
-        }
-    }
-
-    pub async fn require_fresh_answer(&mut self) -> anyhow::Result<()> {
+    pub async fn require_fresh_answer(&mut self) -> anyhow::Result<WordleDayAnswer> {
         let today = chrono::Utc::now();
         let mut latest = self.latest.lock().await;
         if let Some(latest) = latest.as_ref() {
@@ -34,14 +27,20 @@ impl WordleCache {
             let known = latest.day.format("%Y-%m-%d").to_string();
             if today == known {
                 log::info!("Wordle cache hit!");
-                return Ok(());
+                return Ok(latest.clone());
             }
         }
         log::info!("Wordle cache miss!");
 
         let newest = self.wordle_client.get_word(&today).await?;
         let definitions = self.stands4_client.search_word(&newest.solution).await?;
-        latest.replace(WordleDayAnswer { day: today, answer: newest, definitions });
-        Ok(())
+        let answer = WordleDayAnswer {
+            day: today,
+            answer: newest,
+            definitions,
+        };
+        let clone = answer.clone();
+        latest.replace(answer);
+        Ok(clone)
     }
 }

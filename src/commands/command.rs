@@ -1,7 +1,13 @@
-use crate::commands::{
-    help, phrase_lookup, start, teapot, thesaurus_lookup, unknown, urban_lookup, word_lookup,
-    wordle_lookup,
-};
+use crate::bloc::common::HandlerOwner;
+use crate::commands::help::HelpOwner;
+use crate::commands::phrase_lookup::MessagePhraseLookup;
+use crate::commands::start::StartOwner;
+use crate::commands::teapot::TeapotOwner;
+use crate::commands::thesaurus_lookup::MessageThesaurusLookup;
+use crate::commands::unknown::UnknownOwner;
+use crate::commands::urban_lookup::MessageUrbanLookup;
+use crate::commands::word_lookup::MessageWordLookup;
+use crate::commands::wordle::MessageWordleLookup;
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
 use teloxide::payloads::SendMessageSetters;
@@ -98,44 +104,13 @@ pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescrip
 pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_message()
         .map(extract_command)
-        .branch(wordle_lookup())
-        .branch(word_lookup())
-        .branch(phrase_lookup())
-        .branch(urban_lookup())
-        .branch(thesaurus_lookup())
-        .branch(help())
-        .branch(unknown())
-        .branch(start())
-        .branch(teapot())
-}
-
-pub trait BotExt {
-    async fn with_err_response(
-        &self,
-        message: Message,
-        handle: impl AsyncFnOnce(Bot, Message) -> anyhow::Result<()>,
-    ) -> anyhow::Result<()>;
-}
-impl BotExt for Bot {
-    async fn with_err_response(
-        &self,
-        message: Message,
-        handle: impl AsyncFnOnce(Bot, Message) -> anyhow::Result<()>,
-    ) -> anyhow::Result<()> {
-        let chat_id = message.chat.id;
-        if let Err(err) = handle(self.clone(), message.clone()).await {
-            let send_res = self
-                .send_message(
-                    chat_id,
-                    "There was an error processing your query, try again later, sorry.",
-                )
-                .await;
-            if let Err(err) = send_res {
-                log::error!("Couldn't send error-response: {}", err);
-            }
-            Err(err)
-        } else {
-            Ok(())
-        }
-    }
+        .branch(MessageWordleLookup::handler())
+        .branch(MessageWordLookup::handler())
+        .branch(MessagePhraseLookup::handler())
+        .branch(MessageUrbanLookup::handler())
+        .branch(MessageThesaurusLookup::handler())
+        .branch(HelpOwner::handler())
+        .branch(UnknownOwner::handler())
+        .branch(StartOwner::handler())
+        .branch(TeapotOwner::handler())
 }

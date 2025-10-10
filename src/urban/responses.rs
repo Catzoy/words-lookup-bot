@@ -10,7 +10,7 @@ pub struct UrbanResponse {
     pub message: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UrbanDefinition {
     pub word: String,

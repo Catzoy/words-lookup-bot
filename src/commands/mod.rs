@@ -12,12 +12,3 @@ mod wordle;
 
 pub use command::*;
 pub use formatting::*;
-use help::*;
-use phrase_lookup::*;
-use start::*;
-use teapot::*;
-use thesaurus_lookup::*;
-use unknown::*;
-use urban_lookup::*;
-use word_lookup::*;
-use wordle::*;

@@ -1,30 +1,29 @@
-use crate::{
-    format::compose_urban_defs,
-    inlines::{drop_empty, formatting::InlineFormatter, InlineHandler, QueryCommands},
-    urban::UrbanDictionaryClient,
-};
-use teloxide::{
-    prelude::{InlineQuery, Requester},
-    Bot,
-};
+use crate::bloc::common::{CommonLookup, HandlerOwner, Lookup};
+use crate::bloc::urban_lookup::UrbanLookup;
+use crate::inlines::{formatting::InlineFormatter, InlineHandler, QueryCommands};
+use crate::urban::UrbanDefinition;
+use teloxide::prelude::InlineQuery;
+use teloxide::types::InlineQueryResult;
 
-async fn urban_lookup_handler(
-    bot: Bot,
-    query: InlineQuery,
-    client: UrbanDictionaryClient,
-    term: String,
-) -> anyhow::Result<()> {
-    log::info!("Looking up word {}", term);
-
-    let defs = client.search_term(&term).await?;
-    let formatter = InlineFormatter::default();
-    let msg = compose_urban_defs(formatter, &term, &defs)?;
-
-    bot.answer_inline_query(query.id, msg).await?;
-    Ok(())
+#[derive(Debug, Clone)]
+pub struct InlineUrbanLookup;
+impl UrbanLookup for InlineUrbanLookup {
+    type Formatter = InlineFormatter;
 }
-pub fn urban_lookup() -> InlineHandler {
-    teloxide::dptree::case![QueryCommands::UrbanLookup(word)]
-        .filter_async(drop_empty)
-        .endpoint(urban_lookup_handler)
+impl Lookup for InlineUrbanLookup {
+    type Request = InlineQuery;
+    type Entity = Vec<UrbanDefinition>;
+    type Response = Vec<InlineQueryResult>;
+}
+
+impl HandlerOwner for InlineUrbanLookup {
+    fn handler() -> InlineHandler {
+        teloxide::dptree::case![QueryCommands::UrbanLookup(args)]
+            .filter_async(crate::inlines::drop_empty)
+            .map_async(Self::get_definitions)
+            .filter_map_async(Self::ensure_request_success)
+            .map(Self::compose_response)
+            .filter_map_async(Self::retrieve_or_generic_err)
+            .endpoint(Self::respond)
+    }
 }

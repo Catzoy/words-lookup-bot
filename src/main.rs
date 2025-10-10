@@ -1,10 +1,11 @@
-mod stands4;
+mod bloc;
 mod commands;
-mod service;
-mod inlines;
 mod format;
-mod wordle;
+mod inlines;
+mod service;
+mod stands4;
 mod urban;
+mod wordle;
 
 use crate::service::TelegramService;
 use anyhow::Context as _;
@@ -24,10 +25,7 @@ async fn telegram(
     let stands4_token = secret_store
         .get("STANDS4_TOKEN")
         .context("STANDS4_TOKEN not found")?;
-    let stands4_client = Stands4Client::new(
-        stands4_user_id,
-        stands4_token,
-    );
+    let stands4_client = Stands4Client::new(stands4_user_id, stands4_token);
 
     let service = TelegramService {
         token,

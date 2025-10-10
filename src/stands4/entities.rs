@@ -24,7 +24,7 @@ impl ToEscaped for WordDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PhraseDefinition {
     pub(crate) term: String,
     pub(crate) example: String,
@@ -41,7 +41,7 @@ impl ToEscaped for PhraseDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AbbreviationDefinition {
     pub(crate) definition: String,
     pub(crate) category: String,
@@ -56,7 +56,7 @@ impl ToEscaped for AbbreviationDefinition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SynAntDefinitions {
     pub(crate) term: String,
     pub(crate) definition: String,

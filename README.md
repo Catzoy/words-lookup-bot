@@ -158,22 +158,37 @@ Can look up English words from Stands4 API.
     <tr>
         <td>:x:</td>
         <td>0.8.0</td>
-        <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
+        <td>Refactor commands into common modules</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.9.0</td>
-        <td>Add caching of frequent requests per API route</td>
+        <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.10.0</td>
-        <td>Add single api inline lookups</td>
+        <td>Add caching of frequent requests per API route</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.11.0</td>
+        <td>Add single api inline lookups</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.12.0</td>
         <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.13.0</td>
+        <td>Add renovate bot</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.14.0</td>
+        <td>Add CodeRabbit PR reviews</td>
     </tr>
     <tr>
         <td>...</td>
