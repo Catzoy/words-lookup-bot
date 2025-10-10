@@ -17,7 +17,7 @@ use teloxide::utils::command::BotCommands;
 use teloxide::{prelude::Requester, types::InlineQuery, Bot};
 
 trait SuggestionOwner {
-    fn produce(&self) -> Option<InlineQueryResult>;
+    fn produce(self) -> Option<InlineQueryResult>;
 }
 
 struct HelpSuggestion;
@@ -38,7 +38,7 @@ impl SuggestionOwner for HelpSuggestion {
     /// # Returns
     ///
     /// `Some(InlineQueryResult::Article)` containing the help message.
-    fn produce(&self) -> Option<InlineQueryResult> {
+    fn produce(self) -> Option<InlineQueryResult> {
         let text = "Continue writing to look up a word or a phrase";
         let msg = MessageCommands::descriptions().to_string();
         let msg = InputMessageContentText::new(msg.to_escaped());
@@ -61,7 +61,7 @@ impl SuggestionOwner for UrbanSuggestion {
     /// let res = UrbanSuggestion {}.produce();
     /// assert!(matches!(res, Some(InlineQueryResult::Article(_))));
     /// ```
-    fn produce(&self) -> Option<InlineQueryResult> {
+    fn produce(self) -> Option<InlineQueryResult> {
         let text = "Or write \"u.PHRASE\" to look up in UrbanDictionary";
         let msg = InputMessageContentText::new(
             "Write @WordsLookupBot \"u.PHRASE\" to look up in UrbanDictionary",
@@ -87,7 +87,7 @@ impl SuggestionOwner for ThesaurusSuggestion {
     /// let result = suggestion.produce();
     /// assert!(matches!(result, Some(InlineQueryResult::Article(_))));
     /// ```
-    fn produce(&self) -> Option<InlineQueryResult> {
+    fn produce(self) -> Option<InlineQueryResult> {
         let text = "Or write \"sa.WORD\" to look up synonyms & antonyms";
         let msg = InputMessageContentText::new(
             "Write @WordsLookupBot \"sa.WORD\" to look up synonyms & antonyms in the Thesaurus",
@@ -170,9 +170,8 @@ impl SuggestionOwner for WordleSuggestion {
     /// let suggestion = WordleSuggestion { wordle: None };
     /// assert!(suggestion.produce().is_none());
     /// ```
-    fn produce(&self) -> Option<InlineQueryResult> {
+    fn produce(self) -> Option<InlineQueryResult> {
         self.wordle
-            .clone()
             .and_then(Self::compose_message)
             .map(Self::compose_response)
     }
@@ -232,9 +231,9 @@ impl SuggestionsOwner {
         wordle: Option<WordleDayAnswer>,
     ) -> anyhow::Result<()> {
         let suggestions = vec![
-            HelpSuggestion {}.produce(),
-            UrbanSuggestion {}.produce(),
-            ThesaurusSuggestion {}.produce(),
+            HelpSuggestion.produce(),
+            UrbanSuggestion.produce(),
+            ThesaurusSuggestion.produce(),
             WordleSuggestion { wordle }.produce(),
         ];
         let answers = suggestions.into_iter().flatten().collect::<Vec<_>>();
