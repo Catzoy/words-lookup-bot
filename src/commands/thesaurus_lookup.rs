@@ -1,4 +1,4 @@
-use crate::bloc::common::{HandlerOwner, Lookup, MessageLookup};
+use crate::bloc::common::{CommonLookup, HandlerOwner, Lookup};
 use crate::bloc::thesaurus_lookup::ThesaurusLookup;
 use crate::commands::{drop_empty, CommandHandler, FullMessageFormatter, MessageCommands};
 use crate::stands4::SynAntDefinitions;
@@ -25,6 +25,6 @@ impl HandlerOwner for MessageThesaurusLookup {
             .filter_map_async(Self::ensure_request_success)
             .map(Self::compose_response)
             .filter_map_async(Self::retrieve_or_generic_err)
-            .endpoint(Self::respond_message)
+            .endpoint(Self::respond)
     }
 }

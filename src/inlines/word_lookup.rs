@@ -1,4 +1,4 @@
-use crate::bloc::common::{HandlerOwner, InlineLookup, Lookup};
+use crate::bloc::common::{CommonLookup, HandlerOwner, Lookup};
 use crate::bloc::word_lookup::WordLookup;
 use crate::inlines::{formatting::InlineFormatter, InlineHandler, QueryCommands};
 use crate::stands4::{AbbreviationDefinition, WordDefinition};
@@ -26,7 +26,7 @@ impl HandlerOwner for InlinesWordLookup {
             .filter_async(crate::inlines::drop_empty)
             .map_async(Self::get_definitions)
             .map(Self::compose_response)
-            .filter_map(Self::ensure_built_response)
-            .endpoint(Self::respond_inline)
+            .filter_map_async(Self::retrieve_or_generic_err)
+            .endpoint(Self::respond)
     }
 }

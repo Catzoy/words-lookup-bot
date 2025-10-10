@@ -38,42 +38,27 @@ pub trait Lookup: HandlerOwner + Clone {
     type Response: Clone + Send + Sync + Default;
 }
 
-pub trait MessageLookup<Entity> {
-    async fn retrieve_or_generic_err(
-        bot: Bot,
-        message: Message,
-        response: Result<String, LookupError>,
-    ) -> Option<String>;
-
+pub trait CommonLookup<Request, Entity, Response> {
     async fn ensure_request_success(
         bot: Bot,
-        message: Message,
+        request: Request,
         response: Result<Entity, LookupError>,
     ) -> Option<Entity>;
 
-    async fn respond_message(bot: Bot, message: Message, response: String) -> anyhow::Result<()>;
+    async fn retrieve_or_generic_err(
+        bot: Bot,
+        request: Request,
+        response: Result<Response, LookupError>,
+    ) -> Option<Response>;
+
+    async fn respond(bot: Bot, message: Request, response: Response) -> anyhow::Result<()>;
 }
 
-impl<E, T> MessageLookup<E> for T
+impl<E, T> CommonLookup<Message, E, String> for T
 where
     E: Clone + Send + Sync,
     T: Lookup<Request = Message, Entity = E, Response = String>,
 {
-    async fn retrieve_or_generic_err(
-        bot: Bot,
-        message: Message,
-        response: Result<String, LookupError>,
-    ) -> Option<String> {
-        match response {
-            Ok(value) => Some(value),
-            Err(_) => {
-                bot.respond_generic_err(message)
-                    .await
-                    .expect("Generic response OK");
-                None
-            }
-        }
-    }
     async fn ensure_request_success(
         bot: Bot,
         message: Message,
@@ -91,8 +76,23 @@ where
             }
         }
     }
+    async fn retrieve_or_generic_err(
+        bot: Bot,
+        message: Message,
+        response: Result<String, LookupError>,
+    ) -> Option<String> {
+        match response {
+            Ok(value) => Some(value),
+            Err(_) => {
+                bot.respond_generic_err(message)
+                    .await
+                    .expect("Generic response OK");
+                None
+            }
+        }
+    }
 
-    async fn respond_message(bot: Bot, message: Message, response: String) -> anyhow::Result<()> {
+    async fn respond(bot: Bot, message: Message, response: String) -> anyhow::Result<()> {
         bot.send_message(message.chat.id, response)
             .parse_mode(ParseMode::MarkdownV2)
             .await?;
@@ -100,37 +100,21 @@ where
     }
 }
 
-pub trait InlineLookup<Entity> {
-    async fn ensure_query_success(
-        bot: Bot,
-        query: InlineQuery,
-        result: Result<Entity, LookupError>,
-    ) -> Option<Entity>;
-    fn ensure_built_response(
-        result: Result<Vec<InlineQueryResult>, LookupError>,
-    ) -> Option<Vec<InlineQueryResult>>;
-
-    async fn respond_inline(
-        bot: Bot,
-        query: InlineQuery,
-        response: Vec<InlineQueryResult>,
-    ) -> anyhow::Result<()>;
-}
-
-impl<Entity, T> InlineLookup<Entity> for T
+impl<Entity, T> CommonLookup<InlineQuery, Entity, Vec<InlineQueryResult>> for T
 where
     Entity: Clone + Send + Sync,
     T: Lookup<Request = InlineQuery, Entity = Entity, Response = Vec<InlineQueryResult>>,
 {
-    async fn ensure_query_success(
+    async fn ensure_request_success(
         bot: Bot,
-        query: InlineQuery,
-        result: Result<Entity, LookupError>,
+        request: InlineQuery,
+        response: Result<Entity, LookupError>,
     ) -> Option<Entity> {
-        match result {
+        match response {
             Ok(values) => Some(values),
-            Err(_) => {
-                let result = bot.answer_inline_query(query.id, vec![]).await;
+            Err(err) => {
+                log::error!("Failed to get request: {:?}", err);
+                let result = bot.answer_inline_query(request.id, vec![]).await;
                 if let Err(e) = result {
                     log::error!("Failed to send no results: {:?}", e);
                 }
@@ -138,12 +122,24 @@ where
             }
         }
     }
-    fn ensure_built_response(
-        result: Result<Vec<InlineQueryResult>, LookupError>,
+    async fn retrieve_or_generic_err(
+        bot: Bot,
+        request: InlineQuery,
+        response: Result<Vec<InlineQueryResult>, LookupError>,
     ) -> Option<Vec<InlineQueryResult>> {
-        result.ok()
+        match response {
+            Ok(values) => Some(values),
+            Err(err) => {
+                log::error!("Failed to build response: {:?}", err);
+                let result = bot.answer_inline_query(request.id, vec![]).await;
+                if let Err(e) = result {
+                    log::error!("Failed to respond generic err: {:?}", e);
+                }
+                None
+            }
+        }
     }
-    async fn respond_inline(
+    async fn respond(
         bot: Bot,
         query: InlineQuery,
         response: Vec<InlineQueryResult>,

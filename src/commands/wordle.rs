@@ -1,4 +1,4 @@
-use crate::bloc::common::{HandlerOwner, Lookup, LookupError, MessageLookup};
+use crate::bloc::common::{CommonLookup, HandlerOwner, Lookup, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::wordle::WordleDayAnswer;
 use crate::{
@@ -60,6 +60,6 @@ impl HandlerOwner for MessageWordleLookup {
             .filter_map_async(Self::retrieve_or_failed_cache)
             .map(Self::compose_response)
             .filter_map_async(Self::retrieve_or_generic_err)
-            .endpoint(Self::respond_message)
+            .endpoint(Self::respond)
     }
 }

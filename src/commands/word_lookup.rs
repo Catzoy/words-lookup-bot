@@ -1,4 +1,4 @@
-use crate::bloc::common::{HandlerOwner, Lookup, MessageLookup};
+use crate::bloc::common::{CommonLookup, HandlerOwner, Lookup};
 use crate::bloc::word_lookup::WordLookup;
 use crate::commands::{drop_empty, CommandHandler, FullMessageFormatter, MessageCommands};
 use crate::stands4::{AbbreviationDefinition, WordDefinition};
@@ -29,6 +29,6 @@ impl HandlerOwner for MessageWordLookup {
             .map_async(Self::get_definitions)
             .map(Self::compose_response)
             .filter_map_async(Self::retrieve_or_generic_err)
-            .endpoint(Self::respond_message)
+            .endpoint(Self::respond)
     }
 }
