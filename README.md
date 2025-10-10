@@ -191,6 +191,11 @@ Can look up English words from Stands4 API.
         <td>Refactor suggestions handler as a collected list</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.9.2</td>
+        <td>Fix some formatting on abbreviations</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.10.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>

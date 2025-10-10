@@ -75,13 +75,13 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             if len > 1 {
                 for def in defs.iter().skip(1) {
                     meaning.append(", ");
-                    meaning.append(as_in(&escape(&def.definition)));
+                    meaning.append(escape(&def.definition));
                 }
             }
         }
 
         let answer = InlineAnswer {
-            title: format!("#{} in [{}] stands for: ", i + 1, category),
+            title: format!("#{} in [{}]", i + 1, category),
             meaning: meaning
                 .string()
                 .unwrap_or_else(|_| "Cannot describe, try this word in bot's chat".to_string()),
