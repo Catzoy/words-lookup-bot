@@ -51,7 +51,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             meaning: def.explanation.clone(),
             description: match def.example.is_empty() {
                 true => None,
-                false => Some(def.example.clone()),
+                false => Some(as_in(&escape(&def.example))),
             },
         };
         self.answers.push(answer);
@@ -75,7 +75,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             if len > 1 {
                 for def in defs.iter().skip(1) {
                     meaning.append(", ");
-                    meaning.append(def.definition.as_str());
+                    meaning.append(as_in(&escape(&def.definition)));
                 }
             }
         }
@@ -107,7 +107,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
         let answer = InlineAnswer {
             title: format!("#{} - {}", i + 1, def.word),
             meaning: def.meaning.clone(),
-            description: def.example.clone(),
+            description: def.example.clone().map(|it| as_in(&escape(&it))),
         };
         self.answers.push(answer);
     }
@@ -140,7 +140,7 @@ fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::F
     full_text.append(meaning(&escape(&answer.meaning)));
     if let Some(description) = &answer.description {
         full_text.append("\n");
-        full_text.append(as_in(&escape(&description)));
+        full_text.append(description.as_str());
     }
     full_text.string()
 }

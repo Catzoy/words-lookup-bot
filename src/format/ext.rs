@@ -1,3 +1,5 @@
+use teloxide::utils::markdown::escape;
+
 pub trait StringBuilderExt {
     fn join<T, Action, Separator>(&mut self, arr: &Vec<T>, action: Action, separator: Separator)
     where
@@ -33,7 +35,7 @@ impl StringBuilderExt for string_builder::Builder {
     fn list_words(&mut self, arr: &Vec<String>) {
         self.join(
             arr,
-            |it, word| it.append(format!("`{}`", word)),
+            |it, word| it.append(format!("`{}`", escape(word))),
             |it| it.append(", "),
         )
     }

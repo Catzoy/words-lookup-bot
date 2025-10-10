@@ -14,7 +14,7 @@ where
         let mut cmds: Vec<Box<dyn FnMut(&mut Builder)>> = vec![];
         if !def.synonyms.is_empty() {
             let handler = |builder: &mut Builder| {
-                builder.append("Synonyms: ");
+                builder.append("*Synonyms*: ");
                 builder.list_words(&def.synonyms);
                 builder.append("\n");
             };
@@ -22,7 +22,7 @@ where
         }
         if !def.antonyms.is_empty() {
             let handler = |builder: &mut Builder| {
-                builder.append("Antonyms: ");
+                builder.append("*Antonyms*: ");
                 builder.list_words(&def.antonyms);
                 builder.append("\n");
             };
