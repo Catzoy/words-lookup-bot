@@ -8,7 +8,7 @@ pub trait StringBuilderExt {
 
     fn list_words(&mut self, arr: &Vec<String>);
 
-    fn appendl(&mut self, string: String);
+    fn appendl(&mut self, string: &str);
 }
 
 impl StringBuilderExt for string_builder::Builder {
@@ -40,7 +40,7 @@ impl StringBuilderExt for string_builder::Builder {
         )
     }
 
-    fn appendl(&mut self, string: String) {
+    fn appendl(&mut self, string: &str) {
         self.append(string);
         self.append("\n")
     }
