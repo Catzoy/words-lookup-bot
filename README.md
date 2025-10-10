@@ -156,27 +156,27 @@ Can look up English words from Stands4 API.
         <td>Update inline help, refactor inlines composition</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.8.0</td>
         <td>Refactor commands into common modules</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:bug:</td>
         <td>0.8.1</td>
         <td>Fix inlines formatting</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:bug:</td>
         <td>0.8.2</td>
         <td>Fix synonyms & antonyms formatting</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:bug:</td>
         <td>0.8.3</td>
         <td>Fix abbreviations & syn/ant spacings</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:bug:</td>
         <td>0.8.4</td>
         <td>Fix word search with only def. or abbrs. list</td>
     </tr>
