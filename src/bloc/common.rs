@@ -57,6 +57,7 @@ where
                 let resp = bot.send_message(message.chat.id, text).await;
                 if let Err(e) = resp {
                     log::error!("Couldn't send error-response: {:?}", e);
+                    let _ = bot.respond_generic_err(message).await;
                 }
                 None
             }
@@ -83,7 +84,7 @@ where
             .await;
         if let Err(e) = res {
             log::error!("Couldn't send response: {:?}", e);
-            bot.respond_generic_err(message).await?;
+            let _ = bot.respond_generic_err(message).await;
         }
         Ok(())
     }
@@ -103,9 +104,11 @@ where
             Ok(values) => Some(values),
             Err(err) => {
                 log::error!("Failed to get request: {:?}", err);
+                let query = request.clone();
                 let result = bot.answer_inline_query(request.id, vec![]).await;
                 if let Err(e) = result {
                     log::error!("Failed to send no results: {:?}", e);
+                    let _ = bot.respond_generic_err(query).await;
                 }
                 None
             }
@@ -120,9 +123,11 @@ where
             Ok(values) => Some(values),
             Err(err) => {
                 log::error!("Failed to build response: {:?}", err);
+                let query = request.clone();
                 let result = bot.answer_inline_query(request.id, vec![]).await;
                 if let Err(e) = result {
                     log::error!("Failed to respond generic err: {:?}", e);
+                    let _ = bot.respond_generic_err(query).await;
                 }
                 None
             }
@@ -130,13 +135,13 @@ where
     }
     async fn respond(
         bot: Bot,
-        query: InlineQuery,
+        request: InlineQuery,
         response: Vec<InlineQueryResult>,
     ) -> anyhow::Result<()> {
-        let q = query.clone();
-        if let Err(e) = bot.answer_inline_query(query.id, response).await {
+        let query = request.clone();
+        if let Err(e) = bot.answer_inline_query(request.id, response).await {
             log::error!("Failed to respond with query: {:?}", e);
-            bot.respond_generic_err(q).await?;
+            let _ = bot.respond_generic_err(query).await;
         }
         Ok(())
     }
