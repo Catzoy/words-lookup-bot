@@ -186,6 +186,11 @@ Can look up English words from Stands4 API.
         <td>Add CodeRabbit, Renovate & update deps</td>
     </tr>
     <tr>
+        <td>:white_check_mark:</td>
+        <td>0.9.1</td>
+        <td>Refactor suggestions handler as a collected list</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.10.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
