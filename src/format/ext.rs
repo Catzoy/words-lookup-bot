@@ -1,3 +1,4 @@
+use string_builder::ToBytes;
 use teloxide::utils::markdown::escape;
 
 pub trait StringBuilderExt {
@@ -8,7 +9,7 @@ pub trait StringBuilderExt {
 
     fn list_words(&mut self, arr: &Vec<String>);
 
-    fn appendl(&mut self, string: &str);
+    fn appendl<T: ToBytes>(&mut self, string: T);
 }
 
 impl StringBuilderExt for string_builder::Builder {
@@ -40,7 +41,7 @@ impl StringBuilderExt for string_builder::Builder {
         )
     }
 
-    fn appendl(&mut self, string: &str) {
+    fn appendl<T: ToBytes>(&mut self, string: T) {
         self.append(string);
         self.append("\n")
     }
