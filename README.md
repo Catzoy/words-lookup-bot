@@ -177,6 +177,11 @@ Can look up English words from Stands4 API.
     </tr>
     <tr>
         <td>:x:</td>
+        <td>0.8.4</td>
+        <td>Fix word search with only def. or abbrs. list</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
         <td>0.9.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
     </tr>
