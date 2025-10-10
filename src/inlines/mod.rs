@@ -9,4 +9,3 @@ mod word_lookup;
 
 pub use debouncer::*;
 pub use inlines::*;
-use suggestions::*;

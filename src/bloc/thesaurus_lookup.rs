@@ -1,5 +1,5 @@
 use crate::bloc::common::{Lookup, LookupError};
-use crate::format::{LookupFormatter, StringBuilderExt};
+use crate::format::LookupFormatter;
 use crate::stands4::{Stands4Client, SynAntDefinitions};
 use shuttle_runtime::async_trait;
 

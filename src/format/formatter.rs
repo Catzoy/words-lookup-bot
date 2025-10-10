@@ -1,8 +1,5 @@
-use crate::format::{LinksProvider, StringBuilderExt};
-use crate::stands4::{
-    AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, VecAbbreviationsExt,
-    WordDefinition,
-};
+use crate::format::LinksProvider;
+use crate::stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition};
 use crate::urban::UrbanDefinition;
 use regex::Regex;
 use std::fmt::Debug;
