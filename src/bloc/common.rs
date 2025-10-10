@@ -1,3 +1,4 @@
+use crate::bloc::ext::BotExt;
 use crate::commands::CommandHandler;
 use shuttle_runtime::async_trait;
 use std::fmt::Debug;
@@ -11,22 +12,7 @@ pub enum LookupError {
     FailedResponseBuilder,
     FailedRequest,
 }
-#[async_trait]
-pub trait BotExt {
-    async fn respond_generic_err(&self, message: Message) -> anyhow::Result<()>;
-}
 
-#[async_trait]
-impl BotExt for Bot {
-    async fn respond_generic_err(&self, message: Message) -> anyhow::Result<()> {
-        let chat_id = message.chat.id;
-        let text = "There was an error processing your query, try again later, sorry.";
-        if let Err(err) = self.send_message(chat_id, text).await {
-            log::error!("Couldn't send error-response: {}", err);
-        }
-        Ok(())
-    }
-}
 pub trait HandlerOwner {
     fn handler() -> CommandHandler;
 }
@@ -84,18 +70,21 @@ where
         match response {
             Ok(value) => Some(value),
             Err(_) => {
-                bot.respond_generic_err(message)
-                    .await
-                    .expect("Generic response OK");
+                let _ = bot.respond_generic_err(message).await;
                 None
             }
         }
     }
 
     async fn respond(bot: Bot, message: Message, response: String) -> anyhow::Result<()> {
-        bot.send_message(message.chat.id, response)
+        let res = bot
+            .send_message(message.chat.id, response)
             .parse_mode(ParseMode::MarkdownV2)
-            .await?;
+            .await;
+        if let Err(e) = res {
+            log::error!("Couldn't send response: {:?}", e);
+            bot.respond_generic_err(message).await?;
+        }
         Ok(())
     }
 }
@@ -144,7 +133,11 @@ where
         query: InlineQuery,
         response: Vec<InlineQueryResult>,
     ) -> anyhow::Result<()> {
-        bot.answer_inline_query(query.id, response).await?;
+        let q = query.clone();
+        if let Err(e) = bot.answer_inline_query(query.id, response).await {
+            log::error!("Failed to respond with query: {:?}", e);
+            bot.respond_generic_err(q).await?;
+        }
         Ok(())
     }
 }
