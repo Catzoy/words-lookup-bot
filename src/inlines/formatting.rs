@@ -5,6 +5,7 @@ use crate::{
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
     urban::UrbanDefinition,
 };
+use regex::escape;
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
     ParseMode,
@@ -34,11 +35,11 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
         };
 
         let answer = InlineAnswer {
-            title: format!("\\#{} \\- {} \\({}\\)", i + 1, def.term, part_of_speech),
-            meaning: meaning(&def.definition),
+            title: format!("#{} - {} ({})", i + 1, def.term, part_of_speech),
+            meaning: def.definition.clone(),
             description: match def.example.is_empty() {
                 true => None,
-                false => Some(as_in(&def.example)),
+                false => Some(def.example.clone()),
             },
         };
         self.answers.push(answer);
@@ -46,11 +47,11 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
 
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
         let answer = InlineAnswer {
-            title: format!("\\#{} \\- {}", i + 1, def.term),
-            meaning: meaning(&def.explanation),
+            title: format!("#{} - {}", i + 1, def.term),
+            meaning: def.explanation.clone(),
             description: match def.example.is_empty() {
                 true => None,
-                false => Some(as_in(&def.example)),
+                false => Some(def.example.clone()),
             },
         };
         self.answers.push(answer);
@@ -80,7 +81,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
         }
 
         let answer = InlineAnswer {
-            title: format!("\\#{} in \\[{}\\] stands for: ", i + 1, category),
+            title: format!("#{} in [{}] stands for: ", i + 1, category),
             meaning: meaning
                 .string()
                 .unwrap_or_else(|_| "Cannot describe, try this word in bot's chat".to_string()),
@@ -95,7 +96,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             "Surprisingly, there are no synonyms or antonyms to this!".to_string()
         });
         let answer = InlineAnswer {
-            title: format!("\\#{} {} \\[{}\\]", i, def.term, def.part_of_speech),
+            title: format!("#{} {} [{}]", i, def.term, def.part_of_speech),
             meaning: def.definition.clone(),
             description: description.string().ok(),
         };
@@ -104,9 +105,9 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
 
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
         let answer = InlineAnswer {
-            title: format!("\\#{} \\- {}", i + 1, def.word),
-            meaning: meaning(&def.meaning),
-            description: def.example.as_ref().map(as_in),
+            title: format!("#{} - {}", i + 1, def.word),
+            meaning: def.meaning.clone(),
+            description: def.example.clone(),
         };
         self.answers.push(answer);
     }
@@ -134,12 +135,12 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
 
 fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::FromUtf8Error> {
     let mut full_text = string_builder::Builder::default();
-    full_text.append(answer.title.as_str());
+    full_text.append(escape(&answer.title));
     full_text.append("\n\n");
-    full_text.append(answer.meaning.as_str());
+    full_text.append(meaning(&escape(&answer.meaning)));
     if let Some(description) = &answer.description {
         full_text.append("\n");
-        full_text.append(description.as_str());
+        full_text.append(as_in(&escape(&description)));
     }
     full_text.string()
 }
