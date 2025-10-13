@@ -206,6 +206,11 @@ Can look up English words from Stands4 API.
         <td>Fix titles not escaped for inline queries</td>
     </tr>
     <tr>
+        <td>:white_check_mark:</td>
+        <td>0.9.5</td>
+        <td>Introduce opt-in escaping mechanisms for commands</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.10.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
