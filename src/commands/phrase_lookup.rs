@@ -1,4 +1,4 @@
-use crate::bloc::common::{CommonLookup, HandlerOwner, Lookup};
+use crate::bloc::common::{CommonLookup, EscapingEntity, HandlerOwner, Lookup};
 use crate::bloc::phrase_lookup::PhraseLookup;
 use crate::commands::{drop_empty, CommandHandler, FullMessageFormatter, MessageCommands};
 use crate::stands4::PhraseDefinition;
@@ -22,6 +22,7 @@ impl HandlerOwner for MessagePhraseLookup {
             .filter_async(drop_empty)
             .map_async(Self::get_definitions)
             .filter_map_async(Self::ensure_request_success)
+            .map(Self::escaped_values)
             .map(Self::compose_response)
             .filter_map_async(Self::retrieve_or_generic_err)
             .endpoint(Self::respond)

@@ -1,5 +1,6 @@
 use crate::bloc::ext::BotExt;
 use crate::commands::CommandHandler;
+use crate::format::ToEscaped;
 use shuttle_runtime::async_trait;
 use std::fmt::Debug;
 use teloxide::payloads::SendMessageSetters;
@@ -144,5 +145,22 @@ where
             let _ = bot.respond_generic_err(query).await;
         }
         Ok(())
+    }
+}
+
+pub trait EscapingEntity<Entity>
+where
+    Entity: ToEscaped,
+{
+    fn escaped_values(value: Entity) -> Entity;
+}
+
+impl<T, Request, Entity, Response> EscapingEntity<Entity> for T
+where
+    Entity: ToEscaped,
+    T: Lookup<Request = Request, Entity = Entity, Response = Response>,
+{
+    fn escaped_values(value: Entity) -> Entity {
+        value.to_escaped()
     }
 }
