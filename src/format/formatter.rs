@@ -49,6 +49,16 @@ where
     }
 }
 
+impl<A, B> ToEscaped for (A, B)
+where
+    A: ToEscaped,
+    B: ToEscaped,
+{
+    fn to_escaped(&self) -> (A, B) {
+        (self.0.to_escaped(), self.1.to_escaped())
+    }
+}
+
 impl ToEscaped for String {
     fn to_escaped(&self) -> Self {
         teloxide::utils::markdown::escape(self)
