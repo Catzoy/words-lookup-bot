@@ -137,10 +137,10 @@ fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::F
     let mut full_text = string_builder::Builder::default();
     full_text.append(escape(&answer.title));
     full_text.append("\n\n");
-    full_text.append(meaning(&answer.meaning));
+    full_text.append(meaning(&escape(&answer.meaning)));
     if let Some(description) = &answer.description {
         full_text.append("\n");
-        full_text.append(description.as_str());
+        full_text.append(escape(&description));
     }
     full_text.string()
 }
