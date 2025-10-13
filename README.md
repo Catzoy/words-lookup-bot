@@ -201,6 +201,11 @@ Can look up English words from Stands4 API.
         <td>Fix double-escaping inlines</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.9.4</td>
+        <td>Fix titles not escaped for inline queries</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.10.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
