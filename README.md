@@ -196,6 +196,11 @@ Can look up English words from Stands4 API.
         <td>Fix some formatting on abbreviations</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.9.3</td>
+        <td>Fix double-escaping inlines</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.10.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
@@ -214,6 +219,11 @@ Can look up English words from Stands4 API.
         <td>:x:</td>
         <td>0.13.0</td>
         <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.14.0</td>
+        <td>Send wordle hidden by default & shown if button is pressed</td>
     </tr>
     <tr>
         <td>...</td>

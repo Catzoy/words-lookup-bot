@@ -5,7 +5,6 @@ use crate::{
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
     urban::UrbanDefinition,
 };
-use regex::escape;
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
     ParseMode,
@@ -51,7 +50,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             meaning: def.explanation.clone(),
             description: match def.example.is_empty() {
                 true => None,
-                false => Some(as_in(&escape(&def.example))),
+                false => Some(as_in(&def.example)),
             },
         };
         self.answers.push(answer);
@@ -75,7 +74,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
             if len > 1 {
                 for def in defs.iter().skip(1) {
                     meaning.append(", ");
-                    meaning.append(escape(&def.definition));
+                    meaning.append(def.definition.as_str());
                 }
             }
         }
@@ -107,7 +106,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
         let answer = InlineAnswer {
             title: format!("#{} - {}", i + 1, def.word),
             meaning: def.meaning.clone(),
-            description: def.example.clone().map(|it| as_in(&escape(&it))),
+            description: def.example.clone().map(|it| as_in(&&it)),
         };
         self.answers.push(answer);
     }
@@ -135,9 +134,9 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
 
 fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::FromUtf8Error> {
     let mut full_text = string_builder::Builder::default();
-    full_text.append(escape(&answer.title));
+    full_text.append(answer.title.as_str());
     full_text.append("\n\n");
-    full_text.append(meaning(&escape(&answer.meaning)));
+    full_text.append(meaning(&answer.meaning));
     if let Some(description) = &answer.description {
         full_text.append("\n");
         full_text.append(description.as_str());
