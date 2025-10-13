@@ -1,3 +1,4 @@
+use crate::callback::callbacks_tree;
 use crate::commands::*;
 use crate::inlines::*;
 use crate::stands4::client::Stands4Client;
@@ -33,7 +34,10 @@ impl shuttle_runtime::Service for TelegramService {
             WordleCache::new(WordleClient::default(), self.stands4_client.clone(),)
         ];
 
-        let tree = entry().branch(inlines_tree()).branch(commands_tree());
+        let tree = entry()
+            .branch(inlines_tree())
+            .branch(commands_tree())
+            .branch(callbacks_tree());
         Dispatcher::builder(bot, tree)
             .default_handler(ignore_update)
             .dependencies(deps)

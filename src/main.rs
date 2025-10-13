@@ -1,4 +1,5 @@
 mod bloc;
+mod callback;
 mod commands;
 mod format;
 mod inlines;

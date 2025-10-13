@@ -5,7 +5,7 @@ use shuttle_runtime::async_trait;
 use std::fmt::Debug;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::{InlineQuery, Message, Requester};
-use teloxide::types::{InlineQueryResult, ParseMode};
+use teloxide::types::{InlineQueryResult, ParseMode, ReplyMarkup};
 use teloxide::Bot;
 
 #[derive(Debug, Clone)]
@@ -38,7 +38,12 @@ pub trait CommonLookup<Request, Entity, Response> {
         response: Result<Response, LookupError>,
     ) -> Option<Response>;
 
-    async fn respond(bot: Bot, message: Request, response: Response) -> anyhow::Result<()>;
+    async fn respond(
+        bot: Bot,
+        message: Request,
+        response: Response,
+        reply_markup: Option<ReplyMarkup>,
+    ) -> anyhow::Result<()>;
 }
 
 impl<E, T> CommonLookup<Message, E, String> for T
@@ -78,11 +83,22 @@ where
         }
     }
 
-    async fn respond(bot: Bot, message: Message, response: String) -> anyhow::Result<()> {
-        let res = bot
-            .send_message(message.chat.id, response)
-            .parse_mode(ParseMode::MarkdownV2)
-            .await;
+    async fn respond(
+        bot: Bot,
+        message: Message,
+        response: String,
+        reply_markup: Option<ReplyMarkup>,
+    ) -> anyhow::Result<()> {
+        let res = {
+            let mut request = bot
+                .send_message(message.chat.id, response)
+                .parse_mode(ParseMode::MarkdownV2);
+            if let Some(reply_markup) = reply_markup {
+                request = request.reply_markup(reply_markup);
+            }
+            request
+        }
+        .await;
         if let Err(e) = res {
             log::error!("Couldn't send response: {:?}", e);
             let _ = bot.respond_generic_err(message).await;
@@ -138,6 +154,7 @@ where
         bot: Bot,
         request: InlineQuery,
         response: Vec<InlineQueryResult>,
+        _: Option<ReplyMarkup>,
     ) -> anyhow::Result<()> {
         let query = request.clone();
         if let Err(e) = bot.answer_inline_query(request.id, response).await {
