@@ -1,4 +1,3 @@
-use crate::format::ToEscaped;
 use crate::wordle::WordleAnswer;
 use chrono::{DateTime, Utc};
 use reqwest::Client;
@@ -19,7 +18,7 @@ impl WordleClient {
             day.format("%Y-%m-%d").to_string()
         );
         let res = self.client.get(&url).send().await?;
-        Ok(res.json::<WordleAnswer>().await?.to_escaped())
+        Ok(res.json::<WordleAnswer>().await?)
     }
 }
 
