@@ -27,8 +27,8 @@ impl HandlerOwner for MessageWordLookup {
         teloxide::dptree::case![MessageCommands::WordLookup(args)]
             .filter_async(drop_empty)
             .map_async(Self::get_definitions)
-            .map(Self::compose_response)
             .map(Self::escaped_values)
+            .map(Self::compose_response)
             .filter_map_async(Self::retrieve_or_generic_err)
             .endpoint(Self::respond)
     }
