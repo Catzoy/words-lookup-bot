@@ -1,4 +1,3 @@
-use crate::format::ToEscaped;
 use crate::urban::{UrbanDefinition, UrbanResponse};
 use reqwest::Client;
 use shuttle_runtime::__internals::serde_json;

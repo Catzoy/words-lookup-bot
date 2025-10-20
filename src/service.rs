@@ -10,6 +10,7 @@ use std::net::SocketAddr;
 use teloxide::dispatching::Dispatcher;
 use teloxide::dptree::{deps, entry};
 use teloxide::error_handlers::LoggingErrorHandler;
+use teloxide::types::ReplyMarkup;
 use teloxide::{update_listeners, Bot};
 
 #[derive(Clone)]
@@ -31,7 +32,8 @@ impl shuttle_runtime::Service for TelegramService {
             self.stands4_client.clone(),
             InlineQueryDebouncer::default(),
             UrbanDictionaryClient::default(),
-            WordleCache::new(WordleClient::default(), self.stands4_client.clone(),)
+            WordleCache::new(WordleClient::default(), self.stands4_client.clone(),),
+            Option::<ReplyMarkup>::None
         ];
 
         let tree = entry()

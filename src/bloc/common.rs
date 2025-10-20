@@ -49,7 +49,7 @@ pub trait CommonLookup<Request, Entity, Response> {
 impl<E, T> CommonLookup<Message, E, String> for T
 where
     E: Clone + Send + Sync,
-    T: Lookup<Request = Message, Entity = E, Response = String>,
+    T: Lookup<Request=Message, Entity=E, Response=String>,
 {
     async fn ensure_request_success(
         bot: Bot,
@@ -97,8 +97,7 @@ where
                 request = request.reply_markup(reply_markup);
             }
             request
-        }
-        .await;
+        }.await;
         if let Err(e) = res {
             log::error!("Couldn't send response: {:?}", e);
             let _ = bot.respond_generic_err(message).await;
@@ -110,7 +109,7 @@ where
 impl<Entity, T> CommonLookup<InlineQuery, Entity, Vec<InlineQueryResult>> for T
 where
     Entity: Clone + Send + Sync,
-    T: Lookup<Request = InlineQuery, Entity = Entity, Response = Vec<InlineQueryResult>>,
+    T: Lookup<Request=InlineQuery, Entity=Entity, Response=Vec<InlineQueryResult>>,
 {
     async fn ensure_request_success(
         bot: Bot,
@@ -175,7 +174,7 @@ where
 impl<T, Request, Entity, Response> EscapingEntity<Entity> for T
 where
     Entity: ToEscaped,
-    T: Lookup<Request = Request, Entity = Entity, Response = Response>,
+    T: Lookup<Request=Request, Entity=Entity, Response=Response>,
 {
     fn escaped_values(value: Entity) -> Entity {
         value.to_escaped()

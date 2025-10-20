@@ -1,4 +1,3 @@
-use crate::format::ToEscaped;
 use crate::stands4::entities::{
     AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
 };

@@ -29,6 +29,7 @@ impl HandlerOwner for MessageWordLookup {
             .map_async(Self::get_definitions)
             .map(Self::escaped_values)
             .map(Self::compose_response)
+            .map(Self::propose_replies)
             .filter_map_async(Self::retrieve_or_generic_err)
             .endpoint(Self::respond)
     }

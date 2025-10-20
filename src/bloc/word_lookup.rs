@@ -3,9 +3,13 @@ use crate::format::LookupFormatter;
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
 use shuttle_runtime::async_trait;
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, ReplyMarkup};
 
 #[async_trait]
-pub trait WordLookup: Lookup {
+pub trait WordLookup: Lookup
+where
+    Self::Response: PartialEq,
+{
     type Formatter: LookupFormatter<Self::Response> + Default;
     fn on_empty() -> Self::Response {
         Default::default()
@@ -24,8 +28,7 @@ pub trait WordLookup: Lookup {
                 log::error!("Failed to retrieve definitions of an abbr: {:?}", err);
                 vec![]
             }),
-        )
-        .await
+        ).await
     }
 
     fn compose_response(
@@ -44,6 +47,23 @@ pub trait WordLookup: Lookup {
             LookupError::FailedResponseBuilder
         })
     }
+
+    fn propose_replies(word: String, response: Result<Self::Response, LookupError>) -> Option<ReplyMarkup> {
+        let mut keyboard = InlineKeyboardMarkup::new::<Vec<Vec<_>>>(vec![]);
+        if let Ok(text) = response && text != Self::on_empty() {
+            let search_thesaurus = InlineKeyboardButton::callback(
+                "Search for synonyms/antonyms of the word",
+                format!("sa.{}", word),
+            );
+            keyboard = keyboard.append_row(vec![search_thesaurus]);
+        }
+        let search_urban = InlineKeyboardButton::callback(
+            "Search in Urban Dictionary",
+            format!("u.{}", word),
+        );
+        keyboard = keyboard.append_row(vec![search_urban]);
+        Some(ReplyMarkup::InlineKeyboard(keyboard))
+    }
 }
 
 pub trait WordLookupFormatter<R, E> {
@@ -60,7 +80,7 @@ pub trait WordLookupFormatter<R, E> {
 
 impl<T, R, E> WordLookupFormatter<R, E> for T
 where
-    T: LookupFormatter<R, Error = E>,
+    T: LookupFormatter<R, Error=E>,
 {
     fn compose_word_defs(mut self, word: &str, defs: &Vec<WordDefinition>) -> Result<R, E> {
         self.append_title(format!("Found {} definitions", defs.len()));
