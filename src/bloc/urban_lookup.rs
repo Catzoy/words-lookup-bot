@@ -1,10 +1,12 @@
-use crate::bloc::common::{Lookup, LookupError};
+use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
+use teloxide::dptree::entry;
 
-pub trait UrbanLookup: Lookup {
-    type Formatter: LookupFormatter<Self::Response> + Default;
-
+pub struct UrbanLookup;
+impl UrbanLookup {
     async fn get_definitions(
         client: UrbanDictionaryClient,
         term: String,
@@ -15,11 +17,14 @@ pub trait UrbanLookup: Lookup {
         })
     }
 
-    fn compose_response(
+    fn compose_response<Formatter>(
         term: String,
+        mut formatter: Formatter,
         defs: Vec<UrbanDefinition>,
-    ) -> Result<Self::Response, LookupError> {
-        let mut formatter = Self::Formatter::default();
+    ) -> Result<Formatter::Value, LookupError>
+    where
+        Formatter: LookupFormatter,
+    {
         formatter.append_title(format!(
             "Found {} definitions from Urban Dictionary",
             defs.len()
@@ -35,5 +40,34 @@ pub trait UrbanLookup: Lookup {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })
+    }
+}
+
+impl HandlerOwner for UrbanLookup {
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry()
+            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .map_async(Self::get_definitions)
+            .filter_map_async(
+                |bot: Bot, response: Result<Vec<UrbanDefinition>, LookupError>| async move {
+                    bot.ensure_request_success(response).await
+                },
+            )
+            .map(
+                |bot: Bot, phrase: String, defs: Vec<UrbanDefinition>| async move {
+                    Self::compose_response(phrase, bot.formatter(), defs)
+                },
+            )
+            .filter_map_async(
+                |bot: Bot, response: Result<Bot::Response, LookupError>| async move {
+                    bot.retrieve_or_generic_err(response).await
+                },
+            )
+            .endpoint(
+                |bot: Bot, response: Bot::Response| async move { bot.respond(response).await },
+            )
     }
 }

@@ -1,14 +1,16 @@
 use crate::bloc::common::HandlerOwner;
 use crate::bloc::word_lookup::WordLookupFormatter;
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
 use crate::format::ToEscaped;
 use crate::wordle::WordleDayAnswer;
 use crate::{
     commands::{FullMessageFormatter, MessageCommands},
     format::LookupFormatter,
-    inlines::inlines::{InlineHandler, QueryCommands},
     wordle::cache::WordleCache,
     wordle::WordleAnswer,
 };
+use teloxide::dptree::entry;
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
     ParseMode,
@@ -243,8 +245,11 @@ impl SuggestionsOwner {
 }
 
 impl HandlerOwner for SuggestionsOwner {
-    fn handler() -> InlineHandler {
-        teloxide::dptree::case![QueryCommands::Suggestions]
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry()
             .map_async(Self::ensure_wordle_answer)
             .endpoint(Self::suggestions_handler)
     }

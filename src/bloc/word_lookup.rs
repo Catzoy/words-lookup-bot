@@ -1,20 +1,17 @@
-use crate::bloc::common::{Lookup, LookupError};
+use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
-use shuttle_runtime::async_trait;
+use teloxide::dptree::entry;
 
-#[async_trait]
-pub trait WordLookup: Lookup {
-    type Formatter: LookupFormatter<Self::Response> + Default;
-    fn on_empty() -> Self::Response {
-        Default::default()
-    }
+type Entity = (Vec<WordDefinition>, Vec<AbbreviationDefinition>);
 
-    async fn get_definitions(
-        client: Stands4Client,
-        word: String,
-    ) -> (Vec<WordDefinition>, Vec<AbbreviationDefinition>) {
+pub struct WordLookup;
+
+impl WordLookup {
+    async fn get_definitions(client: Stands4Client, word: String) -> Entity {
         futures::future::join(
             client.search_word(&word).unwrap_or_else(|err| {
                 log::error!("Failed to retrieve definitions of a word: {:?}", err);
@@ -28,13 +25,16 @@ pub trait WordLookup: Lookup {
         .await
     }
 
-    fn compose_response(
+    fn compose_response<Formatter>(
         word: String,
-        (words, abbrs): (Vec<WordDefinition>, Vec<AbbreviationDefinition>),
-    ) -> Result<Self::Response, LookupError> {
-        let formatter = Self::Formatter::default();
+        mut formatter: Formatter,
+        (words, abbrs): Entity,
+    ) -> Result<Formatter::Value, LookupError>
+    where
+        Formatter: LookupFormatter,
+    {
         let text = match (words.len(), abbrs.len()) {
-            (0, 0) => Ok(Self::on_empty()),
+            (0, 0) => Ok(Formatter::on_empty()),
             (0, _) => formatter.compose_abbr_defs(&word, &abbrs),
             (_, 0) => formatter.compose_word_defs(&word, &words),
             (_, _) => formatter.compose_words_with_abbrs(&word, &words, &abbrs),
@@ -60,7 +60,7 @@ pub trait WordLookupFormatter<R, E> {
 
 impl<T, R, E> WordLookupFormatter<R, E> for T
 where
-    T: LookupFormatter<R, Error = E>,
+    T: LookupFormatter<Value = R, Error = E>,
 {
     fn compose_word_defs(mut self, word: &str, defs: &Vec<WordDefinition>) -> Result<R, E> {
         self.append_title(format!("Found {} definitions", defs.len()));
@@ -113,5 +113,32 @@ where
         }
 
         self.build()
+    }
+}
+
+impl HandlerOwner for WordLookup {
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry()
+            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .map_async(Self::get_definitions)
+            .filter_map_async(
+                |bot: Bot, response: Result<Entity, LookupError>| async move {
+                    bot.ensure_request_success(response).await
+                },
+            )
+            .map(|bot: Bot, phrase: String, defs: Entity| async move {
+                Self::compose_response(phrase, bot.formatter(), defs)
+            })
+            .filter_map_async(
+                |bot: Bot, response: Result<Bot::Response, LookupError>| async move {
+                    bot.retrieve_or_generic_err(response).await
+                },
+            )
+            .endpoint(
+                |bot: Bot, response: Bot::Response| async move { bot.respond(response).await },
+            )
     }
 }

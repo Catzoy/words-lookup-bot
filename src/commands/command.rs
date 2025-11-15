@@ -1,18 +1,18 @@
 use crate::bloc::common::HandlerOwner;
-use crate::commands::help::HelpOwner;
-use crate::commands::phrase_lookup::MessagePhraseLookup;
-use crate::commands::start::StartOwner;
-use crate::commands::teapot::TeapotOwner;
-use crate::commands::thesaurus_lookup::MessageThesaurusLookup;
-use crate::commands::unknown::UnknownOwner;
-use crate::commands::urban_lookup::MessageUrbanLookup;
-use crate::commands::word_lookup::MessageWordLookup;
-use crate::commands::wordle::MessageWordleLookup;
+use crate::bloc::help::HelpOwner;
+use crate::bloc::phrase_lookup::PhraseLookup;
+use crate::bloc::start::StartOwner;
+use crate::bloc::teapot::TeapotOwner;
+use crate::bloc::thesaurus_lookup::ThesaurusLookup;
+use crate::bloc::unknown::UnknownOwner;
+use crate::bloc::urban_lookup::UrbanLookup;
+use crate::bloc::word_lookup::WordLookup;
+use crate::bloc::wordle::WordleLookup;
+use crate::bot::LookupBot;
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
-use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::{Message, Requester, Update};
-use teloxide::types::{Me, ParseMode};
+use teloxide::prelude::{Message, Update};
+use teloxide::types::Me;
 use teloxide::utils::command::{BotCommands, ParseError};
 use teloxide::Bot;
 
@@ -84,33 +84,50 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     cmd
 }
 
-pub async fn drop_empty(bot: Bot, message: Message, phrase: String) -> bool {
-    if phrase.is_empty() {
-        let _ = bot
-            .send_message(
-                message.chat.id,
-                "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
-            )
-            .parse_mode(ParseMode::MarkdownV2)
-            .await;
-        false
-    } else {
-        true
-    }
-}
-
 pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescription>;
+type MessageBot = LookupBot<Message>;
 
 pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_message()
         .map(extract_command)
-        .branch(MessageWordleLookup::handler())
-        .branch(MessageWordLookup::handler())
-        .branch(MessagePhraseLookup::handler())
-        .branch(MessageUrbanLookup::handler())
-        .branch(MessageThesaurusLookup::handler())
-        .branch(HelpOwner::handler())
-        .branch(UnknownOwner::handler())
-        .branch(StartOwner::handler())
-        .branch(TeapotOwner::handler())
+        .map(|bot: Bot, message: Message| LookupBot {
+            bot,
+            request: message,
+        })
+        .branch(
+            teloxide::dptree::case![MessageCommands::Wordle]
+                .branch(WordleLookup::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::WordLookup(args)]
+                .branch(WordLookup::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::PhraseLookup(phrase)]
+                .branch(PhraseLookup::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Urban(phrase)]
+                .branch(UrbanLookup::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Thesaurus(word)]
+                .branch(ThesaurusLookup::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Help]
+                .branch(HelpOwner::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Unknown]
+                .branch(UnknownOwner::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Start]
+                .branch(StartOwner::handler::<MessageBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Teapot]
+                .branch(TeapotOwner::handler::<MessageBot>()),
+        )
 }

@@ -1,5 +1,7 @@
 use crate::bloc::common::HandlerOwner;
-use crate::commands::{CommandHandler, MessageCommands};
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
+use teloxide::dptree::entry;
 use teloxide::prelude::{Message, Requester};
 use teloxide::Bot;
 
@@ -12,7 +14,10 @@ impl TeapotOwner {
 }
 
 impl HandlerOwner for TeapotOwner {
-    fn handler() -> CommandHandler {
-        teloxide::dptree::case![MessageCommands::Teapot].endpoint(Self::send_teapot)
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry().endpoint(Self::send_teapot)
     }
 }

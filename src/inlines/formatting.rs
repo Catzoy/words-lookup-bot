@@ -22,8 +22,14 @@ pub struct InlineFormatter {
     link_provider: LinksProvider,
 }
 
-impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
+impl LookupFormatter for InlineFormatter {
     type Error = std::string::FromUtf8Error;
+    type Value = Vec<InlineQueryResult>;
+
+    fn on_empty() -> Self::Value {
+        vec![]
+    }
+
     fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
     }

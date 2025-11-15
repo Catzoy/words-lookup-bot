@@ -1,16 +1,16 @@
 use crate::bloc::common::HandlerOwner;
-use crate::inlines::phrase_lookup::InlinePhraseLookup;
-use crate::inlines::suggestions::SuggestionsOwner;
-use crate::inlines::thesaurus_lookup::InlineThesaurusLookup;
-use crate::inlines::urban_lookup::InlineUrbanLookup;
-use crate::inlines::word_lookup::InlinesWordLookup;
+use crate::bloc::phrase_lookup::PhraseLookup;
+use crate::bloc::suggestions::SuggestionsOwner;
+use crate::bloc::thesaurus_lookup::ThesaurusLookup;
+use crate::bloc::urban_lookup::UrbanLookup;
+use crate::bloc::word_lookup::WordLookup;
+use crate::bot::LookupBot;
 use crate::inlines::debounce_inline_queries;
 use regex::Regex;
 use std::sync::LazyLock;
 use teloxide::{
     dispatching::{DpHandlerDescription, UpdateFilterExt},
     dptree::Handler,
-    prelude::Requester,
     prelude::{InlineQuery, Update},
     Bot,
 };
@@ -55,23 +55,34 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
     Some(cmd)
 }
 
-pub async fn drop_empty(bot: Bot, InlineQuery { id, .. }: InlineQuery, input: String) -> bool {
-    match input.as_str() {
-        "" => {
-            let _ = bot.answer_inline_query(id, vec![]).await;
-            false
-        }
-        _ => true,
-    }
-}
+type InlineBot = LookupBot<InlineQuery>;
 
 pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_inline_query()
         .filter_map(extract_command)
+        .map(|bot: Bot, query: InlineQuery| LookupBot {
+            bot,
+            request: query,
+        })
         .filter_async(debounce_inline_queries)
-        .branch(SuggestionsOwner::handler())
-        .branch(InlinesWordLookup::handler())
-        .branch(InlinePhraseLookup::handler())
-        .branch(InlineUrbanLookup::handler())
-        .branch(InlineThesaurusLookup::handler())
+        .branch(
+            teloxide::dptree::case![QueryCommands::Suggestions]
+                .branch(SuggestionsOwner::handler::<InlineBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![QueryCommands::WordLookup(args)]
+                .branch(WordLookup::handler::<InlineBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![QueryCommands::PhraseLookup(phrase)]
+                .branch(PhraseLookup::handler::<InlineBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![QueryCommands::UrbanLookup(phrase)]
+                .branch(UrbanLookup::handler::<InlineBot>()),
+        )
+        .branch(
+            teloxide::dptree::case![QueryCommands::ThesaurusLookup(phrase)]
+                .branch(ThesaurusLookup::handler::<InlineBot>()),
+        )
 }

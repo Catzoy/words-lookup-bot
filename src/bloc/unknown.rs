@@ -1,5 +1,7 @@
 use crate::bloc::common::HandlerOwner;
-use crate::commands::{CommandHandler, MessageCommands};
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
+use teloxide::dptree::entry;
 use teloxide::prelude::{Message, Requester};
 use teloxide::Bot;
 
@@ -13,7 +15,10 @@ impl UnknownOwner {
 }
 
 impl HandlerOwner for UnknownOwner {
-    fn handler() -> CommandHandler {
-        teloxide::dptree::case![MessageCommands::Unknown].endpoint(Self::send_unknown)
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry().endpoint(Self::send_unknown)
     }
 }

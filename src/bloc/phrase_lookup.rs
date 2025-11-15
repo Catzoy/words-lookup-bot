@@ -1,12 +1,13 @@
-use crate::bloc::common::{Lookup, LookupError};
+use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{PhraseDefinition, Stands4Client};
-use shuttle_runtime::async_trait;
+use teloxide::dptree::entry;
 
-#[async_trait]
-pub trait PhraseLookup: Lookup {
-    type Formatter: LookupFormatter<Self::Response> + Default;
-
+#[derive(Clone, Debug)]
+pub struct PhraseLookup;
+impl PhraseLookup {
     async fn get_definitions(
         client: Stands4Client,
         phrase: String,
@@ -17,11 +18,14 @@ pub trait PhraseLookup: Lookup {
         })
     }
 
-    fn compose_response(
+    fn compose_response<Formatter>(
         phrase: String,
+        mut formatter: Formatter,
         defs: Vec<PhraseDefinition>,
-    ) -> Result<Self::Response, LookupError> {
-        let mut formatter = Self::Formatter::default();
+    ) -> Result<Formatter::Value, LookupError>
+    where
+        Formatter: LookupFormatter,
+    {
         formatter.append_title(format!("Found {} definitions", defs.len()));
 
         for (i, def) in defs.iter().take(5).enumerate() {
@@ -35,5 +39,34 @@ pub trait PhraseLookup: Lookup {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })
+    }
+}
+
+impl HandlerOwner for PhraseLookup {
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry()
+            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .map_async(Self::get_definitions)
+            .filter_map_async(
+                |bot: Bot, response: Result<Vec<PhraseDefinition>, LookupError>| async move {
+                    bot.ensure_request_success(response).await
+                },
+            )
+            .map(
+                |bot: Bot, phrase: String, defs: Vec<PhraseDefinition>| async move {
+                    Self::compose_response(phrase, bot.formatter(), defs)
+                },
+            )
+            .filter_map_async(
+                |bot: Bot, response: Result<Bot::Response, LookupError>| async move {
+                    bot.retrieve_or_generic_err(response).await
+                },
+            )
+            .endpoint(
+                |bot: Bot, response: Bot::Response| async move { bot.respond(response).await },
+            )
     }
 }

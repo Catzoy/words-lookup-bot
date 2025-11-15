@@ -2,13 +2,13 @@ use crate::format::{LookupFormatter, StringBuilderExt};
 use crate::stands4::SynAntDefinitions;
 use string_builder::Builder;
 
-pub trait SynAntFormatterExt<R> {
+pub trait SynAntFormatterExt {
     fn push_syn_ant(builder: &mut Builder, def: &SynAntDefinitions, on_empty: fn() -> String);
 }
 
-impl<L, R> SynAntFormatterExt<R> for L
+impl<L> SynAntFormatterExt for L
 where
-    L: LookupFormatter<R>,
+    L: LookupFormatter,
 {
     fn push_syn_ant(builder: &mut Builder, def: &SynAntDefinitions, on_empty: fn() -> String) {
         let mut cmds: Vec<Box<dyn FnMut(&mut Builder)>> = vec![];

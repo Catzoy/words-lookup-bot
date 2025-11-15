@@ -1,18 +1,20 @@
-use crate::bloc::common::{CommonLookup, EscapingEntity, HandlerOwner, Lookup, LookupError};
+use crate::bloc::common::{HandlerOwner, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
+use crate::bot::LookupBotX;
 use crate::wordle::WordleDayAnswer;
 use crate::{
-    commands::{CommandHandler, FullMessageFormatter, MessageCommands},
+    commands::{CommandHandler, FullMessageFormatter},
     wordle::cache::WordleCache,
 };
+use teloxide::dptree::entry;
 use teloxide::{
     prelude::{Message, Requester},
     Bot,
 };
 
 #[derive(Clone, Debug)]
-pub struct MessageWordleLookup;
-impl MessageWordleLookup {
+pub struct WordleLookup;
+impl WordleLookup {
     async fn ensure_wordle_answer(mut cache: WordleCache) -> Result<WordleDayAnswer, LookupError> {
         cache.require_fresh_answer().await.map_err(|e| {
             log::error!("Couldn't retrieve wordle answer: {:?}", e);
@@ -47,20 +49,22 @@ impl MessageWordleLookup {
     }
 }
 
-impl Lookup for MessageWordleLookup {
-    type Request = Message;
-    type Entity = WordleDayAnswer;
-    type Response = String;
-}
-
-impl HandlerOwner for MessageWordleLookup {
-    fn handler() -> CommandHandler {
-        teloxide::dptree::case![MessageCommands::Wordle]
+impl HandlerOwner for WordleLookup {
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry()
             .map_async(Self::ensure_wordle_answer)
             .filter_map_async(Self::retrieve_or_failed_cache)
-            .map(Self::escaped_values)
             .map(Self::compose_response)
-            .filter_map_async(Self::retrieve_or_generic_err)
-            .endpoint(Self::respond)
+            .filter_map_async(
+                |bot: Bot, response: Result<Bot::Response, LookupError>| async move {
+                    bot.retrieve_or_generic_err(response).await
+                },
+            )
+            .endpoint(
+                |bot: Bot, response: Bot::Response| async move { bot.respond(response).await },
+            )
     }
 }

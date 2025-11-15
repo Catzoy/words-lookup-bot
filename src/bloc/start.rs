@@ -1,6 +1,8 @@
 use crate::bloc::common::HandlerOwner;
-use crate::commands::{CommandHandler, MessageCommands};
+use crate::bot::LookupBotX;
+use crate::commands::CommandHandler;
 use crate::format::ToEscaped;
+use teloxide::dptree::entry;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
 use teloxide::types::{Message, ParseMode};
@@ -20,7 +22,10 @@ impl StartOwner {
     }
 }
 impl HandlerOwner for StartOwner {
-    fn handler() -> CommandHandler {
-        teloxide::dptree::case![MessageCommands::Start].endpoint(Self::send_start)
+    fn handler<Bot>() -> CommandHandler
+    where
+        Bot: LookupBotX + Clone + Send + Sync + 'static,
+    {
+        entry().endpoint(Self::send_start)
     }
 }
