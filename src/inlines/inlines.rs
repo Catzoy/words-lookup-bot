@@ -1,10 +1,10 @@
 use crate::bloc::common::HandlerOwner;
+use crate::inlines::debounce_inline_queries;
 use crate::inlines::phrase_lookup::InlinePhraseLookup;
 use crate::inlines::suggestions::SuggestionsOwner;
 use crate::inlines::thesaurus_lookup::InlineThesaurusLookup;
 use crate::inlines::urban_lookup::InlineUrbanLookup;
 use crate::inlines::word_lookup::InlinesWordLookup;
-use crate::inlines::debounce_inline_queries;
 use regex::Regex;
 use std::sync::LazyLock;
 use teloxide::{
@@ -23,9 +23,10 @@ pub enum QueryCommands {
     UrbanLookup(String),
     ThesaurusLookup(String),
 }
-static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(u.|sa.)?(.+)").unwrap());
+pub static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(u.|sa.)?(.+)").unwrap());
 pub type InlineHandler = Handler<'static, anyhow::Result<()>, DpHandlerDescription>;
-fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryCommands> {
+
+pub fn extract_text_inline_command(query: String) -> Option<QueryCommands> {
     if query.is_empty() {
         return Some(QueryCommands::Suggestions);
     }
@@ -53,6 +54,10 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
         _ => QueryCommands::Suggestions,
     };
     Some(cmd)
+}
+
+fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryCommands> {
+    extract_text_inline_command(query)
 }
 
 pub async fn drop_empty(bot: Bot, InlineQuery { id, .. }: InlineQuery, input: String) -> bool {
