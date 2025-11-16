@@ -4,7 +4,7 @@ use crate::bloc::suggestions::SuggestionsOwner;
 use crate::bloc::thesaurus_lookup::ThesaurusLookup;
 use crate::bloc::urban_lookup::UrbanLookup;
 use crate::bloc::word_lookup::WordLookup;
-use crate::bot::LookupBot;
+use crate::bot::InlineBot;
 use crate::inlines::debounce_inline_queries;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -55,15 +55,10 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
     Some(cmd)
 }
 
-type InlineBot = LookupBot<InlineQuery>;
-
 pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_inline_query()
         .filter_map(extract_command)
-        .map(|bot: Bot, query: InlineQuery| LookupBot {
-            bot,
-            request: query,
-        })
+        .map(|bot: Bot, query: InlineQuery| InlineBot { bot, query })
         .filter_async(debounce_inline_queries)
         .branch(
             teloxide::dptree::case![QueryCommands::Suggestions]

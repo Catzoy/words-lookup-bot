@@ -1,4 +1,4 @@
-use crate::bot::LookupBotX;
+use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use std::fmt::Debug;
 
@@ -11,5 +11,5 @@ pub enum LookupError {
 pub trait HandlerOwner {
     fn handler<Bot>() -> CommandHandler
     where
-        Bot: LookupBotX + Clone + Send + Sync + 'static;
+        Bot: LookupBot + Clone + Send + Sync + 'static;
 }

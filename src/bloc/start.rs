@@ -1,5 +1,5 @@
 use crate::bloc::common::HandlerOwner;
-use crate::bot::LookupBotX;
+use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::ToEscaped;
 use teloxide::dptree::entry;
@@ -24,7 +24,7 @@ impl StartOwner {
 impl HandlerOwner for StartOwner {
     fn handler<Bot>() -> CommandHandler
     where
-        Bot: LookupBotX + Clone + Send + Sync + 'static,
+        Bot: LookupBot + Clone + Send + Sync + 'static,
     {
         entry().endpoint(Self::send_start)
     }

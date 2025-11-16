@@ -1,6 +1,6 @@
 use crate::bloc::common::{HandlerOwner, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
-use crate::bot::LookupBotX;
+use crate::bot::LookupBot;
 use crate::wordle::WordleDayAnswer;
 use crate::{
     commands::{CommandHandler, FullMessageFormatter},
@@ -52,7 +52,7 @@ impl WordleLookup {
 impl HandlerOwner for WordleLookup {
     fn handler<Bot>() -> CommandHandler
     where
-        Bot: LookupBotX + Clone + Send + Sync + 'static,
+        Bot: LookupBot + Clone + Send + Sync + 'static,
     {
         entry()
             .map_async(Self::ensure_wordle_answer)

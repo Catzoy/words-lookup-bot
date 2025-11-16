@@ -1,5 +1,5 @@
 use crate::bloc::common::{HandlerOwner, LookupError};
-use crate::bot::LookupBotX;
+use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
@@ -46,7 +46,7 @@ impl UrbanLookup {
 impl HandlerOwner for UrbanLookup {
     fn handler<Bot>() -> CommandHandler
     where
-        Bot: LookupBotX + Clone + Send + Sync + 'static,
+        Bot: LookupBot + Clone + Send + Sync + 'static,
     {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })

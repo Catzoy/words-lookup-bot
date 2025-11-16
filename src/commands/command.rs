@@ -8,7 +8,7 @@ use crate::bloc::unknown::UnknownOwner;
 use crate::bloc::urban_lookup::UrbanLookup;
 use crate::bloc::word_lookup::WordLookup;
 use crate::bloc::wordle::WordleLookup;
-use crate::bot::LookupBot;
+use crate::bot::MessageBot;
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
 use teloxide::prelude::{Message, Update};
@@ -85,15 +85,11 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
 }
 
 pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescription>;
-type MessageBot = LookupBot<Message>;
 
 pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
     Update::filter_message()
         .map(extract_command)
-        .map(|bot: Bot, message: Message| LookupBot {
-            bot,
-            request: message,
-        })
+        .map(|bot: Bot, message: Message| MessageBot { bot, message })
         .branch(
             teloxide::dptree::case![MessageCommands::Wordle]
                 .branch(WordleLookup::handler::<MessageBot>()),

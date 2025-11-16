@@ -1,5 +1,5 @@
 use crate::bloc::common::{HandlerOwner, LookupError};
-use crate::bot::LookupBotX;
+use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{Stands4Client, SynAntDefinitions};
@@ -46,7 +46,7 @@ impl ThesaurusLookup {
 impl HandlerOwner for ThesaurusLookup {
     fn handler<Bot>() -> CommandHandler
     where
-        Bot: LookupBotX + Clone + Send + Sync + 'static,
+        Bot: LookupBot + Clone + Send + Sync + 'static,
     {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
