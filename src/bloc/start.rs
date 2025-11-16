@@ -1,31 +1,25 @@
-use crate::bloc::common::HandlerOwner;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
-use crate::format::ToEscaped;
 use teloxide::dptree::entry;
-use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::Requester;
-use teloxide::types::{Message, ParseMode};
-use teloxide::Bot;
 
-pub struct StartOwner;
+pub trait StartBot<Value> {
+    fn start_response(&self) -> Value;
+}
 
-impl StartOwner {
-    async fn send_start(bot: Bot, message: Message) -> anyhow::Result<()> {
-        let msg = "Hi!\n\
-        I'm a bot that can look up words and phrases.\n\
-        Simply send me a message and I'll search for the definition of the text.";
-        bot.send_message(message.chat.id, msg.to_string().to_escaped())
-            .parse_mode(ParseMode::MarkdownV2)
-            .await?;
+pub trait StartHandler {
+    async fn send_start(self) -> anyhow::Result<()>;
+
+    fn start_handler() -> CommandHandler;
+}
+impl<Bot> StartHandler for Bot
+where
+    Bot: StartBot<Bot::Response> + LookupBot + Send + Sync + 'static,
+{
+    async fn send_start(self) -> anyhow::Result<()> {
+        self.answer(self.start_response()).await?;
         Ok(())
     }
-}
-impl HandlerOwner for StartOwner {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
-        entry().endpoint(Self::send_start)
+    fn start_handler() -> CommandHandler {
+        entry().endpoint(|bot: Bot| async move { bot.send_start().await })
     }
 }

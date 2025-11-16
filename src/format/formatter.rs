@@ -8,7 +8,7 @@ use std::sync::LazyLock;
 
 pub trait LookupFormatter {
     type Error: Debug;
-    type Value;
+    type Value: Send + Sync;
     fn on_empty() -> Self::Value;
     fn link_provider(&self) -> &LinksProvider;
     fn visit_word(&mut self, i: usize, def: &WordDefinition);

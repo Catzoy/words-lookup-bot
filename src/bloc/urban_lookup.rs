@@ -1,12 +1,12 @@
-use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bloc::common::LookupError;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
 use teloxide::dptree::entry;
 
-pub struct UrbanLookup;
-impl UrbanLookup {
+pub trait UrbanLookupBot {}
+pub trait UrbanLookupHandler {
     async fn get_definitions(
         client: UrbanDictionaryClient,
         term: String,
@@ -17,37 +17,48 @@ impl UrbanLookup {
         })
     }
 
-    fn compose_response<Formatter>(
+    fn urban_lookup_handler() -> CommandHandler;
+}
+trait UrbanFormatter<Value> {
+    fn compose_urban_response(
+        self,
         term: String,
-        mut formatter: Formatter,
         defs: Vec<UrbanDefinition>,
-    ) -> Result<Formatter::Value, LookupError>
-    where
-        Formatter: LookupFormatter,
-    {
-        formatter.append_title(format!(
+    ) -> Result<Value, LookupError>;
+}
+
+impl<Formatter> UrbanFormatter<Formatter::Value> for Formatter
+where
+    Formatter: LookupFormatter,
+{
+    fn compose_urban_response(
+        mut self,
+        term: String,
+        defs: Vec<UrbanDefinition>,
+    ) -> Result<Formatter::Value, LookupError> {
+        self.append_title(format!(
             "Found {} definitions from Urban Dictionary",
             defs.len()
         ));
 
         for (i, def) in defs.iter().take(5).enumerate() {
-            formatter.visit_urban_definition(i, def);
+            self.visit_urban_definition(i, def);
         }
         if defs.len() > 5 {
-            formatter.append_link(formatter.link_provider().urban_link(&term))
+            self.append_link(self.link_provider().urban_link(&term))
         }
-        formatter.build().map_err(|err| {
+        self.build().map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })
     }
 }
 
-impl HandlerOwner for UrbanLookup {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
+impl<Bot> UrbanLookupHandler for Bot
+where
+    Bot: LookupBot + Send + Sync + 'static,
+{
+    fn urban_lookup_handler() -> CommandHandler {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
             .map_async(Self::get_definitions)
@@ -58,7 +69,7 @@ impl HandlerOwner for UrbanLookup {
             )
             .map(
                 |bot: Bot, phrase: String, defs: Vec<UrbanDefinition>| async move {
-                    Self::compose_response(phrase, bot.formatter(), defs)
+                    bot.formatter().compose_urban_response(phrase, defs)
                 },
             )
             .filter_map_async(

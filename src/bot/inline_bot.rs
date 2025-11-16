@@ -1,3 +1,8 @@
+use crate::bloc::phrase_lookup::PhraseLookupBot;
+use crate::bloc::suggestions::SuggestionsBot;
+use crate::bloc::thesaurus_lookup::ThesaurusLookupBot;
+use crate::bloc::urban_lookup::UrbanLookupBot;
+use crate::bloc::word_lookup::WordLookupBot;
 use crate::bot::LookupBot;
 use crate::inlines::formatting::InlineFormatter;
 use shuttle_runtime::async_trait;
@@ -23,3 +28,9 @@ impl LookupBot for InlineBot {
         Ok(())
     }
 }
+
+impl WordLookupBot for InlineBot {}
+impl PhraseLookupBot for InlineBot {}
+impl ThesaurusLookupBot for InlineBot {}
+impl UrbanLookupBot for InlineBot {}
+impl SuggestionsBot for InlineBot {}

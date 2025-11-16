@@ -1,13 +1,12 @@
-use crate::bloc::common::HandlerOwner;
-use crate::bloc::help::HelpOwner;
-use crate::bloc::phrase_lookup::PhraseLookup;
-use crate::bloc::start::StartOwner;
-use crate::bloc::teapot::TeapotOwner;
-use crate::bloc::thesaurus_lookup::ThesaurusLookup;
-use crate::bloc::unknown::UnknownOwner;
-use crate::bloc::urban_lookup::UrbanLookup;
-use crate::bloc::word_lookup::WordLookup;
-use crate::bloc::wordle::WordleLookup;
+use crate::bloc::help::HelpHandler;
+use crate::bloc::phrase_lookup::PhraseLookupHandler;
+use crate::bloc::start::StartHandler;
+use crate::bloc::teapot::TeapotHandler;
+use crate::bloc::thesaurus_lookup::ThesaurusLookupHandler;
+use crate::bloc::unknown::UnknownHandler;
+use crate::bloc::urban_lookup::UrbanLookupHandler;
+use crate::bloc::word_lookup::WordLookupHandler;
+use crate::bloc::wordle::WordleHandler;
 use crate::bot::MessageBot;
 use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
 use teloxide::dptree::{Endpoint, Handler};
@@ -91,39 +90,30 @@ pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescript
         .map(extract_command)
         .map(|bot: Bot, message: Message| MessageBot { bot, message })
         .branch(
-            teloxide::dptree::case![MessageCommands::Wordle]
-                .branch(WordleLookup::handler::<MessageBot>()),
+            teloxide::dptree::case![MessageCommands::Wordle].branch(MessageBot::wordle_handler()),
         )
         .branch(
             teloxide::dptree::case![MessageCommands::WordLookup(args)]
-                .branch(WordLookup::handler::<MessageBot>()),
+                .branch(MessageBot::word_lookup_handler()),
         )
         .branch(
             teloxide::dptree::case![MessageCommands::PhraseLookup(phrase)]
-                .branch(PhraseLookup::handler::<MessageBot>()),
+                .branch(MessageBot::phrase_lookup_handler()),
         )
         .branch(
             teloxide::dptree::case![MessageCommands::Urban(phrase)]
-                .branch(UrbanLookup::handler::<MessageBot>()),
+                .branch(MessageBot::urban_lookup_handler()),
         )
         .branch(
             teloxide::dptree::case![MessageCommands::Thesaurus(word)]
-                .branch(ThesaurusLookup::handler::<MessageBot>()),
+                .branch(MessageBot::thesaurus_lookup_handler()),
         )
+        .branch(teloxide::dptree::case![MessageCommands::Help].branch(MessageBot::help_handler()))
         .branch(
-            teloxide::dptree::case![MessageCommands::Help]
-                .branch(HelpOwner::handler::<MessageBot>()),
+            teloxide::dptree::case![MessageCommands::Unknown].branch(MessageBot::unknown_handler()),
         )
+        .branch(teloxide::dptree::case![MessageCommands::Start].branch(MessageBot::start_handler()))
         .branch(
-            teloxide::dptree::case![MessageCommands::Unknown]
-                .branch(UnknownOwner::handler::<MessageBot>()),
-        )
-        .branch(
-            teloxide::dptree::case![MessageCommands::Start]
-                .branch(StartOwner::handler::<MessageBot>()),
-        )
-        .branch(
-            teloxide::dptree::case![MessageCommands::Teapot]
-                .branch(TeapotOwner::handler::<MessageBot>()),
+            teloxide::dptree::case![MessageCommands::Teapot].branch(MessageBot::teapot_handler()),
         )
 }

@@ -1,24 +1,25 @@
-use crate::bloc::common::HandlerOwner;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use teloxide::dptree::entry;
-use teloxide::prelude::{Message, Requester};
-use teloxide::Bot;
 
-pub struct UnknownOwner {}
-impl UnknownOwner {
-    async fn send_unknown(bot: Bot, message: Message) -> anyhow::Result<()> {
-        bot.send_message(message.chat.id, "I don't know that command, sorry.")
-            .await?;
-        Ok(())
-    }
+pub trait UnknownBot<Response> {
+    fn unknown_response(&self) -> Response;
+}
+pub trait UnknownHandler {
+    async fn send_unknown(self) -> anyhow::Result<()>;
+
+    fn unknown_handler() -> CommandHandler;
 }
 
-impl HandlerOwner for UnknownOwner {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
-        entry().endpoint(Self::send_unknown)
+impl<Bot> UnknownHandler for Bot
+where
+    Bot: UnknownBot<Bot::Response> + LookupBot + Send + Sync + 'static,
+{
+    async fn send_unknown(self) -> anyhow::Result<()> {
+        self.answer(self.unknown_response()).await?;
+        Ok(())
+    }
+    fn unknown_handler() -> CommandHandler {
+        entry().endpoint(|bot: Bot| async move { bot.send_unknown().await })
     }
 }

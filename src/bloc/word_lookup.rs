@@ -1,16 +1,18 @@
-use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bloc::common::LookupError;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
+use shuttle_runtime::async_trait;
 use teloxide::dptree::entry;
 
 type Entity = (Vec<WordDefinition>, Vec<AbbreviationDefinition>);
 
-pub struct WordLookup;
+pub trait WordLookupBot {}
 
-impl WordLookup {
+#[async_trait]
+pub trait WordLookupHandler {
     async fn get_definitions(client: Stands4Client, word: String) -> Entity {
         futures::future::join(
             client.search_word(&word).unwrap_or_else(|err| {
@@ -25,44 +27,37 @@ impl WordLookup {
         .await
     }
 
-    fn compose_response<Formatter>(
-        word: String,
-        mut formatter: Formatter,
-        (words, abbrs): Entity,
-    ) -> Result<Formatter::Value, LookupError>
-    where
-        Formatter: LookupFormatter,
-    {
-        let text = match (words.len(), abbrs.len()) {
-            (0, 0) => Ok(Formatter::on_empty()),
-            (0, _) => formatter.compose_abbr_defs(&word, &abbrs),
-            (_, 0) => formatter.compose_word_defs(&word, &words),
-            (_, _) => formatter.compose_words_with_abbrs(&word, &words, &abbrs),
-        };
-        text.map_err(|err| {
-            log::error!("Failed to construct a response: {:?}", err);
-            LookupError::FailedResponseBuilder
-        })
-    }
+    fn word_lookup_handler() -> CommandHandler;
 }
 
-pub trait WordLookupFormatter<R, E> {
-    fn compose_word_defs(self, word: &str, defs: &Vec<WordDefinition>) -> Result<R, E>;
-    fn compose_abbr_defs(self, word: &str, defs: &Vec<AbbreviationDefinition>) -> Result<R, E>;
+pub trait WordLookupFormatter<Value, Error> {
+    fn compose_word_defs(self, word: &str, defs: &Vec<WordDefinition>) -> Result<Value, Error>;
+
+    fn compose_abbr_defs(
+        self,
+        word: &str,
+        defs: &Vec<AbbreviationDefinition>,
+    ) -> Result<Value, Error>;
 
     fn compose_words_with_abbrs(
         self,
         word: &str,
         words: &Vec<WordDefinition>,
         abbrs: &Vec<AbbreviationDefinition>,
-    ) -> Result<R, E>;
+    ) -> Result<Value, Error>;
+
+    fn compose_word_response(self, word: String, entity: Entity) -> Result<Value, LookupError>;
 }
 
-impl<T, R, E> WordLookupFormatter<R, E> for T
+impl<Formatter> WordLookupFormatter<Formatter::Value, Formatter::Error> for Formatter
 where
-    T: LookupFormatter<Value = R, Error = E>,
+    Formatter: LookupFormatter,
 {
-    fn compose_word_defs(mut self, word: &str, defs: &Vec<WordDefinition>) -> Result<R, E> {
+    fn compose_word_defs(
+        mut self,
+        word: &str,
+        defs: &Vec<WordDefinition>,
+    ) -> Result<Formatter::Value, Formatter::Error> {
         self.append_title(format!("Found {} definitions", defs.len()));
 
         for (i, def) in defs.iter().take(5).enumerate() {
@@ -74,7 +69,11 @@ where
         self.build()
     }
 
-    fn compose_abbr_defs(mut self, word: &str, defs: &Vec<AbbreviationDefinition>) -> Result<R, E> {
+    fn compose_abbr_defs(
+        mut self,
+        word: &str,
+        defs: &Vec<AbbreviationDefinition>,
+    ) -> Result<Formatter::Value, Formatter::Error> {
         self.append_title(format!("Found {} definitions", defs.len()));
 
         let categorized = defs.categorized();
@@ -92,7 +91,7 @@ where
         word: &str,
         words: &Vec<WordDefinition>,
         abbrs: &Vec<AbbreviationDefinition>,
-    ) -> Result<R, E> {
+    ) -> Result<Formatter::Value, Formatter::Error> {
         self.append_title(format!("Found {} definitions", words.len()));
 
         for (i, def) in words.iter().take(5).enumerate() {
@@ -114,13 +113,30 @@ where
 
         self.build()
     }
+
+    fn compose_word_response(
+        self,
+        word: String,
+        (words, abbrs): Entity,
+    ) -> Result<Formatter::Value, LookupError> {
+        let text = match (words.len(), abbrs.len()) {
+            (0, 0) => Ok(Self::on_empty()),
+            (0, _) => self.compose_abbr_defs(&word, &abbrs),
+            (_, 0) => self.compose_word_defs(&word, &words),
+            (_, _) => self.compose_words_with_abbrs(&word, &words, &abbrs),
+        };
+        text.map_err(|err| {
+            log::error!("Failed to construct a response: {:?}", err);
+            LookupError::FailedResponseBuilder
+        })
+    }
 }
 
-impl HandlerOwner for WordLookup {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
+impl<Bot> WordLookupHandler for Bot
+where
+    Bot: LookupBot + Send + Sync + 'static,
+{
+    fn word_lookup_handler() -> CommandHandler {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
             .map_async(Self::get_definitions)
@@ -130,7 +146,7 @@ impl HandlerOwner for WordLookup {
                 },
             )
             .map(|bot: Bot, phrase: String, defs: Entity| async move {
-                Self::compose_response(phrase, bot.formatter(), defs)
+                bot.formatter().compose_word_response(phrase, defs)
             })
             .filter_map_async(
                 |bot: Bot, response: Result<Bot::Response, LookupError>| async move {

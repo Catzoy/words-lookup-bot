@@ -1,12 +1,12 @@
-use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bloc::common::LookupError;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{Stands4Client, SynAntDefinitions};
 use teloxide::dptree::entry;
 
-pub struct ThesaurusLookup;
-impl ThesaurusLookup {
+pub trait ThesaurusLookupBot {}
+pub trait ThesaurusLookupHandler {
     async fn get_definitions(
         client: Stands4Client,
         term: String,
@@ -17,37 +17,48 @@ impl ThesaurusLookup {
         })
     }
 
-    fn compose_response<Formatter>(
+    fn thesaurus_lookup_handler() -> CommandHandler;
+}
+trait ThesaurusLookupFormatter<Value> {
+    fn compose_thesaurus_response(
+        self,
         term: String,
-        mut formatter: Formatter,
         defs: Vec<SynAntDefinitions>,
-    ) -> Result<Formatter::Value, LookupError>
-    where
-        Formatter: LookupFormatter,
-    {
-        formatter.append_title(format!(
+    ) -> Result<Value, LookupError>;
+}
+
+impl<Formatter> ThesaurusLookupFormatter<Formatter::Value> for Formatter
+where
+    Formatter: LookupFormatter,
+{
+    fn compose_thesaurus_response(
+        mut self,
+        term: String,
+        defs: Vec<SynAntDefinitions>,
+    ) -> Result<Formatter::Value, LookupError> {
+        self.append_title(format!(
             "Found {} different definitions with respective information",
             defs.len()
         ));
         for (i, def) in defs.iter().take(5).enumerate() {
-            formatter.visit_syn_ant(i, def)
+            self.visit_syn_ant(i, def)
         }
         if defs.len() > 5 {
-            formatter.append_link(formatter.link_provider().syn_ant_link(&term))
+            self.append_link(self.link_provider().syn_ant_link(&term))
         }
 
-        formatter.build().map_err(|err| {
+        self.build().map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })
     }
 }
 
-impl HandlerOwner for ThesaurusLookup {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
+impl<Bot> ThesaurusLookupHandler for Bot
+where
+    Bot: ThesaurusLookupBot + LookupBot + Send + Sync + 'static,
+{
+    fn thesaurus_lookup_handler() -> CommandHandler {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
             .map_async(Self::get_definitions)
@@ -58,7 +69,7 @@ impl HandlerOwner for ThesaurusLookup {
             )
             .map(
                 |bot: Bot, phrase: String, defs: Vec<SynAntDefinitions>| async move {
-                    Self::compose_response(phrase, bot.formatter(), defs)
+                    bot.formatter().compose_thesaurus_response(phrase, defs)
                 },
             )
             .filter_map_async(

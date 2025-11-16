@@ -1,4 +1,3 @@
-use crate::bloc::common::HandlerOwner;
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
@@ -16,7 +15,6 @@ use teloxide::types::{
     ParseMode,
 };
 use teloxide::utils::command::BotCommands;
-use teloxide::{prelude::Requester, types::InlineQuery, Bot};
 
 trait SuggestionOwner {
     fn produce(self) -> Option<InlineQueryResult>;
@@ -179,8 +177,8 @@ impl SuggestionOwner for WordleSuggestion {
     }
 }
 
-pub struct SuggestionsOwner;
-impl SuggestionsOwner {
+pub trait SuggestionsBot {}
+pub trait SuggestionsHandler {
     /// Attempts to obtain a fresh WordleDayAnswer from the provided cache.
     ///
     /// On failure the error is logged and `None` is returned; on success returns `Some(WordleDayAnswer)`.
@@ -227,11 +225,16 @@ impl SuggestionsOwner {
     /// # Ok(())
     /// # }
     /// ```
-    async fn suggestions_handler(
-        bot: Bot,
-        query: InlineQuery,
-        wordle: Option<WordleDayAnswer>,
-    ) -> anyhow::Result<()> {
+    async fn send_suggestions(&self, wordle: Option<WordleDayAnswer>) -> anyhow::Result<()>;
+
+    fn suggestions_handler() -> CommandHandler;
+}
+
+impl<Bot> SuggestionsHandler for Bot
+where
+    Bot: SuggestionsBot + LookupBot<Response = Vec<InlineQueryResult>> + Send + Sync + 'static,
+{
+    async fn send_suggestions(&self, wordle: Option<WordleDayAnswer>) -> anyhow::Result<()> {
         let suggestions = vec![
             HelpSuggestion.produce(),
             UrbanSuggestion.produce(),
@@ -239,18 +242,15 @@ impl SuggestionsOwner {
             WordleSuggestion { wordle }.produce(),
         ];
         let answers = suggestions.into_iter().flatten().collect::<Vec<_>>();
-        bot.answer_inline_query(query.id, answers).await?;
+        self.answer(answers).await?;
         Ok(())
     }
-}
 
-impl HandlerOwner for SuggestionsOwner {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
-        entry()
-            .map_async(Self::ensure_wordle_answer)
-            .endpoint(Self::suggestions_handler)
+    fn suggestions_handler() -> CommandHandler {
+        entry().map_async(Self::ensure_wordle_answer).endpoint(
+            |bot: Bot, wordle: Option<WordleDayAnswer>| async move {
+                bot.send_suggestions(wordle).await
+            },
+        )
     }
 }

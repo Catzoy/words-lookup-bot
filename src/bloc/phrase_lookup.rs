@@ -1,13 +1,12 @@
-use crate::bloc::common::{HandlerOwner, LookupError};
+use crate::bloc::common::LookupError;
 use crate::bot::LookupBot;
 use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{PhraseDefinition, Stands4Client};
 use teloxide::dptree::entry;
 
-#[derive(Clone, Debug)]
-pub struct PhraseLookup;
-impl PhraseLookup {
+pub trait PhraseLookupBot {}
+pub trait PhraseLookupHandler {
     async fn get_definitions(
         client: Stands4Client,
         phrase: String,
@@ -18,35 +17,46 @@ impl PhraseLookup {
         })
     }
 
-    fn compose_response<Formatter>(
+    fn phrase_lookup_handler() -> CommandHandler;
+}
+
+trait PhraseLookupFormatter<Value> {
+    fn compose_phrase_response(
+        self,
         phrase: String,
-        mut formatter: Formatter,
         defs: Vec<PhraseDefinition>,
-    ) -> Result<Formatter::Value, LookupError>
-    where
-        Formatter: LookupFormatter,
-    {
-        formatter.append_title(format!("Found {} definitions", defs.len()));
+    ) -> Result<Value, LookupError>;
+}
+
+impl<Formatter> PhraseLookupFormatter<Formatter::Value> for Formatter
+where
+    Formatter: LookupFormatter,
+{
+    fn compose_phrase_response(
+        mut self,
+        phrase: String,
+        defs: Vec<PhraseDefinition>,
+    ) -> Result<Formatter::Value, LookupError> {
+        self.append_title(format!("Found {} definitions", defs.len()));
 
         for (i, def) in defs.iter().take(5).enumerate() {
-            formatter.visit_phrase(i, def);
+            self.visit_phrase(i, def);
         }
         if defs.len() > 5 {
-            formatter.append_link(formatter.link_provider().phrase_link(&phrase));
+            self.append_link(self.link_provider().phrase_link(&phrase));
         }
 
-        formatter.build().map_err(|err| {
+        self.build().map_err(|err| {
             log::error!("Failed to construct a response: {:?}", err);
             LookupError::FailedResponseBuilder
         })
     }
 }
-
-impl HandlerOwner for PhraseLookup {
-    fn handler<Bot>() -> CommandHandler
-    where
-        Bot: LookupBot + Clone + Send + Sync + 'static,
-    {
+impl<Bot> PhraseLookupHandler for Bot
+where
+    Bot: PhraseLookupBot + LookupBot + Send + Sync + 'static,
+{
+    fn phrase_lookup_handler() -> CommandHandler {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
             .map_async(Self::get_definitions)
@@ -55,11 +65,9 @@ impl HandlerOwner for PhraseLookup {
                     bot.ensure_request_success(response).await
                 },
             )
-            .map(
-                |bot: Bot, phrase: String, defs: Vec<PhraseDefinition>| async move {
-                    Self::compose_response(phrase, bot.formatter(), defs)
-                },
-            )
+            .map(|bot: Bot, phrase: String, defs: Vec<PhraseDefinition>| {
+                bot.formatter().compose_phrase_response(phrase, defs)
+            })
             .filter_map_async(
                 |bot: Bot, response: Result<Bot::Response, LookupError>| async move {
                     bot.retrieve_or_generic_err(response).await
