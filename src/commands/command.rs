@@ -1,3 +1,4 @@
+use crate::bloc::common::CommandHandler;
 use crate::bloc::help::HelpHandler;
 use crate::bloc::phrase_lookup::PhraseLookupHandler;
 use crate::bloc::start::StartHandler;
@@ -8,8 +9,7 @@ use crate::bloc::urban_lookup::UrbanLookupHandler;
 use crate::bloc::word_lookup::WordLookupHandler;
 use crate::bloc::wordle::WordleHandler;
 use crate::bot::MessageBot;
-use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
-use teloxide::dptree::{Endpoint, Handler};
+use teloxide::dispatching::UpdateFilterExt;
 use teloxide::prelude::{Message, Update};
 use teloxide::types::Me;
 use teloxide::utils::command::{BotCommands, ParseError};
@@ -83,9 +83,7 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     cmd
 }
 
-pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescription>;
-
-pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
+pub fn commands_tree() -> CommandHandler {
     Update::filter_message()
         .map(extract_command)
         .map(|bot: Bot, message: Message| MessageBot { bot, message })

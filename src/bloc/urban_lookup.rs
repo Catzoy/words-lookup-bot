@@ -1,6 +1,5 @@
-use crate::bloc::common::LookupError;
+use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::LookupBot;
-use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
 use teloxide::dptree::entry;

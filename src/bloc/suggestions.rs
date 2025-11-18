@@ -1,6 +1,6 @@
+use crate::bloc::common::CommandHandler;
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::LookupBot;
-use crate::commands::CommandHandler;
 use crate::format::ToEscaped;
 use crate::wordle::WordleDayAnswer;
 use crate::{

@@ -1,9 +1,9 @@
-use crate::bloc::common::LookupError;
+use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::LookupBot;
 use crate::format::LookupFormatter;
+use crate::wordle::cache::WordleCache;
 use crate::wordle::WordleDayAnswer;
-use crate::{commands::CommandHandler, wordle::cache::WordleCache};
 use shuttle_runtime::async_trait;
 use teloxide::dptree::entry;
 

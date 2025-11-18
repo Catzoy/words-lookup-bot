@@ -1,6 +1,5 @@
-use crate::bloc::common::LookupError;
+use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::LookupBot;
-use crate::commands::CommandHandler;
 use crate::format::LookupFormatter;
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;

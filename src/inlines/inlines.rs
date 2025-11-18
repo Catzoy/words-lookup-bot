@@ -1,3 +1,4 @@
+use crate::bloc::common::CommandHandler;
 use crate::bloc::phrase_lookup::PhraseLookupHandler;
 use crate::bloc::suggestions::SuggestionsHandler;
 use crate::bloc::thesaurus_lookup::ThesaurusLookupHandler;
@@ -8,8 +9,7 @@ use crate::inlines::debounce_inline_queries;
 use regex::Regex;
 use std::sync::LazyLock;
 use teloxide::{
-    dispatching::{DpHandlerDescription, UpdateFilterExt},
-    dptree::Handler,
+    dispatching::UpdateFilterExt,
     prelude::{InlineQuery, Update},
     Bot,
 };
@@ -53,7 +53,7 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
     Some(cmd)
 }
 
-pub fn inlines_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
+pub fn inlines_tree() -> CommandHandler {
     Update::filter_inline_query()
         .filter_map(extract_command)
         .map(|bot: Bot, query: InlineQuery| InlineBot { bot, query })

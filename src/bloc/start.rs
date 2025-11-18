@@ -1,5 +1,5 @@
+use crate::bloc::common::CommandHandler;
 use crate::bot::LookupBot;
-use crate::commands::CommandHandler;
 use teloxide::dptree::entry;
 
 pub trait StartBot<Value> {
