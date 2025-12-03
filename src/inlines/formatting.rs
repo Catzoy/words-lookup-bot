@@ -26,10 +26,29 @@ impl LookupFormatter for InlineFormatter {
     type Error = std::string::FromUtf8Error;
     type Value = Vec<InlineQueryResult>;
 
+    /// Create an empty collection of inline query results.
+    ///
+    /// Used when a lookup produces no answers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let empty = InlineFormatter::on_empty();
+    /// assert!(empty.is_empty());
+    /// ```
     fn on_empty() -> Self::Value {
         vec![]
     }
 
+    /// Access the formatter's link provider.
+    ///
+    /// Returns a reference to the internal LinksProvider.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let lp: &LinksProvider = formatter.link_provider();
+    /// ```
     fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
     }
