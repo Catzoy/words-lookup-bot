@@ -34,7 +34,7 @@ impl LookupBot for MessageBot {
     }
 
     fn empty_response() -> Self::Response {
-        "You meed to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
+        "You need to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
     }
 
     async fn answer(&self, text: String) -> anyhow::Result<()> {
