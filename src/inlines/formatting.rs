@@ -22,8 +22,33 @@ pub struct InlineFormatter {
     link_provider: LinksProvider,
 }
 
-impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
+impl LookupFormatter for InlineFormatter {
     type Error = std::string::FromUtf8Error;
+    type Value = Vec<InlineQueryResult>;
+
+    /// Create an empty collection of inline query results.
+    ///
+    /// Used when a lookup produces no answers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let empty = InlineFormatter::on_empty();
+    /// assert!(empty.is_empty());
+    /// ```
+    fn on_empty() -> Self::Value {
+        vec![]
+    }
+
+    /// Access the formatter's link provider.
+    ///
+    /// Returns a reference to the internal LinksProvider.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let lp: &LinksProvider = formatter.link_provider();
+    /// ```
     fn link_provider(&self) -> &LinksProvider {
         &self.link_provider
     }
@@ -120,7 +145,7 @@ impl LookupFormatter<Vec<InlineQueryResult>> for InlineFormatter {
         // no support for now
     }
 
-    fn build(self) -> Result<Vec<InlineQueryResult>, std::string::FromUtf8Error> {
+    fn build(self) -> Result<Self::Value, Self::Error> {
         self.answers
             .iter()
             .enumerate()

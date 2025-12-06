@@ -6,8 +6,10 @@ use std::fmt::Debug;
 use std::ops::Index;
 use std::sync::LazyLock;
 
-pub trait LookupFormatter<T> {
+pub trait LookupFormatter {
     type Error: Debug;
+    type Value: Send + Sync;
+    fn on_empty() -> Self::Value;
     fn link_provider(&self) -> &LinksProvider;
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
@@ -21,7 +23,7 @@ pub trait LookupFormatter<T> {
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition);
     fn append_title(&mut self, title: String);
     fn append_link(&mut self, link: String);
-    fn build(self) -> Result<T, Self::Error>;
+    fn build(self) -> Result<Self::Value, Self::Error>;
 }
 
 pub trait ToEscaped {

@@ -1,18 +1,17 @@
-use crate::bloc::common::HandlerOwner;
-use crate::commands::help::HelpOwner;
-use crate::commands::phrase_lookup::MessagePhraseLookup;
-use crate::commands::start::StartOwner;
-use crate::commands::teapot::TeapotOwner;
-use crate::commands::thesaurus_lookup::MessageThesaurusLookup;
-use crate::commands::unknown::UnknownOwner;
-use crate::commands::urban_lookup::MessageUrbanLookup;
-use crate::commands::word_lookup::MessageWordLookup;
-use crate::commands::wordle::MessageWordleLookup;
-use teloxide::dispatching::{DpHandlerDescription, UpdateFilterExt};
-use teloxide::dptree::{Endpoint, Handler};
-use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::{Message, Requester, Update};
-use teloxide::types::{Me, ParseMode};
+use crate::bloc::common::CommandHandler;
+use crate::bloc::help::HelpHandler;
+use crate::bloc::phrase_lookup::PhraseLookupHandler;
+use crate::bloc::start::StartHandler;
+use crate::bloc::teapot::TeapotHandler;
+use crate::bloc::thesaurus_lookup::ThesaurusLookupHandler;
+use crate::bloc::unknown::UnknownHandler;
+use crate::bloc::urban_lookup::UrbanLookupHandler;
+use crate::bloc::word_lookup::WordLookupHandler;
+use crate::bloc::wordle::WordleHandler;
+use crate::bot::MessageBot;
+use teloxide::dispatching::UpdateFilterExt;
+use teloxide::prelude::{Message, Update};
+use teloxide::types::Me;
 use teloxide::utils::command::{BotCommands, ParseError};
 use teloxide::Bot;
 
@@ -71,6 +70,30 @@ fn extract_text_command(text: &str) -> MessageCommands {
         _ => MessageCommands::PhraseLookup(words.join(" ")),
     }
 }
+/// Parse a Telegram message together with the bot identity into a `MessageCommands` variant.
+///
+/// Attempts to parse the message text as a bot command (taking the bot's username into account).
+/// If parsing yields an unknown slash command (starts with `/`) the function returns
+/// `MessageCommands::Unknown`. For other parse failures it falls back to text-based extraction:
+/// a single word becomes `MessageCommands::WordLookup`, multiple words become
+/// `MessageCommands::PhraseLookup`.
+///
+/// # Parameters
+///
+/// - `message` — the incoming Telegram `Message` whose text should be interpreted as a command or lookup.
+/// - `me` — the bot's `Me` identity used to resolve username-qualified commands.
+///
+/// # Returns
+///
+/// A `MessageCommands` value representing the resolved command or lookup.
+///
+/// # Examples
+///
+/// ```
+/// // Construct appropriate `Message` and `Me` values in your test harness and call:
+/// // let cmd = extract_command(message, me);
+/// // assert!(matches!(cmd, MessageCommands::WordLookup(_) | MessageCommands::PhraseLookup(_)));
+/// ```
 fn extract_command(message: Message, me: Me) -> MessageCommands {
     let text = message.text().unwrap_or_default();
     let username = me.username.clone().unwrap_or_default();
@@ -84,33 +107,47 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     cmd
 }
 
-pub async fn drop_empty(bot: Bot, message: Message, phrase: String) -> bool {
-    if phrase.is_empty() {
-        let _ = bot
-            .send_message(
-                message.chat.id,
-                "You meed to specify a phrase to look up, like so: `\\phrase buckle up`",
-            )
-            .parse_mode(ParseMode::MarkdownV2)
-            .await;
-        false
-    } else {
-        true
-    }
-}
-
-pub type CommandHandler = Endpoint<'static, anyhow::Result<()>, DpHandlerDescription>;
-
-pub fn commands_tree() -> Handler<'static, anyhow::Result<()>, DpHandlerDescription> {
+/// Builds the update dispatch tree that routes incoming messages to the appropriate command handlers.
+///
+/// The returned handler filters incoming updates for messages, extracts a MessageCommands value from
+/// each message, wraps the bot and message into a MessageBot, and dispatches to the corresponding
+/// handler (wordle, word lookup, phrase lookup, urban, thesaurus, help, unknown, start, teapot).
+///
+/// # Examples
+///
+/// ```
+/// let handler = commands_tree();
+/// // `handler` can be used with the bot dispatcher to process incoming updates.
+/// ```
+pub fn commands_tree() -> CommandHandler {
     Update::filter_message()
         .map(extract_command)
-        .branch(MessageWordleLookup::handler())
-        .branch(MessageWordLookup::handler())
-        .branch(MessagePhraseLookup::handler())
-        .branch(MessageUrbanLookup::handler())
-        .branch(MessageThesaurusLookup::handler())
-        .branch(HelpOwner::handler())
-        .branch(UnknownOwner::handler())
-        .branch(StartOwner::handler())
-        .branch(TeapotOwner::handler())
+        .map(|bot: Bot, message: Message| MessageBot { bot, message })
+        .branch(
+            teloxide::dptree::case![MessageCommands::Wordle].branch(MessageBot::wordle_handler()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::WordLookup(args)]
+                .branch(MessageBot::word_lookup_handler()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::PhraseLookup(phrase)]
+                .branch(MessageBot::phrase_lookup_handler()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Urban(phrase)]
+                .branch(MessageBot::urban_lookup_handler()),
+        )
+        .branch(
+            teloxide::dptree::case![MessageCommands::Thesaurus(word)]
+                .branch(MessageBot::thesaurus_lookup_handler()),
+        )
+        .branch(teloxide::dptree::case![MessageCommands::Help].branch(MessageBot::help_handler()))
+        .branch(
+            teloxide::dptree::case![MessageCommands::Unknown].branch(MessageBot::unknown_handler()),
+        )
+        .branch(teloxide::dptree::case![MessageCommands::Start].branch(MessageBot::start_handler()))
+        .branch(
+            teloxide::dptree::case![MessageCommands::Teapot].branch(MessageBot::teapot_handler()),
+        )
 }
