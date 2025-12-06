@@ -74,10 +74,10 @@ where
             defs.len()
         ));
         for (i, def) in defs.iter().take(5).enumerate() {
-            self.visit_syn_ant(i, def)
+            self.visit_syn_ant(i, def);
         }
         if defs.len() > 5 {
-            self.append_link(self.link_provider().syn_ant_link(&term))
+            self.append_link(self.link_provider().syn_ant_link(&term));
         }
 
         self.build().map_err(|err| {

@@ -77,7 +77,7 @@ impl LookupBot for MessageBot {
     /// # }
     /// ```
     async fn answer(&self, text: String) -> anyhow::Result<()> {
-        let _ = &self
+        let _ = self
             .bot
             .send_message(self.message.chat.id, text)
             .parse_mode(ParseMode::MarkdownV2)

@@ -29,29 +29,24 @@ where
     /// assert!(output.contains("Synonyms"));
     /// ```
     fn push_syn_ant(builder: &mut Builder, def: &SynAntDefinitions, on_empty: fn() -> String) {
-        let mut cmds: Vec<Box<dyn FnMut(&mut Builder)>> = vec![];
+        let mut has_any = false;
+
         if !def.synonyms.is_empty() {
-            let handler = |builder: &mut Builder| {
-                builder.append("*Synonyms*: ");
-                builder.list_words(&def.synonyms);
-                builder.append("\n");
-            };
-            cmds.push(Box::new(handler));
+            builder.append("*Synonyms*: ");
+            builder.list_words(&def.synonyms);
+            builder.append("\n");
+            has_any = true;
         }
+
         if !def.antonyms.is_empty() {
-            let handler = |builder: &mut Builder| {
-                builder.append("*Antonyms*: ");
-                builder.list_words(&def.antonyms);
-                builder.append("\n");
-            };
-            cmds.push(Box::new(handler));
+            builder.append("*Antonyms*: ");
+            builder.list_words(&def.antonyms);
+            builder.append("\n");
+            has_any = true;
         }
-        if cmds.is_empty() {
-            builder.append(on_empty())
-        } else {
-            for mut expr in cmds {
-                expr(builder);
-            }
+
+        if !has_any {
+            builder.append(on_empty());
         }
     }
 }

@@ -7,7 +7,7 @@ pub trait StartBot<Value> {
 }
 
 pub trait StartHandler {
-    async fn send_start(self) -> anyhow::Result<()>;
+    async fn send_start(&self) -> anyhow::Result<()>;
 
     fn start_handler() -> CommandHandler;
 }
@@ -30,7 +30,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    async fn send_start(self) -> anyhow::Result<()> {
+    async fn send_start(&self) -> anyhow::Result<()> {
         self.answer(self.start_response()).await?;
         Ok(())
     }
