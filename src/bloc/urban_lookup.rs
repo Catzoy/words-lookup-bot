@@ -89,9 +89,10 @@ where
     }
 }
 
-impl<Bot> UrbanLookupHandler for Bot
+impl<Bot, Formatter> UrbanLookupHandler for Bot
 where
-    Bot: LookupBot + Send + Sync + 'static,
+    Bot: UrbanLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Creates a Teloxide command handler that processes Urban Dictionary lookups by validating the input phrase, retrieving definitions, formatting a response, and sending it via the bot.
     ///
@@ -111,7 +112,7 @@ where
                 },
             )
             .map(
-                |bot: Bot, phrase: String, defs: Vec<UrbanDefinition>| async move {
+                move |bot: Bot, phrase: String, defs: Vec<UrbanDefinition>| {
                     bot.formatter().compose_urban_response(phrase, defs)
                 },
             )

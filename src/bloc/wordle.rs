@@ -86,9 +86,10 @@ where
 }
 
 #[async_trait]
-impl<Bot> WordleHandler for Bot
+impl<Bot, Formatter> WordleHandler for Bot
 where
-    Bot: LookupBot + WordleBot<Bot::Response> + Send + Sync + 'static,
+    Bot: WordleBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Attempts to extract the day's Wordle answer from a cache lookup result, sending an error response when the lookup failed.
     ///
@@ -146,7 +147,7 @@ where
                     bot.retrieve_or_failed_cache(answer).await
                 },
             )
-            .map(|bot: Bot, answer: WordleDayAnswer| {
+            .map(move |bot: Bot, answer: WordleDayAnswer| {
                 bot.formatter().compose_wordle_response(answer)
             })
             .filter_map_async(

@@ -88,9 +88,10 @@ where
         })
     }
 }
-impl<Bot> PhraseLookupHandler for Bot
+impl<Bot, Formatter> PhraseLookupHandler for Bot
 where
-    Bot: PhraseLookupBot + LookupBot + Send + Sync + 'static,
+    Bot: PhraseLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Constructs a command handler pipeline that processes phrase lookup requests by validating input, retrieving definitions, formatting a response, and sending that response to the user.
     ///
@@ -111,9 +112,11 @@ where
                     bot.ensure_request_success(response).await
                 },
             )
-            .map(|bot: Bot, phrase: String, defs: Vec<PhraseDefinition>| {
-                bot.formatter().compose_phrase_response(phrase, defs)
-            })
+            .map(
+                move |bot: Bot, phrase: String, defs: Vec<PhraseDefinition>| {
+                    bot.formatter().compose_phrase_response(phrase, defs)
+                },
+            )
             .filter_map_async(
                 |bot: Bot, response: Result<Bot::Response, LookupError>| async move {
                     bot.retrieve_or_generic_err(response).await

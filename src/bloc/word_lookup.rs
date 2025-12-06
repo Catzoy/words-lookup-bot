@@ -239,9 +239,10 @@ where
     }
 }
 
-impl<Bot> WordLookupHandler for Bot
+impl<Bot, Formatter> WordLookupHandler for Bot
 where
-    Bot: LookupBot + Send + Sync + 'static,
+    Bot: WordLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Builds a teloxide dptree CommandHandler that processes a phrase lookup and sends the bot's formatted response.
     
@@ -280,12 +281,7 @@ where
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
             .map_async(Self::get_definitions)
-            .filter_map_async(
-                |bot: Bot, response: Result<Entity, LookupError>| async move {
-                    bot.ensure_request_success(response).await
-                },
-            )
-            .map(|bot: Bot, phrase: String, defs: Entity| async move {
+            .map(move |bot: Bot, phrase: String, defs: Entity| {
                 bot.formatter().compose_word_response(phrase, defs)
             })
             .filter_map_async(

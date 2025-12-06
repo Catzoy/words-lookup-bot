@@ -87,9 +87,10 @@ where
     }
 }
 
-impl<Bot> ThesaurusLookupHandler for Bot
+impl<Bot, Formatter> ThesaurusLookupHandler for Bot
 where
-    Bot: ThesaurusLookupBot + LookupBot + Send + Sync + 'static,
+    Bot: ThesaurusLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Constructs a teloxide command handler that performs a complete thesaurus lookup flow:
     /// it validates the incoming phrase, fetches synonym/antonym definitions, formats a response,
@@ -112,7 +113,7 @@ where
                 },
             )
             .map(
-                |bot: Bot, phrase: String, defs: Vec<SynAntDefinitions>| async move {
+                move |bot: Bot, phrase: String, defs: Vec<SynAntDefinitions>| {
                     bot.formatter().compose_thesaurus_response(phrase, defs)
                 },
             )
