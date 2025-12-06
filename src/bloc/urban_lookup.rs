@@ -6,6 +6,27 @@ use teloxide::dptree::entry;
 
 pub trait UrbanLookupBot {}
 pub trait UrbanLookupHandler {
+    /// Fetches definitions for `term` from Urban Dictionary using the provided client.
+    ///
+    /// # Parameters
+    ///
+    /// - `term`: The search term to query Urban Dictionary for.
+    ///
+    /// # Returns
+    ///
+    /// `Ok` with a vector of `UrbanDefinition` when the lookup succeeds; `Err(LookupError::FailedRequest)` if the remote request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use your_crate::{get_definitions, UrbanDictionaryClient, UrbanDefinition, LookupError};
+    /// # async fn example() -> Result<(), LookupError> {
+    /// let client = UrbanDictionaryClient::new(); // construct client appropriately
+    /// let defs: Vec<UrbanDefinition> = get_definitions(client, "rust".to_string()).await?;
+    /// assert!(!defs.is_empty() || defs.is_empty()); // placeholder assertion
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn get_definitions(
         client: UrbanDictionaryClient,
         term: String,
@@ -30,6 +51,21 @@ impl<Formatter> UrbanFormatter<Formatter::Value> for Formatter
 where
     Formatter: LookupFormatter,
 {
+    /// Compose a formatted response for Urban Dictionary search results.
+    ///
+    /// The response includes a title stating the total number of definitions, up to the first five definitions, and — when more than five definitions exist — a link to the full Urban Dictionary entry for the term.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(Formatter::Value)` with the constructed response on success, `Err(LookupError::FailedResponseBuilder)` if the formatter fails to build the final value.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let formatter = Formatter::new();
+    /// let defs: Vec<UrbanDefinition> = Vec::new();
+    /// let _ = formatter.compose_urban_response("rust".into(), defs);
+    /// ```
     fn compose_urban_response(
         mut self,
         term: String,
@@ -57,6 +93,14 @@ impl<Bot> UrbanLookupHandler for Bot
 where
     Bot: LookupBot + Send + Sync + 'static,
 {
+    /// Creates a Teloxide command handler that processes Urban Dictionary lookups by validating the input phrase, retrieving definitions, formatting a response, and sending it via the bot.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Construct the command handler for urban lookups.
+    /// let handler = Bot::urban_lookup_handler();
+    /// ```
     fn urban_lookup_handler() -> CommandHandler {
         entry()
             .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })

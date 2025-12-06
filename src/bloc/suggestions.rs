@@ -234,6 +234,30 @@ impl<Bot> SuggestionsHandler for Bot
 where
     Bot: SuggestionsBot + LookupBot<Response = Vec<InlineQueryResult>> + Send + Sync + 'static,
 {
+    /// Send inline query suggestions assembled from the available suggestion owners.
+    ///
+    /// The handler gathers Help, Urban, Thesaurus, and (optionally) Wordle suggestions,
+    /// filters out any missing entries, and forwards the collected InlineQueryResult
+    /// list to the bot's inline answer responder.
+    ///
+    /// # Parameters
+    ///
+    /// - `wordle`: Optional cached WordleDayAnswer used to produce a Wordle suggestion.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` on success, an error otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use anyhow::Result;
+    /// # use your_crate::bloc::suggestions::WordleDayAnswer;
+    /// # async fn example<B: your_crate::bloc::suggestions::SuggestionsHandler + Sync>(bot: &B) -> Result<()> {
+    /// bot.send_suggestions(None).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn send_suggestions(&self, wordle: Option<WordleDayAnswer>) -> anyhow::Result<()> {
         let suggestions = vec![
             HelpSuggestion.produce(),
@@ -246,6 +270,18 @@ where
         Ok(())
     }
 
+    /// Builds a CommandHandler that prepares and sends inline suggestions, supplying a fresh Wordle answer if available.
+    ///
+    /// The handler first resolves an optional `WordleDayAnswer` via `Self::ensure_wordle_answer`, then invokes
+    /// `send_suggestions` on the bot with that optional answer.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // Obtain a handler for the bot type and register it with your dispatcher.
+    /// let handler = Bot::suggestions_handler();
+    /// // register `handler` with your bot framework...
+    /// ```
     fn suggestions_handler() -> CommandHandler {
         entry().map_async(Self::ensure_wordle_answer).endpoint(
             |bot: Bot, wordle: Option<WordleDayAnswer>| async move {

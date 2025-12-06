@@ -70,6 +70,30 @@ fn extract_text_command(text: &str) -> MessageCommands {
         _ => MessageCommands::PhraseLookup(words.join(" ")),
     }
 }
+/// Parse a Telegram message together with the bot identity into a `MessageCommands` variant.
+///
+/// Attempts to parse the message text as a bot command (taking the bot's username into account).
+/// If parsing yields an unknown slash command (starts with `/`) the function returns
+/// `MessageCommands::Unknown`. For other parse failures it falls back to text-based extraction:
+/// a single word becomes `MessageCommands::WordLookup`, multiple words become
+/// `MessageCommands::PhraseLookup`.
+///
+/// # Parameters
+///
+/// - `message` — the incoming Telegram `Message` whose text should be interpreted as a command or lookup.
+/// - `me` — the bot's `Me` identity used to resolve username-qualified commands.
+///
+/// # Returns
+///
+/// A `MessageCommands` value representing the resolved command or lookup.
+///
+/// # Examples
+///
+/// ```
+/// // Construct appropriate `Message` and `Me` values in your test harness and call:
+/// // let cmd = extract_command(message, me);
+/// // assert!(matches!(cmd, MessageCommands::WordLookup(_) | MessageCommands::PhraseLookup(_)));
+/// ```
 fn extract_command(message: Message, me: Me) -> MessageCommands {
     let text = message.text().unwrap_or_default();
     let username = me.username.clone().unwrap_or_default();
@@ -83,6 +107,18 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     cmd
 }
 
+/// Builds the update dispatch tree that routes incoming messages to the appropriate command handlers.
+///
+/// The returned handler filters incoming updates for messages, extracts a MessageCommands value from
+/// each message, wraps the bot and message into a MessageBot, and dispatches to the corresponding
+/// handler (wordle, word lookup, phrase lookup, urban, thesaurus, help, unknown, start, teapot).
+///
+/// # Examples
+///
+/// ```
+/// let handler = commands_tree();
+/// // `handler` can be used with the bot dispatcher to process incoming updates.
+/// ```
 pub fn commands_tree() -> CommandHandler {
     Update::filter_message()
         .map(extract_command)
