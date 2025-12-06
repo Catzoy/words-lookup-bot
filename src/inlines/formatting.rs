@@ -145,7 +145,7 @@ impl LookupFormatter for InlineFormatter {
         // no support for now
     }
 
-    fn build(self) -> Result<Vec<InlineQueryResult>, std::string::FromUtf8Error> {
+    fn build(self) -> Result<Self::Value, Self::Error> {
         self.answers
             .iter()
             .enumerate()

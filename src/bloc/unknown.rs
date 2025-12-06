@@ -6,7 +6,7 @@ pub trait UnknownBot<Response> {
     fn unknown_response(&self) -> Response;
 }
 pub trait UnknownHandler {
-    async fn send_unknown(self) -> anyhow::Result<()>;
+    async fn send_unknown(&self) -> anyhow::Result<()>;
 
     fn unknown_handler() -> CommandHandler;
 }
@@ -30,7 +30,7 @@ where
     ///     bot.send_unknown().await
     /// }
     /// ```
-    async fn send_unknown(self) -> anyhow::Result<()> {
+    async fn send_unknown(&self) -> anyhow::Result<()> {
         self.answer(self.unknown_response()).await?;
         Ok(())
     }

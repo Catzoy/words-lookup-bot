@@ -41,7 +41,7 @@ impl LookupBot for InlineBot {
     /// ```
     async fn answer(&self, answers: Vec<InlineQueryResult>) -> anyhow::Result<()> {
         let query_id = self.query.id.clone();
-        let _ = &self.bot.answer_inline_query(query_id, answers).await?;
+        let _ = self.bot.answer_inline_query(query_id, answers).await?;
         Ok(())
     }
 }

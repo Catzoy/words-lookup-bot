@@ -274,7 +274,7 @@ impl LookupFormatter for FullMessageFormatter {
             .append(format!("\\#{} \\- {}\n", i + 1, def.word));
         self.builder.appendl(meaning(&def.meaning));
         if let Some(example) = &def.example {
-            self.builder.appendl(as_in(&example));
+            self.builder.appendl(as_in(example));
         }
         self.builder.append("\n");
     }
