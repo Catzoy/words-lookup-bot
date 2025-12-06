@@ -1,5 +1,4 @@
 pub mod common;
-pub mod ext;
 pub mod formatting;
 pub mod help;
 pub mod phrase_lookup;
