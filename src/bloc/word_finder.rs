@@ -21,11 +21,11 @@ pub trait WordFinderHandler {
     fn word_finder_handler() -> CommandHandler;
 }
 
-trait WordFinderFormater<Value, Error> {
+trait WordFinderFormatter<Value> {
     fn compose_word_finder_response(self, defs: Vec<String>) -> Result<Value, LookupError>;
 }
 
-impl<Formatter> WordFinderFormater<Formatter::Value, Formatter::Error> for Formatter
+impl<Formatter> WordFinderFormatter<Formatter::Value> for Formatter
 where
     Formatter: LookupFormatter,
 {
@@ -34,7 +34,7 @@ where
         defs: Vec<String>,
     ) -> Result<Formatter::Value, LookupError> {
         let defs = defs.to_escaped();
-        self.append_title(format!("Found {:} words", defs.len()));
+        self.append_title(format!("Found {} words", defs.len()));
         for (i, def) in defs.iter().enumerate() {
             self.visit_word_finder_definition(i, def);
         }
