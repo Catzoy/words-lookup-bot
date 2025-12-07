@@ -67,7 +67,8 @@ where
                     has_filled = true;
                 }
                 _ => {
-                    break;
+                    let _ = self.answer_generic_err().await;
+                    return false;
                 }
             }
         }
