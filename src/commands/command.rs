@@ -65,6 +65,17 @@ pub enum MessageCommands {
     )]
     Finder(String),
 }
+/// Convert plain text into a MessageCommands value based on word count.
+///
+/// Produces `Teapot` for empty input, `WordLookup(word)` for a single word (converted to lowercase), and `PhraseLookup(phrase)` for multiple words (lowercased and joined with single spaces).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(extract_text_command(""), MessageCommands::Teapot);
+/// assert_eq!(extract_text_command("Hello"), MessageCommands::WordLookup("hello".into()));
+/// assert_eq!(extract_text_command("Hello WORLD"), MessageCommands::PhraseLookup("hello world".into()));
+/// ```
 fn extract_text_command(text: &str) -> MessageCommands {
     let words = text
         .split_whitespace()
@@ -115,15 +126,14 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
 
 /// Builds the update dispatch tree that routes incoming messages to the appropriate command handlers.
 ///
-/// The returned handler filters incoming updates for messages, extracts a MessageCommands value from
-/// each message, wraps the bot and message into a MessageBot, and dispatches to the corresponding
-/// handler (wordle, word lookup, phrase lookup, urban, thesaurus, help, unknown, start, teapot).
+/// The returned handler filters updates for messages, extracts a `MessageCommands` value from each message,
+/// wraps the bot and message into a `MessageBot`, and dispatches to the matching handler branch.
 ///
 /// # Examples
 ///
 /// ```
 /// let handler = commands_tree();
-/// // `handler` can be used with the bot dispatcher to process incoming updates.
+/// // Attach `handler` to a teloxide dispatcher to process incoming updates.
 /// ```
 pub fn commands_tree() -> CommandHandler {
     Update::filter_message()
