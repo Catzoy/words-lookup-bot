@@ -8,5 +8,6 @@ pub mod teapot;
 pub mod thesaurus_lookup;
 pub mod unknown;
 pub mod urban_lookup;
+pub mod word_finder;
 pub mod word_lookup;
 pub mod wordle;

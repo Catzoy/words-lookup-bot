@@ -137,6 +137,10 @@ impl LookupFormatter for InlineFormatter {
         self.answers.push(answer);
     }
 
+    fn visit_word_finder_definition(&mut self, _i: usize, _def: &String) {
+        // no support for now
+    }
+
     fn append_title(&mut self, _title: String) {
         // no support for now
     }

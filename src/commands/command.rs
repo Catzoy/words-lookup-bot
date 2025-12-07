@@ -6,6 +6,7 @@ use crate::bloc::teapot::TeapotHandler;
 use crate::bloc::thesaurus_lookup::ThesaurusLookupHandler;
 use crate::bloc::unknown::UnknownHandler;
 use crate::bloc::urban_lookup::UrbanLookupHandler;
+use crate::bloc::word_finder::WordFinderHandler;
 use crate::bloc::word_lookup::WordLookupHandler;
 use crate::bloc::wordle::WordleHandler;
 use crate::bot::MessageBot;
@@ -58,6 +59,11 @@ pub enum MessageCommands {
         where `sa.` will point to look in the Thesaurus"
     )]
     Thesaurus(String),
+    #[command(
+        description = "Get a list of words that have characters at specified positions.\n\
+        For example, `___ly` will return all 5-letter words that end with `ly`"
+    )]
+    Finder(String),
 }
 fn extract_text_command(text: &str) -> MessageCommands {
     let words = text
@@ -123,6 +129,10 @@ pub fn commands_tree() -> CommandHandler {
     Update::filter_message()
         .map(extract_command)
         .map(|bot: Bot, message: Message| MessageBot { bot, message })
+        .branch(
+            teloxide::dptree::case![MessageCommands::Finder(mask)]
+                .branch(MessageBot::word_finder_handler()),
+        )
         .branch(
             teloxide::dptree::case![MessageCommands::Wordle].branch(MessageBot::wordle_handler()),
         )

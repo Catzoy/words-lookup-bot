@@ -3,6 +3,7 @@ mod bot;
 mod commands;
 mod format;
 mod inlines;
+mod mw;
 mod service;
 mod stands4;
 mod urban;

@@ -279,6 +279,11 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append("\n");
     }
 
+    fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
+        self.builder
+            .appendl(format!("\\#{} \\- {}", i + 1, def.to_escaped()));
+    }
+
     fn append_title(&mut self, title: String) {
         self.builder.append(format!("{}\n\n", title));
     }

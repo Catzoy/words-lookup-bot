@@ -1,5 +1,6 @@
 use crate::commands::*;
 use crate::inlines::*;
+use crate::mw::client::MerriamWebsterClient;
 use crate::stands4::client::Stands4Client;
 use crate::urban::UrbanDictionaryClient;
 use crate::wordle::cache::WordleCache;
@@ -30,6 +31,7 @@ impl shuttle_runtime::Service for TelegramService {
             self.stands4_client.clone(),
             InlineQueryDebouncer::default(),
             UrbanDictionaryClient::default(),
+            MerriamWebsterClient::default(),
             WordleCache::new(WordleClient::default(), self.stands4_client.clone(),)
         ];
 
