@@ -128,6 +128,20 @@ impl LookupFormatter for InlineFormatter {
         self.answers.push(answer);
     }
 
+    /// Adds an inline answer for an UrbanDefinition to the formatter's accumulated answers.
+    ///
+    /// The created answer uses the title "#<i+1> - <word>", copies the definition into `meaning`,
+    /// and sets `description` to the formatted example if one exists.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut fmt = InlineFormatter::default();
+    /// let def = UrbanDefinition { word: "yeet".into(), meaning: "to throw".into(), example: Some("He yeeted it.".into()) };
+    /// fmt.visit_urban_definition(0, &def);
+    /// assert_eq!(fmt.answers.len(), 1);
+    /// assert!(fmt.answers[0].title.contains("yeet"));
+    /// ```
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
         let answer = InlineAnswer {
             title: format!("#{} - {}", i + 1, def.word),
@@ -137,6 +151,31 @@ impl LookupFormatter for InlineFormatter {
         self.answers.push(answer);
     }
 
+    /// Ignores a word-finder definition during visitation.
+    ///
+    /// This method is intentionally a no-op because inline formatting does not support
+    /// word-finder entries; calls to it have no effect on the formatter's state.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut fmt = crate::inlines::formatting::InlineFormatter::default();
+    /// fmt.visit_word_finder_definition(0, &"pattern".to_string());
+    /// ```
+    fn visit_word_finder_definition(&mut self, _i: usize, _def: &String) {
+        // no support for now
+    }
+
+    /// Accepts a title but intentionally performs no action.
+    ///
+    /// This method is a no-op placeholder; provided titles are ignored.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut fmt = InlineFormatter::default();
+    /// fmt.append_title("ignored".to_string());
+    /// ```
     fn append_title(&mut self, _title: String) {
         // no support for now
     }
@@ -170,6 +209,19 @@ fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::F
     full_text.string()
 }
 
+/// Builds an `InlineQueryResult::Article` from an `InlineAnswer` and its preformatted MarkdownV2 text.
+///
+/// The article's title is taken from `answer.title`, its description is `answer.meaning`, and the provided
+/// `full_text` is used as the message content with MarkdownV2 parse mode. The result ID is formatted as `answer-<i>`.
+///
+/// # Examples
+///
+/// ```
+/// let answer = InlineAnswer { title: "Example".into(), meaning: "A short meaning".into(), description: None };
+/// let full_text = "Example\n\nA short meaning".to_string();
+/// let res = compose_inline_result(0, &answer, full_text);
+/// assert!(matches!(res, InlineQueryResult::Article(_)));
+/// ```
 fn compose_inline_result(i: usize, answer: &InlineAnswer, full_text: String) -> InlineQueryResult {
     let content = InputMessageContentText::new(&full_text).parse_mode(ParseMode::MarkdownV2);
     let content = InputMessageContent::Text(content);

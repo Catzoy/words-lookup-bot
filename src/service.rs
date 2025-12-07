@@ -1,4 +1,5 @@
 use crate::commands::*;
+use crate::datamuse::client::DatamuseClient;
 use crate::inlines::*;
 use crate::stands4::client::Stands4Client;
 use crate::urban::UrbanDictionaryClient;
@@ -19,6 +20,29 @@ pub struct TelegramService {
 
 #[shuttle_runtime::async_trait]
 impl shuttle_runtime::Service for TelegramService {
+    /// Starts and runs the Telegram bot dispatcher with its required dependencies and a polling update listener.
+    ///
+    /// The service constructs the bot and dependency set, registers command and inline handler trees,
+    /// ignores non-message updates, and runs the dispatcher until completion.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if the dispatcher runs to completion; an `Error` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::net::SocketAddr;
+    /// # use tokio::runtime::Runtime;
+    /// # use my_crate::TelegramService;
+    /// # fn make_service() -> TelegramService { unimplemented!() }
+    /// # let mut rt = Runtime::new().unwrap();
+    /// # rt.block_on(async {
+    /// let svc = make_service();
+    /// let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
+    /// let _ = svc.bind(addr).await;
+    /// # });
+    /// ```
     async fn bind(self, _: SocketAddr) -> Result<(), Error> {
         let bot = Bot::new(self.token.clone());
         let cloned_bot = bot.clone();
@@ -30,6 +54,7 @@ impl shuttle_runtime::Service for TelegramService {
             self.stands4_client.clone(),
             InlineQueryDebouncer::default(),
             UrbanDictionaryClient::default(),
+            DatamuseClient::default(),
             WordleCache::new(WordleClient::default(), self.stands4_client.clone(),)
         ];
 

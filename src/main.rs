@@ -1,6 +1,7 @@
 mod bloc;
 mod bot;
 mod commands;
+mod datamuse;
 mod format;
 mod inlines;
 mod service;

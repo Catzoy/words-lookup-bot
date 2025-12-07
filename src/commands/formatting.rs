@@ -243,15 +243,16 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append("\n");
     }
 
-    /// Appends an UrbanDictionary-style definition entry for `def` to the internal builder.
+    /// Append an Urban Dictionary–style entry for an urban definition to the internal builder.
     ///
-    /// The entry consists of a numbered header (`#<index> - <word>`), the formatted meaning,
-    /// an optional formatted example if present, and a trailing blank line.
+    /// The entry is written with a numbered header (displaying `i + 1`), the formatted meaning,
+    /// an optional formatted example if present, and a trailing blank line. The provided definition
+    /// is escaped before formatting.
     ///
     /// # Parameters
     ///
-    /// - `i`: zero-based index of the definition (displayed as `i + 1`).
-    /// - `def`: the urban definition to format and append; it is escaped prior to formatting.
+    /// - `i`: zero-based index used for the displayed number (`i + 1`).
+    /// - `def`: the urban definition to format and append.
     ///
     /// # Examples
     ///
@@ -279,6 +280,32 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append("\n");
     }
 
+    /// Appends a numbered line containing the provided word-finder definition to the internal builder.
+    ///
+    /// The index `i` is zero-based; the appended line is formatted as `#<i+1> - <def>` without any escaping and includes a trailing newline.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // After calling `visit_word_finder_definition(0, &"candidate".to_string())`
+    /// // the builder will contain the line:
+    /// // "#1 - candidate\n"
+    /// ```
+    fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
+        self.builder.appendl(format!("\\#{} \\- {}", i + 1, def));
+    }
+
+    /// Appends a title followed by two newline characters to the internal builder.
+    ///
+    /// The provided `title` is written as-is, then two newline characters (`\n\n`) are appended.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let title = String::from("Definitions");
+    /// let formatted = format!("{}\n\n", title);
+    /// assert_eq!(formatted, "Definitions\n\n");
+    /// ```
     fn append_title(&mut self, title: String) {
         self.builder.append(format!("{}\n\n", title));
     }
@@ -288,6 +315,24 @@ impl LookupFormatter for FullMessageFormatter {
             .append(format!("Check out other definitions at {}\n\n", link));
     }
 
+    /// Finalizes the formatter and returns the assembled text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(String)` containing the concatenated output built so far, `Err(std::string::FromUtf8Error)` if the internal bytes cannot be converted to valid UTF-8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Construct a formatter with an empty builder and a default link provider,
+    /// // then build the final string.
+    /// let formatter = FullMessageFormatter {
+    ///     builder: string_builder::Builder::new(),
+    ///     link_provider: LinksProvider::default(),
+    /// };
+    /// let output = formatter.build().unwrap();
+    /// assert_eq!(output, "");
+    /// ```
     fn build(self) -> Result<String, std::string::FromUtf8Error> {
         self.builder.string()
     }

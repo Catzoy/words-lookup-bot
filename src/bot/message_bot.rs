@@ -5,6 +5,7 @@ use crate::bloc::teapot::TeapotBot;
 use crate::bloc::thesaurus_lookup::ThesaurusLookupBot;
 use crate::bloc::unknown::UnknownBot;
 use crate::bloc::urban_lookup::UrbanLookupBot;
+use crate::bloc::word_finder::WordFinderBot;
 use crate::bloc::word_lookup::WordLookupBot;
 use crate::bloc::wordle::WordleBot;
 use crate::bot::LookupBot;
@@ -171,3 +172,4 @@ impl WordLookupBot for MessageBot {}
 impl PhraseLookupBot for MessageBot {}
 impl ThesaurusLookupBot for MessageBot {}
 impl UrbanLookupBot for MessageBot {}
+impl WordFinderBot for MessageBot {}

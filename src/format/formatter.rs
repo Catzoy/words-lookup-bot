@@ -21,6 +21,7 @@ pub trait LookupFormatter {
     );
     fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions);
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition);
+    fn visit_word_finder_definition(&mut self, i: usize, def: &String);
     fn append_title(&mut self, title: String);
     fn append_link(&mut self, link: String);
     fn build(self) -> Result<Self::Value, Self::Error>;
