@@ -11,7 +11,7 @@ pub trait WordFinderHandler {
         mask: String,
     ) -> Result<Vec<String>, LookupError> {
         client.find(mask).await.map_err(|err| {
-            log::error!("MW failed request: {}", err);
+            log::error!("WF failed request: {}", err);
             LookupError::FailedRequest
         })
     }
@@ -34,7 +34,7 @@ where
         defs: Vec<String>,
     ) -> Result<Formatter::Value, LookupError> {
         let defs = defs.to_escaped();
-        self.append_title(format!("Found {:} definitions", defs.len()));
+        self.append_title(format!("Found {:} words", defs.len()));
         for (i, def) in defs.iter().enumerate() {
             self.visit_word_finder_definition(i, def);
         }
