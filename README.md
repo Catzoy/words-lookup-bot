@@ -218,7 +218,7 @@ Can look up English words from Stands4 API.
     <tr>
         <td>:white_check_mark:</td>
         <td>0.11.0</td>
-        <td>Add word-finder based on [MerriamWebster](https://www.merriam-webster.com/) for messages</td>
+        <td>Add word-finder based on [Datamuse API](https://www.datamuse.com/api/) for messages</td>
     </tr>
     <tr>
         <td>:x:</td>

@@ -280,8 +280,7 @@ impl LookupFormatter for FullMessageFormatter {
     }
 
     fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
-        self.builder
-            .appendl(format!("\\#{} \\- {}", i + 1, def.to_escaped()));
+        self.builder.appendl(format!("\\#{} \\- {}", i + 1, def));
     }
 
     fn append_title(&mut self, title: String) {
