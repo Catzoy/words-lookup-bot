@@ -4,7 +4,24 @@ use crate::format::LookupFormatter;
 use crate::stands4::{Stands4Client, SynAntDefinitions};
 use teloxide::dptree::entry;
 
-pub trait ThesaurusLookupBot {}
+pub trait ThesaurusLookupBot<Response>
+where
+    Response: Send + Default,
+{
+    /// Provide the default response used when a lookup phrase is empty.
+    ///
+    /// This returns the default value for the `Response` type so callers have a
+    /// well-defined reply when no lookup term is supplied.
+    ///
+    /// # Returns
+    ///
+    /// The `Response` value returned when the lookup phrase is empty; specifically,
+    /// the type's `Default` value.
+    fn on_empty() -> Response {
+        Default::default()
+    }
+}
+
 pub trait ThesaurusLookupHandler {
     /// Retrieve synonym and antonym definitions for a term from the Stands4 service.
     ///
@@ -89,12 +106,17 @@ where
 
 impl<Bot, Formatter> ThesaurusLookupHandler for Bot
 where
-    Bot: ThesaurusLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
+    Bot: ThesaurusLookupBot<Bot::Response>
+        + LookupBot<Formatter = Formatter>
+        + Send
+        + Sync
+        + 'static,
 {
-    /// Constructs a teloxide command handler that performs a complete thesaurus lookup flow:
-    /// it validates the incoming phrase, fetches synonym/antonym definitions, formats a response,
-    /// and sends the response via the bot.
+    /// Builds a teloxide command handler that performs the complete thesaurus lookup flow.
+    ///
+    /// The handler validates the incoming phrase, obtains synonym/antonym definitions,
+    /// formats a response using the bot's formatter, and sends the resulting response.
     ///
     /// # Examples
     ///
@@ -105,7 +127,9 @@ where
     /// ```
     fn thesaurus_lookup_handler() -> CommandHandler {
         entry()
-            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .filter_async(|bot: Bot, phrase: String| async move {
+                bot.drop_empty(phrase, Self::on_empty).await
+            })
             .map_async(Self::get_definitions)
             .filter_map_async(
                 |bot: Bot, response: Result<Vec<SynAntDefinitions>, LookupError>| async move {

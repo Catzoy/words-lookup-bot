@@ -61,19 +61,22 @@ pub enum MessageCommands {
     Thesaurus(String),
     #[command(
         description = "Get a list of words that have characters at specified positions.\n\
-        For example, `___ly` will return all 5-letter words that end with `ly`"
+        For example, `___ly` will return all 5-letter words that end with `ly`.\
+        Also you can request to look up a word in any chat by writing `@WordsLookupBot f.___ly`,\
+        where `f.` will point try match words against the specified mask"
     )]
     Finder(String),
 }
-/// Convert plain text into a MessageCommands value based on word count.
+/// Convert plain text into a MessageCommands value based on word count and content.
 ///
-/// Produces `Teapot` for empty input, `WordLookup(word)` for a single word (converted to lowercase), and `PhraseLookup(phrase)` for multiple words (lowercased and joined with single spaces).
+/// Maps empty input to `Teapot`; a single word containing an underscore to `Finder(word)`; a single other word to `WordLookup(word)`; and multiple words to `PhraseLookup(phrase)` where words are lowercased and joined with single spaces.
 ///
 /// # Examples
 ///
 /// ```
 /// assert_eq!(extract_text_command(""), MessageCommands::Teapot);
 /// assert_eq!(extract_text_command("Hello"), MessageCommands::WordLookup("hello".into()));
+/// assert_eq!(extract_text_command("f__nd_me"), MessageCommands::Finder("f__nd_me".into()));
 /// assert_eq!(extract_text_command("Hello WORLD"), MessageCommands::PhraseLookup("hello world".into()));
 /// ```
 fn extract_text_command(text: &str) -> MessageCommands {
@@ -83,6 +86,7 @@ fn extract_text_command(text: &str) -> MessageCommands {
         .collect::<Vec<String>>();
     match &words[..] {
         [] => MessageCommands::Teapot,
+        [word] if word.contains("_") => MessageCommands::Finder(word.to_owned()),
         [word] => MessageCommands::WordLookup(word.to_owned()),
         _ => MessageCommands::PhraseLookup(words.join(" ")),
     }
@@ -124,10 +128,11 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
     cmd
 }
 
-/// Builds the update dispatch tree that routes incoming messages to the appropriate command handlers.
+/// Builds the update dispatch tree that routes incoming message updates to their command handlers.
 ///
-/// The returned handler filters updates for messages, extracts a `MessageCommands` value from each message,
-/// wraps the bot and message into a `MessageBot`, and dispatches to the matching handler branch.
+/// The handler filters for message updates, converts each message into a `MessageCommands` value,
+/// wraps the bot and message into a `MessageBot`, and dispatches to the matching handler branch
+/// (Finder, Wordle, WordLookup, PhraseLookup, Urban, Thesaurus, Help, Unknown, Start, Teapot).
 ///
 /// # Examples
 ///

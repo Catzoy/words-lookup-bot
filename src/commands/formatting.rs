@@ -280,19 +280,25 @@ impl LookupFormatter for FullMessageFormatter {
         self.builder.append("\n");
     }
 
-    /// Appends a numbered line containing the provided word-finder definition to the internal builder.
+    /// Appends a word-finder definition to the formatter's output, joining multiple entries with a comma.
     ///
-    /// The index `i` is zero-based; the appended line is formatted as `#<i+1> - <def>` without any escaping and includes a trailing newline.
+    /// If `i` is 0 the escaped definition is appended as-is; for `i > 0` the escaped definition is appended
+    /// prefixed by ", ". The input `def` is escaped before being appended.
     ///
     /// # Examples
     ///
     /// ```
-    /// // After calling `visit_word_finder_definition(0, &"candidate".to_string())`
-    /// // the builder will contain the line:
-    /// // "#1 - candidate\n"
+    /// let mut f = FullMessageFormatter::new(...); // constructor omitted for brevity
+    /// f.visit_word_finder_definition(0, &"candidate".to_string());
+    /// f.visit_word_finder_definition(1, &"nominee".to_string());
+    /// assert_eq!(f.build().unwrap(), "candidate, nominee\n");
     /// ```
     fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
-        self.builder.appendl(format!("\\#{} \\- {}", i + 1, def));
+        let def = def.to_escaped();
+        match i {
+            0 => self.builder.append(def.as_str()),
+            _ => self.builder.append(format!(", {}", def)),
+        }
     }
 
     /// Appends a title followed by two newline characters to the internal builder.
@@ -319,7 +325,7 @@ impl LookupFormatter for FullMessageFormatter {
     ///
     /// # Returns
     ///
-    /// `Ok(String)` containing the concatenated output built so far, `Err(std::string::FromUtf8Error)` if the internal bytes cannot be converted to valid UTF-8.
+    /// `Ok(String)` containing the assembled output, or `Err(std::string::FromUtf8Error)` if the internal bytes cannot be converted to valid UTF-8.
     ///
     /// # Examples
     ///

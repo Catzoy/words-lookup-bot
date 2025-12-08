@@ -25,70 +25,19 @@ pub trait LookupBot: Clone {
         Self::Formatter::default()
     }
 
-    /// Provides the standard error response for failed lookup operations.
+    /// Returns the canonical error response for failed lookup operations.
     ///
-    /// This returns the default value of `Self::Response`, which implementations treat as the canonical
-    /// error payload to send when a lookup cannot be satisfied.
+    /// This is the default value of the associated `Response` type and is intended
+    /// to be used as the standardized payload sent when a lookup cannot be satisfied.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// // Assuming `MyBot` implements `LookupBot`:
     /// // let err = MyBot::error_response();
-    /// // assert_eq!(err, MyBot::Response::default());
+    /// // assert_eq!(err, <MyBot as LookupBot>::Response::default());
     /// ```
     fn error_response() -> Self::Response {
-        Self::Response::default()
-    }
-
-    /// Create a default response used for empty lookup results.
-    
-    ///
-    
-    /// This returns the type's `Default` response value to represent an empty or no-op reply.
-    
-    ///
-    
-    /// # Examples
-    
-    ///
-    
-    /// ```
-    
-    /// struct Dummy;
-    
-    ///
-    
-    /// impl LookupBot for Dummy {
-    
-    ///     type Request = ();
-    
-    ///     type Formatter = ();
-    
-    ///     type Response = String;
-    
-    ///
-    
-    ///     fn formatter(&self) -> Self::Formatter { Default::default() }
-    
-    ///     fn error_response() -> Self::Response { Default::default() }
-    
-    ///     fn empty_response() -> Self::Response { Self::Response::default() }
-    
-    ///     async fn answer(&self, _response: Self::Response) -> anyhow::Result<()> { Ok(()) }
-    
-    /// }
-    
-    ///
-    
-    /// // Use the default empty response
-    
-    /// let resp = Dummy::empty_response();
-    
-    /// assert_eq!(resp, String::default());
-    
-    /// ```
-    fn empty_response() -> Self::Response {
         Self::Response::default()
     }
 
@@ -136,23 +85,24 @@ pub trait LookupBot: Clone {
         Ok(())
     }
 
-    /// Checks whether the given phrase is non-empty and emits an empty response when it is empty.
+    /// Checks whether the given phrase is non-empty and, if empty, sends a provided empty response and stops processing.
     ///
-    /// If `phrase` is empty, sends `Self::empty_response()` via `answer` and returns `false`.
-    /// Otherwise returns `true`.
+    /// When `phrase` is empty, `on_empty()` is called and its returned response is sent with `answer`; the method then returns `false`. If `phrase` is non-empty, the method returns `true`.
     ///
     /// # Examples
     ///
     /// ```
     /// // Assume `bot` implements `LookupBot`.
-    /// // let keep = bot.drop_empty("hello".to_string()).await;
+    /// // let keep = bot.drop_empty("hello".to_string(), || bot.formatter().format_empty()).await;
     /// // assert!(keep);
     /// ```
-    async fn drop_empty(&self, phrase: String) -> bool {
+    async fn drop_empty<F>(&self, phrase: String, on_empty: F) -> bool
+    where
+        F: Fn() -> Self::Response + Send,
+    {
         match phrase.as_str() {
             "" => {
-                let empty = Self::empty_response();
-                let _ = self.answer(empty).await;
+                let _ = self.answer(on_empty()).await;
                 false
             }
             _ => true,
@@ -225,11 +175,14 @@ pub trait LookupBot: Clone {
         }
     }
 
-    /// Attempts to send the provided response using `answer`. If sending fails, logs the error and then tries to send the bot's generic error response.
+    /// Send a response to the requester, falling back to the bot's generic error response if sending fails.
+    ///
+    /// If `answer` returns an error the failure is logged and `answer_generic_err` is attempted. The function
+    /// swallows send errors and always returns `Ok(())` after handling.
     ///
     /// # Returns
     ///
-    /// `Ok(())` after attempting to send the response; any send failures are handled internally and not propagated.
+    /// `Ok(())` after attempting to send the response; send failures are logged and a generic error send is attempted.
     ///
     /// # Examples
     ///

@@ -4,7 +4,28 @@ use crate::format::LookupFormatter;
 use crate::stands4::{PhraseDefinition, Stands4Client};
 use teloxide::dptree::entry;
 
-pub trait PhraseLookupBot {}
+pub trait PhraseLookupBot<Response>
+where
+    Response: Send + Default,
+{
+    /// Provides the default response produced when a lookup phrase is empty.
+    ///
+    /// The default implementation returns `Default::default()` for the response type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct Dummy;
+    /// impl PhraseLookupBot<String> for Dummy {}
+    ///
+    /// let resp = Dummy::on_empty();
+    /// assert_eq!(resp, String::new());
+    /// ```
+    fn on_empty() -> Response {
+        Default::default()
+    }
+}
+
 pub trait PhraseLookupHandler {
     /// Fetches definitions for a phrase from the Stands4 API.
     ///
@@ -90,22 +111,25 @@ where
 }
 impl<Bot, Formatter> PhraseLookupHandler for Bot
 where
-    Bot: PhraseLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Bot: PhraseLookupBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
-    /// Constructs a command handler pipeline that processes phrase lookup requests by validating input, retrieving definitions, formatting a response, and sending that response to the user.
+    /// Creates the command handler pipeline that processes phrase lookup requests.
     ///
-    /// The handler performs the full phrase-lookup flow and normalizes errors into the bot's expected response path.
+    /// The handler validates input, retrieves phrase definitions, formats a response (or a normalized error response),
+    /// and sends that response to the user.
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust
     /// // Build the handler and bind its type
     /// let _handler: CommandHandler = phrase_lookup_handler();
     /// ```
     fn phrase_lookup_handler() -> CommandHandler {
         entry()
-            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .filter_async(|bot: Bot, phrase: String| async move {
+                bot.drop_empty(phrase, Self::on_empty).await
+            })
             .map_async(Self::get_definitions)
             .filter_map_async(
                 |bot: Bot, response: Result<Vec<PhraseDefinition>, LookupError>| async move {

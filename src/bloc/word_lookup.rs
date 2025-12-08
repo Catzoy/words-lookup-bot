@@ -8,7 +8,28 @@ use teloxide::dptree::entry;
 
 type Entity = (Vec<WordDefinition>, Vec<AbbreviationDefinition>);
 
-pub trait WordLookupBot {}
+pub trait WordLookupBot<Response>
+where
+    Response: Send + Default,
+{
+    /// Provide the bot's default empty response value.
+    ///
+    /// # Returns
+    ///
+    /// The default `Response` value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct MyBot;
+    /// impl WordLookupBot<String> for MyBot {}
+    /// let empty = <MyBot as WordLookupBot<String>>::on_empty();
+    /// assert_eq!(empty, String::default());
+    /// ```
+    fn on_empty() -> Response {
+        Default::default()
+    }
+}
 
 #[async_trait]
 pub trait WordLookupHandler {
@@ -241,45 +262,25 @@ where
 
 impl<Bot, Formatter> WordLookupHandler for Bot
 where
-    Bot: WordLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Bot: WordLookupBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
-    /// Builds a teloxide dptree CommandHandler that processes a phrase lookup and sends the bot's formatted response.
-    
+    /// Builds a teloxide dptree CommandHandler that handles a phrase lookup and sends the bot's formatted response.
     ///
-    
-    /// The handler chain:
-    
-    /// - drops empty phrases,
-    
-    /// - obtains word and abbreviation definitions,
-    
-    /// - ensures the lookup request succeeded,
-    
-    /// - composes a formatted response from the definitions,
-    
-    /// - resolves or substitutes a generic error response,
-    
-    /// - and finally sends the response via the bot.
-    
+    /// The handler chain drops empty phrases (using `Bot::on_empty`), retrieves word and abbreviation definitions,
+    /// composes a formatted response or substitutes a generic error response, and sends the result via the bot.
     ///
-    
     /// # Examples
-    
     ///
-    
     /// ```
-    
-    /// // Create the handler and use it when wiring the bot's dispatch tree.
-    
     /// let handler = Bot::word_lookup_handler();
-    
-    /// // `handler` can be mounted into a teloxide dispatcher dptree.
-    
+    /// // Mount `handler` into a teloxide dispatcher dptree.
     /// ```
     fn word_lookup_handler() -> CommandHandler {
         entry()
-            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .filter_async(|bot: Bot, phrase: String| async move {
+                bot.drop_empty(phrase, Bot::on_empty).await
+            })
             .map_async(Self::get_definitions)
             .map(move |bot: Bot, phrase: String, defs: Entity| {
                 bot.formatter().compose_word_response(phrase, defs)

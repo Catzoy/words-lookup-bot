@@ -2,6 +2,7 @@ use crate::bloc::phrase_lookup::PhraseLookupBot;
 use crate::bloc::suggestions::SuggestionsBot;
 use crate::bloc::thesaurus_lookup::ThesaurusLookupBot;
 use crate::bloc::urban_lookup::UrbanLookupBot;
+use crate::bloc::word_finder::WordFinderBot;
 use crate::bloc::word_lookup::WordLookupBot;
 use crate::bot::LookupBot;
 use crate::inlines::formatting::InlineFormatter;
@@ -22,19 +23,15 @@ impl LookupBot for InlineBot {
     type Formatter = InlineFormatter;
     type Response = Vec<InlineQueryResult>;
 
-    /// Sends the provided inline query answers to Telegram for the current query.
+    /// Sends the stored inline query's answers to Telegram.
     ///
-    /// Answers the `InlineQuery` stored on this bot by sending the given `answers`.
-    /// Returns `Ok(())` when the Telegram API call succeeds, or an `Err` containing the underlying error otherwise.
-    ///
-    /// # Arguments
-    ///
-    /// * `answers` - The collection of `InlineQueryResult` to send as the response to the inline query.
+    /// Sends the provided `answers` as the response to the `InlineQuery` contained in this bot.
+    /// Returns `Ok(())` on success, or an error containing the underlying API failure.
     ///
     /// # Examples
     ///
-    /// ```
-    /// # async fn example(bot: &crate::InlineBot) -> anyhow::Result<()> {
+    /// ```no_run
+    /// # async fn run_example(bot: &crate::InlineBot) -> anyhow::Result<()> {
     /// bot.answer(vec![]).await?;
     /// # Ok(())
     /// # }
@@ -46,8 +43,10 @@ impl LookupBot for InlineBot {
     }
 }
 
-impl WordLookupBot for InlineBot {}
-impl PhraseLookupBot for InlineBot {}
-impl ThesaurusLookupBot for InlineBot {}
-impl UrbanLookupBot for InlineBot {}
+impl WordLookupBot<Vec<InlineQueryResult>> for InlineBot {}
+impl PhraseLookupBot<Vec<InlineQueryResult>> for InlineBot {}
+impl ThesaurusLookupBot<Vec<InlineQueryResult>> for InlineBot {}
+impl UrbanLookupBot<Vec<InlineQueryResult>> for InlineBot {}
 impl SuggestionsBot for InlineBot {}
+
+impl WordFinderBot<Vec<InlineQueryResult>> for InlineBot {}
