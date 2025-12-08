@@ -82,7 +82,6 @@ where
         mut self,
         defs: Vec<String>,
     ) -> Result<Formatter::Value, LookupError> {
-        let defs = defs.to_escaped();
         self.append_title(format!("Found {} words", defs.len()));
         for (i, def) in defs.iter().enumerate() {
             self.visit_word_finder_definition(i, def);

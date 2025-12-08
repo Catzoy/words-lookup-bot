@@ -292,7 +292,11 @@ impl LookupFormatter for FullMessageFormatter {
     /// // "#1 - candidate\n"
     /// ```
     fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
-        self.builder.appendl(format!("\\#{} \\- {}", i + 1, def));
+        let def = def.to_escaped();
+        match i {
+            0 => self.builder.append(def.as_str()),
+            _ => self.builder.append(format!(", {}", def)),
+        }
     }
 
     /// Appends a title followed by two newline characters to the internal builder.

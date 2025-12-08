@@ -1,21 +1,81 @@
 use crate::bloc::formatting::SynAntFormatterExt;
-use crate::format::{as_in, meaning};
+use crate::format::{as_in, meaning, ToEscaped};
 use crate::{
     format::{LinksProvider, LookupFormatter},
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
     urban::UrbanDefinition,
 };
+use std::string::FromUtf8Error;
 use teloxide::types::{
     InlineQueryResult, InlineQueryResultArticle, InputMessageContent, InputMessageContentText,
     ParseMode,
 };
 use teloxide::utils::markdown::escape;
 
+enum Desc {
+    Building(string_builder::Builder),
+    Done(Result<String, FromUtf8Error>),
+}
+
 struct InlineAnswer {
     title: String,
-    meaning: String,
-    description: Option<String>,
+    meaning: Option<String>,
+    description: Desc,
 }
+
+impl Default for InlineAnswer {
+    fn default() -> Self {
+        InlineAnswer::new(String::default())
+    }
+}
+
+impl InlineAnswer {
+    fn new(title: String) -> Self {
+        Self {
+            title,
+            meaning: None,
+            description: Desc::Building(string_builder::Builder::default()),
+        }
+    }
+
+    fn title(mut self, string: String) -> Self {
+        self.title = string;
+        self
+    }
+
+    fn meaning(mut self, string: String) -> Self {
+        self.meaning = Some(string);
+        self
+    }
+
+    fn description(mut self, string: String) -> Self {
+        match &self.description {
+            Desc::Building(builder) => {
+                if builder.len() > 0 {
+                    self.description = Desc::Building(string_builder::Builder::default());
+                }
+                self.append_description(string)
+            }
+            Desc::Done(_) => self,
+        }
+    }
+
+    fn append_description(mut self, string: String) -> Self {
+        if let Desc::Building(ref mut builder) = self.description {
+            builder.append(string);
+        }
+        self
+    }
+
+    fn build_description(mut self) -> Self {
+        self.description = match self.description {
+            Desc::Building(buffer) => Desc::Done(buffer.string()),
+            Desc::Done(str) => Desc::Done(str),
+        };
+        self
+    }
+}
+
 #[derive(Default)]
 pub struct InlineFormatter {
     answers: Vec<InlineAnswer>,
@@ -59,26 +119,22 @@ impl LookupFormatter for InlineFormatter {
             false => &def.part_of_speech,
         };
 
-        let answer = InlineAnswer {
-            title: format!("#{} - {} ({})", i + 1, def.term, part_of_speech),
-            meaning: def.definition.clone(),
-            description: match def.example.is_empty() {
-                true => None,
-                false => Some(def.example.clone()),
-            },
-        };
+        let mut answer =
+            InlineAnswer::new(format!("#{} - {} ({})", i + 1, def.term, part_of_speech))
+                .meaning(def.definition.clone());
+        if !def.example.is_empty() {
+            answer = answer.description(def.example.clone());
+        }
         self.answers.push(answer);
     }
 
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition) {
-        let answer = InlineAnswer {
-            title: format!("#{} - {}", i + 1, def.term),
-            meaning: def.explanation.clone(),
-            description: match def.example.is_empty() {
-                true => None,
-                false => Some(as_in(&def.example)),
-            },
-        };
+        let mut answer = InlineAnswer::new(format!("#{} - {}", i + 1, def.term))
+            .meaning(def.explanation.clone());
+        if !def.example.is_empty() {
+            answer = answer.description(as_in(&def.example));
+        }
+
         self.answers.push(answer);
     }
 
@@ -105,13 +161,11 @@ impl LookupFormatter for InlineFormatter {
             }
         }
 
-        let answer = InlineAnswer {
-            title: format!("#{} in [{}]", i + 1, category),
-            meaning: meaning
+        let answer = InlineAnswer::new(format!("#{} in [{}]", i + 1, category)).meaning(
+            meaning
                 .string()
                 .unwrap_or_else(|_| "Cannot describe, try this word in bot's chat".to_string()),
-            description: None,
-        };
+        );
         self.answers.push(answer);
     }
 
@@ -120,11 +174,11 @@ impl LookupFormatter for InlineFormatter {
         Self::push_syn_ant(&mut description, def, || {
             "Surprisingly, there are no synonyms or antonyms to this!".to_string()
         });
-        let answer = InlineAnswer {
-            title: format!("#{} {} [{}]", i, def.term, def.part_of_speech),
-            meaning: def.definition.clone(),
-            description: description.string().ok(),
-        };
+        let mut answer = InlineAnswer::new(format!("#{} {} [{}]", i, def.term, def.part_of_speech))
+            .meaning(def.definition.clone());
+        if let Ok(description) = description.string() {
+            answer = answer.description(description);
+        }
         self.answers.push(answer);
     }
 
@@ -143,11 +197,11 @@ impl LookupFormatter for InlineFormatter {
     /// assert!(fmt.answers[0].title.contains("yeet"));
     /// ```
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition) {
-        let answer = InlineAnswer {
-            title: format!("#{} - {}", i + 1, def.word),
-            meaning: def.meaning.clone(),
-            description: def.example.clone().map(|it| as_in(&&it)),
-        };
+        let mut answer =
+            InlineAnswer::new(format!("#{} - {}", i + 1, def.word)).meaning(def.meaning.clone());
+        if let Some(example) = &def.example {
+            answer = answer.description(as_in(example));
+        }
         self.answers.push(answer);
     }
 
@@ -162,8 +216,21 @@ impl LookupFormatter for InlineFormatter {
     /// let mut fmt = crate::inlines::formatting::InlineFormatter::default();
     /// fmt.visit_word_finder_definition(0, &"pattern".to_string());
     /// ```
-    fn visit_word_finder_definition(&mut self, _i: usize, _def: &String) {
-        // no support for now
+    fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
+        let def = def.to_escaped();
+        let mut answer = self
+            .answers
+            .pop()
+            .unwrap_or_default()
+            .title(format!("Found {} words", i + 1));
+        answer = match &answer.description {
+            Desc::Building(builder) if builder.len() == 0 => {
+                answer.append_description(def.to_string())
+            }
+            Desc::Building(_) => answer.append_description(format!(", {}", def)),
+            _ => answer,
+        };
+        self.answers.push(answer);
     }
 
     /// Accepts a title but intentionally performs no action.
@@ -186,25 +253,35 @@ impl LookupFormatter for InlineFormatter {
 
     fn build(self) -> Result<Self::Value, Self::Error> {
         self.answers
-            .iter()
+            .into_iter()
             .enumerate()
             .try_fold(Vec::new(), |mut acc, (i, answer)| {
-                let full_text = compose_inline_answer(answer)?;
-                let article = compose_inline_result(i, answer, full_text);
+                let answer = answer.build_description();
+                let full_text = compose_inline_answer(&answer)?;
+                let article = compose_inline_result(i, &answer, full_text);
                 acc.push(article);
                 Ok(acc)
             })
     }
 }
 
-fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, std::string::FromUtf8Error> {
+fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, FromUtf8Error> {
     let mut full_text = string_builder::Builder::default();
     full_text.append(escape(&answer.title));
-    full_text.append("\n\n");
-    full_text.append(meaning(&escape(&answer.meaning)));
-    if let Some(description) = &answer.description {
-        full_text.append("\n");
-        full_text.append(escape(&description));
+    if let Some(text) = &answer.meaning {
+        full_text.append("\n\n");
+        full_text.append(meaning(&escape(text)));
+    }
+    if let Desc::Done(desc) = &answer.description {
+        match desc {
+            Ok(desc) => {
+                full_text.append("\n");
+                full_text.append(escape(desc));
+            }
+            Err(err) => {
+                return Err(err.clone());
+            }
+        }
     }
     full_text.string()
 }
@@ -226,7 +303,9 @@ fn compose_inline_result(i: usize, answer: &InlineAnswer, full_text: String) -> 
     let content = InputMessageContentText::new(&full_text).parse_mode(ParseMode::MarkdownV2);
     let content = InputMessageContent::Text(content);
     let id = format!("answer-{}", i);
-    let article = InlineQueryResultArticle::new(id, &answer.title, content)
-        .description(answer.meaning.as_str());
+    let mut article = InlineQueryResultArticle::new(id, &answer.title, content);
+    if let Some(meaning) = &answer.meaning {
+        article = article.description(meaning);
+    }
     InlineQueryResult::Article(article)
 }
