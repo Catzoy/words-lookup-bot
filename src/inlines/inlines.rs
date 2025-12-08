@@ -3,6 +3,7 @@ use crate::bloc::phrase_lookup::PhraseLookupHandler;
 use crate::bloc::suggestions::SuggestionsHandler;
 use crate::bloc::thesaurus_lookup::ThesaurusLookupHandler;
 use crate::bloc::urban_lookup::UrbanLookupHandler;
+use crate::bloc::word_finder::WordFinderHandler;
 use crate::bloc::word_lookup::WordLookupHandler;
 use crate::bot::InlineBot;
 use crate::inlines::debounce_inline_queries;
@@ -21,8 +22,10 @@ pub enum QueryCommands {
     PhraseLookup(String),
     UrbanLookup(String),
     ThesaurusLookup(String),
+    Finder(String),
 }
-static COMMAND_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(u.|sa.)?(.+)").unwrap());
+static COMMAND_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(u.|sa.|f.)?(.+)").unwrap());
 /// Parse an inline query string and map it to a `QueryCommands` variant.
 ///
 /// The function examines the query text and selects a command according to these rules:
@@ -63,6 +66,9 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
         }
         (Some(m), Some(phrase)) if m.as_str().eq("sa.") => {
             QueryCommands::ThesaurusLookup(phrase.as_str().to_string())
+        }
+        (Some(m), Some(phrase)) if m.as_str().eq("f.") => {
+            QueryCommands::Finder(phrase.as_str().to_string())
         }
         _ => QueryCommands::Suggestions,
     };
@@ -106,5 +112,9 @@ pub fn inlines_tree() -> CommandHandler {
         .branch(
             teloxide::dptree::case![QueryCommands::ThesaurusLookup(phrase)]
                 .branch(InlineBot::thesaurus_lookup_handler()),
+        )
+        .branch(
+            teloxide::dptree::case![QueryCommands::Finder(phrase)]
+                .branch(InlineBot::word_finder_handler()),
         )
 }

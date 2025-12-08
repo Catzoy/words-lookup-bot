@@ -2,6 +2,7 @@ use crate::bloc::phrase_lookup::PhraseLookupBot;
 use crate::bloc::suggestions::SuggestionsBot;
 use crate::bloc::thesaurus_lookup::ThesaurusLookupBot;
 use crate::bloc::urban_lookup::UrbanLookupBot;
+use crate::bloc::word_finder::WordFinderBot;
 use crate::bloc::word_lookup::WordLookupBot;
 use crate::bot::LookupBot;
 use crate::inlines::formatting::InlineFormatter;
@@ -51,3 +52,5 @@ impl PhraseLookupBot<Vec<InlineQueryResult>> for InlineBot {}
 impl ThesaurusLookupBot<Vec<InlineQueryResult>> for InlineBot {}
 impl UrbanLookupBot<Vec<InlineQueryResult>> for InlineBot {}
 impl SuggestionsBot for InlineBot {}
+
+impl WordFinderBot<Vec<InlineQueryResult>> for InlineBot {}
