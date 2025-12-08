@@ -221,7 +221,7 @@ Can look up English words from Stands4 API.
         <td>Add word-finder based on [Datamuse API](https://www.datamuse.com/api/) for messages</td>
     </tr>
     <tr>
-        <td>:x:</td>
+        <td>:white_check_mark:</td>
         <td>0.12.0</td>
         <td>Improve error-messages of WF; add support for inline WF</td>
     </tr>
