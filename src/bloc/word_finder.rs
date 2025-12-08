@@ -8,18 +8,68 @@ pub trait WordFinderBot<Response>
 where
     Response: Send + Default,
 {
+    /// Provides the default response to use when the user submits an empty query.
+    ///
+    /// By default this returns `Default::default()` for the response type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct Bot;
+    /// impl word_finder::WordFinderBot<String> for Bot {}
+    /// let resp = Bot::on_empty();
+    /// assert_eq!(resp, String::default());
+    /// ```
     fn on_empty() -> Response {
         Default::default()
     }
 
+    /// Provides the default response used when the user-supplied mask has an invalid length.
+    ///
+    /// Returns the default `Response` value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct BotDummy;
+    /// impl WordFinderBot<()> for BotDummy {}
+    /// let resp = BotDummy::on_length_invalid();
+    /// assert_eq!(resp, ());
+    /// ```
     fn on_length_invalid() -> Response {
         Default::default()
     }
 
+    /// Produce a response when the input mask contains an unsupported character.
+    ///
+    /// This hook is invoked when validation detects a character other than ASCII letters or `_` in the mask.
+    ///
+    /// # Returns
+    ///
+    /// `Response` to send to the user; the default implementation returns `Default::default()`.
     fn on_unknown_character() -> Response {
         Default::default()
     }
 
+    /// Produces the response the bot should send when the user's query is invalid.
+    ///
+    /// The default implementation returns `Default::default()` for the response type.
+    /// Implementors may override to provide a custom user-facing reply.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::default::Default;
+    /// struct Resp;
+    /// impl Default for Resp { fn default() -> Self { Resp } }
+    ///
+    /// trait WordFinderBot<R> { fn on_invalid_query() -> R where R: Default { Default::default() } }
+    ///
+    /// struct MyBot;
+    /// impl WordFinderBot<Resp> for MyBot {}
+    ///
+    /// let resp = MyBot::on_invalid_query();
+    /// ```
     fn on_invalid_query() -> Response {
         Default::default()
     }
@@ -65,19 +115,22 @@ impl<Formatter> WordFinderFormatter<Formatter::Value> for Formatter
 where
     Formatter: LookupFormatter,
 {
-    /// Builds a formatted response containing the provided word definitions.
+    /// Compose a formatted response value from a list of word definitions.
     ///
-    /// The formatter will escape each definition, prepend a title of the form
-    /// "Found N words" where N is the number of definitions, and visit each
-    /// definition in order before building the final response value.
+    /// The formatter adds a title "Found N words" where N is the number of
+    /// provided definitions, visits each definition in order, and builds the
+    /// final response value.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// // Given a formatter that implements `LookupFormatter`:
     /// let defs = vec!["apple".to_string(), "angle".to_string()];
     /// let response = Formatter::new().compose_word_finder_response(defs).unwrap();
     /// ```
+    ///
+    /// # Returns
+    ///
+    /// The constructed formatter value on success, or a `LookupError::FailedResponseBuilder` if building fails.
     fn compose_word_finder_response(
         mut self,
         defs: Vec<String>,
@@ -98,18 +151,13 @@ where
     Bot: WordFinderBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
-    /// Validates a word-mask pattern and notifies the user on invalid input.
+    /// Validate a word-mask pattern and notify the user when the mask is invalid.
     ///
     /// The mask must be 2–15 characters long, contain at least one underscore (`_`)
     /// and at least one ASCII letter (`A`–`Z`, `a`–`z`), and may contain only
-    /// letters or underscores. When the mask is invalid, this method signals a
-    /// generic error to the user by calling `answer_generic_err()` and returns
-    /// `false`.
-    ///
-    /// # Parameters
-    ///
-    /// - `mask`: A pattern where `_` represents a blank and letters represent known
-    ///   characters.
+    /// letters or underscores. When the mask fails any check this method sends the
+    /// corresponding user-facing response (via `Self::on_length_invalid`,
+    /// `Self::on_unknown_character`, or `Self::on_invalid_query`) and returns `false`.
     ///
     /// # Returns
     ///
@@ -118,9 +166,10 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// # async fn example<B: ?Sized + std::marker::Send>(_bot: &B) {}
+    /// # use std::future::Future;
+    /// # // This example demonstrates the call shape; replace `Bot` with your bot type.
+    /// # async fn example<B: std::marker::Send + ?Sized>(_bot: &B) {}
     /// # async {
-    /// // Typical usage inside an async context:
     /// // let ok = bot.ensure_valid("a__le".to_string()).await;
     /// # }
     /// ```
@@ -153,10 +202,7 @@ where
             true
         }
     }
-    /// Builds the Telegram command pipeline for the word-finder feature.
-    ///
-    /// The pipeline validates and filters the input mask, queries possible words,
-    /// formats the results into a response, and sends the response to the user.
+    /// Create a Teloxide command handler for the word-finder feature.
     ///
     /// # Examples
     ///

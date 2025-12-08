@@ -8,6 +8,15 @@ pub trait ThesaurusLookupBot<Response>
 where
     Response: Send + Default,
 {
+    /// Provide the default response used when a lookup phrase is empty.
+    ///
+    /// This returns the default value for the `Response` type so callers have a
+    /// well-defined reply when no lookup term is supplied.
+    ///
+    /// # Returns
+    ///
+    /// The `Response` value returned when the lookup phrase is empty; specifically,
+    /// the type's `Default` value.
     fn on_empty() -> Response {
         Default::default()
     }
@@ -104,9 +113,10 @@ where
         + Sync
         + 'static,
 {
-    /// Constructs a teloxide command handler that performs a complete thesaurus lookup flow:
-    /// it validates the incoming phrase, fetches synonym/antonym definitions, formats a response,
-    /// and sends the response via the bot.
+    /// Builds a teloxide command handler that performs the complete thesaurus lookup flow.
+    ///
+    /// The handler validates the incoming phrase, obtains synonym/antonym definitions,
+    /// formats a response using the bot's formatter, and sends the resulting response.
     ///
     /// # Examples
     ///

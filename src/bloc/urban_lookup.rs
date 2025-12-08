@@ -8,6 +8,20 @@ pub trait UrbanLookupBot<Response>
 where
     Response: Send + Default,
 {
+    /// Provides the default response returned when a lookup phrase is empty.
+    ///
+    /// # Returns
+    ///
+    /// A `Response` value constructed with `Response::default()`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct Bot;
+    /// impl UrbanLookupBot<String> for Bot {}
+    /// let empty = Bot::on_empty();
+    /// assert_eq!(empty, String::default());
+    /// ```
     fn on_empty() -> Response {
         Response::default()
     }
