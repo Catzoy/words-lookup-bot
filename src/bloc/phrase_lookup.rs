@@ -8,6 +8,19 @@ pub trait PhraseLookupBot<Response>
 where
     Response: Send + Default,
 {
+    /// Provides the default response produced when a lookup phrase is empty.
+    ///
+    /// The default implementation returns `Default::default()` for the response type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct Dummy;
+    /// impl PhraseLookupBot<String> for Dummy {}
+    ///
+    /// let resp = Dummy::on_empty();
+    /// assert_eq!(resp, String::new());
+    /// ```
     fn on_empty() -> Response {
         Default::default()
     }
@@ -101,13 +114,14 @@ where
     Bot: PhraseLookupBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
-    /// Constructs a command handler pipeline that processes phrase lookup requests by validating input, retrieving definitions, formatting a response, and sending that response to the user.
+    /// Creates the command handler pipeline that processes phrase lookup requests.
     ///
-    /// The handler performs the full phrase-lookup flow and normalizes errors into the bot's expected response path.
+    /// The handler validates input, retrieves phrase definitions, formats a response (or a normalized error response),
+    /// and sends that response to the user.
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust
     /// // Build the handler and bind its type
     /// let _handler: CommandHandler = phrase_lookup_handler();
     /// ```

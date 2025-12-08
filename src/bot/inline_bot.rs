@@ -23,19 +23,15 @@ impl LookupBot for InlineBot {
     type Formatter = InlineFormatter;
     type Response = Vec<InlineQueryResult>;
 
-    /// Sends the provided inline query answers to Telegram for the current query.
+    /// Sends the stored inline query's answers to Telegram.
     ///
-    /// Answers the `InlineQuery` stored on this bot by sending the given `answers`.
-    /// Returns `Ok(())` when the Telegram API call succeeds, or an `Err` containing the underlying error otherwise.
-    ///
-    /// # Arguments
-    ///
-    /// * `answers` - The collection of `InlineQueryResult` to send as the response to the inline query.
+    /// Sends the provided `answers` as the response to the `InlineQuery` contained in this bot.
+    /// Returns `Ok(())` on success, or an error containing the underlying API failure.
     ///
     /// # Examples
     ///
-    /// ```
-    /// # async fn example(bot: &crate::InlineBot) -> anyhow::Result<()> {
+    /// ```no_run
+    /// # async fn run_example(bot: &crate::InlineBot) -> anyhow::Result<()> {
     /// bot.answer(vec![]).await?;
     /// # Ok(())
     /// # }
