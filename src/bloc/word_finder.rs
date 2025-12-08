@@ -11,6 +11,18 @@ where
     fn on_empty() -> Response {
         Default::default()
     }
+
+    fn on_length_invalid() -> Response {
+        Default::default()
+    }
+
+    fn on_unknown_character() -> Response {
+        Default::default()
+    }
+
+    fn on_invalid_query() -> Response {
+        Default::default()
+    }
 }
 
 pub trait WordFinderHandler {
@@ -115,7 +127,7 @@ where
     /// ```
     async fn ensure_valid(&self, mask: String) -> bool {
         if mask.len() < 2 || mask.len() > 15 {
-            let _ = self.answer_generic_err().await;
+            let _ = self.answer(Self::on_length_invalid()).await;
             return false;
         }
 
@@ -130,13 +142,13 @@ where
                     has_filled = true;
                 }
                 _ => {
-                    let _ = self.answer_generic_err().await;
+                    let _ = self.answer(Self::on_unknown_character()).await;
                     return false;
                 }
             }
         }
         if !has_blank || !has_filled {
-            let _ = self.answer_generic_err().await;
+            let _ = self.answer(Self::on_invalid_query()).await;
             false
         } else {
             true

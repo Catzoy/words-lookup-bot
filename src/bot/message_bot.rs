@@ -179,4 +179,19 @@ impl WordFinderBot<String> for MessageBot {
     fn on_empty() -> String {
         "You need to specify a mask to run query for, like so: `\\finder a___e`".to_string()
     }
+
+    fn on_length_invalid() -> String {
+        "Sorry, finder can only process up to 15 symbols, but at least two".to_string()
+    }
+
+    fn on_unknown_character() -> String {
+        "Sorry, your message contains unsupported characters - only a-z, A-Z and an underscore can be specified".to_string()
+    }
+
+    fn on_invalid_query() -> String {
+        "Your query is incorrect: \
+        it either has all underscores, which would result in a whole dictionary of response, \
+        or no underscore, in which case you already know the word!"
+            .to_string()
+    }
 }
