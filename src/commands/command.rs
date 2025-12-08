@@ -61,7 +61,9 @@ pub enum MessageCommands {
     Thesaurus(String),
     #[command(
         description = "Get a list of words that have characters at specified positions.\n\
-        For example, `___ly` will return all 5-letter words that end with `ly`"
+        For example, `___ly` will return all 5-letter words that end with `ly`.\
+        Also you can request to look up a word in any chat by writing `@WordsLookupBot f.___ly`,\
+        where `f.` will point try match words against the specified mask"
     )]
     Finder(String),
 }
@@ -83,6 +85,7 @@ fn extract_text_command(text: &str) -> MessageCommands {
         .collect::<Vec<String>>();
     match &words[..] {
         [] => MessageCommands::Teapot,
+        [word] if word.contains("_") => MessageCommands::Finder(word.to_owned()),
         [word] => MessageCommands::WordLookup(word.to_owned()),
         _ => MessageCommands::PhraseLookup(words.join(" ")),
     }
