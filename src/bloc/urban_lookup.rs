@@ -4,7 +4,15 @@ use crate::format::LookupFormatter;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
 use teloxide::dptree::entry;
 
-pub trait UrbanLookupBot {}
+pub trait UrbanLookupBot<Response>
+where
+    Response: Send + Default,
+{
+    fn on_empty() -> Response {
+        Response::default()
+    }
+}
+
 pub trait UrbanLookupHandler {
     /// Fetches definitions for `term` from Urban Dictionary using the provided client.
     ///
@@ -91,8 +99,8 @@ where
 
 impl<Bot, Formatter> UrbanLookupHandler for Bot
 where
-    Bot: UrbanLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
+    Bot: UrbanLookupBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
 {
     /// Creates a Teloxide command handler that processes Urban Dictionary lookups by validating the input phrase, retrieving definitions, formatting a response, and sending it via the bot.
     ///
@@ -104,7 +112,9 @@ where
     /// ```
     fn urban_lookup_handler() -> CommandHandler {
         entry()
-            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .filter_async(|bot: Bot, phrase: String| async move {
+                bot.drop_empty(phrase, Self::on_empty).await
+            })
             .map_async(Self::get_definitions)
             .filter_map_async(
                 |bot: Bot, response: Result<Vec<UrbanDefinition>, LookupError>| async move {

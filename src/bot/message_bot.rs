@@ -44,23 +44,6 @@ impl LookupBot for MessageBot {
         "There was an error processing your query, try again later, sorry.".to_string()
     }
 
-    /// Prompt returned when the user invokes a lookup command without providing a phrase.
-    ///
-    /// The message instructs the user to supply a phrase and includes a concrete example.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// // Shows the exact instruction returned for empty lookup queries.
-    /// assert_eq!(
-    ///     MessageBot::empty_response(),
-    ///     "You need to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
-    /// );
-    /// ```
-    fn empty_response() -> Self::Response {
-        "You need to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
-    }
-
     /// Sends the given text as a message to the chat referenced by this instance's `message`, using MarkdownV2 parsing.
     ///
     /// The message is delivered to `self.message.chat.id` with `ParseMode::MarkdownV2`.
@@ -168,8 +151,32 @@ impl WordleBot<String> for MessageBot {
         "Could not get today's wordle, sorry, try again in an hour or so.".to_string()
     }
 }
-impl WordLookupBot for MessageBot {}
-impl PhraseLookupBot for MessageBot {}
-impl ThesaurusLookupBot for MessageBot {}
-impl UrbanLookupBot for MessageBot {}
-impl WordFinderBot for MessageBot {}
+impl WordLookupBot<String> for MessageBot {
+    fn on_empty() -> String {
+        "You need to specify a word to look up, like so: `\\word give`".to_string()
+    }
+}
+
+impl PhraseLookupBot<String> for MessageBot {
+    fn on_empty() -> String {
+        "You need to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
+    }
+}
+
+impl ThesaurusLookupBot<String> for MessageBot {
+    fn on_empty() -> String {
+        "You need to specify a phrase to look up, like so: `\\thesaurus cool down`".to_string()
+    }
+}
+
+impl UrbanLookupBot<String> for MessageBot {
+    fn on_empty() -> String {
+        "You need to specify a phrase to look up, like so: `\\urban gone lemon`".to_string()
+    }
+}
+
+impl WordFinderBot<String> for MessageBot {
+    fn on_empty() -> String {
+        "You need to specify a mask to run query for, like so: `\\finder a___e`".to_string()
+    }
+}

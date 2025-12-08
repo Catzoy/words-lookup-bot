@@ -4,7 +4,15 @@ use crate::format::LookupFormatter;
 use crate::stands4::{PhraseDefinition, Stands4Client};
 use teloxide::dptree::entry;
 
-pub trait PhraseLookupBot {}
+pub trait PhraseLookupBot<Response>
+where
+    Response: Send + Default,
+{
+    fn on_empty() -> Response {
+        Default::default()
+    }
+}
+
 pub trait PhraseLookupHandler {
     /// Fetches definitions for a phrase from the Stands4 API.
     ///
@@ -90,7 +98,7 @@ where
 }
 impl<Bot, Formatter> PhraseLookupHandler for Bot
 where
-    Bot: PhraseLookupBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Bot: PhraseLookupBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Constructs a command handler pipeline that processes phrase lookup requests by validating input, retrieving definitions, formatting a response, and sending that response to the user.
@@ -105,7 +113,9 @@ where
     /// ```
     fn phrase_lookup_handler() -> CommandHandler {
         entry()
-            .filter_async(|bot: Bot, phrase: String| async move { bot.drop_empty(phrase).await })
+            .filter_async(|bot: Bot, phrase: String| async move {
+                bot.drop_empty(phrase, Self::on_empty).await
+            })
             .map_async(Self::get_definitions)
             .filter_map_async(
                 |bot: Bot, response: Result<Vec<PhraseDefinition>, LookupError>| async move {

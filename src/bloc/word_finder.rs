@@ -4,7 +4,15 @@ use crate::datamuse::client::DatamuseClient;
 use crate::format::{LookupFormatter, ToEscaped};
 use teloxide::dptree::entry;
 
-pub trait WordFinderBot {}
+pub trait WordFinderBot<Response>
+where
+    Response: Send + Default,
+{
+    fn on_empty() -> Response {
+        Default::default()
+    }
+}
+
 pub trait WordFinderHandler {
     /// Fetches candidate words that match a pattern from the Datamuse service.
     ///
@@ -76,7 +84,7 @@ where
 
 impl<Bot, Formatter> WordFinderHandler for Bot
 where
-    Bot: WordFinderBot + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
+    Bot: WordFinderBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
     /// Validates a word-mask pattern and notifies the user on invalid input.
@@ -147,7 +155,9 @@ where
     /// ```
     fn word_finder_handler() -> CommandHandler {
         entry()
-            .filter_async(|bot: Bot, mask: String| async move { bot.drop_empty(mask).await })
+            .filter_async(|bot: Bot, mask: String| async move {
+                bot.drop_empty(mask, Self::on_empty).await
+            })
             .filter_async(|bot: Bot, mask: String| async move { bot.ensure_valid(mask).await })
             .map_async(Self::get_possible_words)
             .filter_map_async(

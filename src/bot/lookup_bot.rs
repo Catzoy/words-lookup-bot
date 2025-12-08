@@ -41,57 +41,6 @@ pub trait LookupBot: Clone {
         Self::Response::default()
     }
 
-    /// Create a default response used for empty lookup results.
-    
-    ///
-    
-    /// This returns the type's `Default` response value to represent an empty or no-op reply.
-    
-    ///
-    
-    /// # Examples
-    
-    ///
-    
-    /// ```
-    
-    /// struct Dummy;
-    
-    ///
-    
-    /// impl LookupBot for Dummy {
-    
-    ///     type Request = ();
-    
-    ///     type Formatter = ();
-    
-    ///     type Response = String;
-    
-    ///
-    
-    ///     fn formatter(&self) -> Self::Formatter { Default::default() }
-    
-    ///     fn error_response() -> Self::Response { Default::default() }
-    
-    ///     fn empty_response() -> Self::Response { Self::Response::default() }
-    
-    ///     async fn answer(&self, _response: Self::Response) -> anyhow::Result<()> { Ok(()) }
-    
-    /// }
-    
-    ///
-    
-    /// // Use the default empty response
-    
-    /// let resp = Dummy::empty_response();
-    
-    /// assert_eq!(resp, String::default());
-    
-    /// ```
-    fn empty_response() -> Self::Response {
-        Self::Response::default()
-    }
-
     async fn answer(&self, response: Self::Response) -> anyhow::Result<()>;
     /// Sends the bot's default error response.
     ///
@@ -148,11 +97,13 @@ pub trait LookupBot: Clone {
     /// // let keep = bot.drop_empty("hello".to_string()).await;
     /// // assert!(keep);
     /// ```
-    async fn drop_empty(&self, phrase: String) -> bool {
+    async fn drop_empty<F>(&self, phrase: String, on_empty: F) -> bool
+    where
+        F: Fn() -> Self::Response + Send,
+    {
         match phrase.as_str() {
             "" => {
-                let empty = Self::empty_response();
-                let _ = self.answer(empty).await;
+                let _ = self.answer(on_empty()).await;
                 false
             }
             _ => true,

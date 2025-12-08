@@ -46,8 +46,8 @@ impl LookupBot for InlineBot {
     }
 }
 
-impl WordLookupBot for InlineBot {}
-impl PhraseLookupBot for InlineBot {}
-impl ThesaurusLookupBot for InlineBot {}
-impl UrbanLookupBot for InlineBot {}
+impl WordLookupBot<Vec<InlineQueryResult>> for InlineBot {}
+impl PhraseLookupBot<Vec<InlineQueryResult>> for InlineBot {}
+impl ThesaurusLookupBot<Vec<InlineQueryResult>> for InlineBot {}
+impl UrbanLookupBot<Vec<InlineQueryResult>> for InlineBot {}
 impl SuggestionsBot for InlineBot {}
