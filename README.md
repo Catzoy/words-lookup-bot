@@ -226,6 +226,11 @@ Can look up English words from Stands4 API.
         <td>Improve error-messages of WF; add support for inline WF</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.12.1</td>
+        <td>Fix escaping strings on inlines; Fix missing suggestion for WordFinder</td>
+    </tr>
+    <tr>
         <td>:x:</td>
         <td>0.13.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>

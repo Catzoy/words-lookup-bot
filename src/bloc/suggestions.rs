@@ -1,7 +1,6 @@
 use crate::bloc::common::CommandHandler;
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::LookupBot;
-use crate::format::ToEscaped;
 use crate::wordle::WordleDayAnswer;
 use crate::{
     commands::{FullMessageFormatter, MessageCommands},
@@ -22,10 +21,9 @@ trait SuggestionOwner {
 
 struct HelpSuggestion;
 impl SuggestionOwner for HelpSuggestion {
-    /// Builds an inline help suggestion that explains how to look up words or phrases.
+    /// Create an inline article suggesting how to look up a word or phrase.
     ///
-    /// The result is an `InlineQueryResult::Article` with id `"help"`, a short prompt title,
-    /// and a prepared, escaped help message suitable for sending as inline query content.
+    /// The article contains a short prompt and the bot's help text as the message content.
     ///
     /// # Examples
     ///
@@ -35,13 +33,11 @@ impl SuggestionOwner for HelpSuggestion {
     /// assert!(result.is_some());
     /// ```
     ///
-    /// # Returns
-    ///
-    /// `Some(InlineQueryResult::Article)` containing the help message.
+    /// Returns `Some(InlineQueryResult::Article)` containing the bot's help text.
     fn produce(self) -> Option<InlineQueryResult> {
         let text = "Continue writing to look up a word or a phrase";
         let msg = MessageCommands::descriptions().to_string();
-        let msg = InputMessageContentText::new(msg.to_escaped());
+        let msg = InputMessageContentText::new(msg);
         let msg = InputMessageContent::Text(msg);
         let msg = InlineQueryResultArticle::new("help", text, msg);
         Some(InlineQueryResult::Article(msg))
@@ -155,14 +151,9 @@ impl WordleSuggestion {
 }
 
 impl SuggestionOwner for WordleSuggestion {
-    /// Create an inline query result for the current Wordle answer when one is available.
+    /// Produces an `InlineQueryResult` containing today's Wordle answer and its formatted definitions when available.
     ///
-    /// The method attempts to compose a message from the stored `WordleDayAnswer` and,
-    /// if successful, wraps it in an `InlineQueryResult` ready to be returned to Telegram.
-    ///
-    /// # Returns
-    ///
-    /// `Some(InlineQueryResult)` with a Wordle article if a Wordle answer exists and the message was composed successfully, `None` otherwise.
+    /// Returns `Some(InlineQueryResult)` with an article ready to send to Telegram if a stored `WordleDayAnswer` can be formatted, or `None` if no answer is present or formatting fails.
     ///
     /// # Examples
     ///
@@ -174,6 +165,34 @@ impl SuggestionOwner for WordleSuggestion {
         self.wordle
             .and_then(Self::compose_message)
             .map(Self::compose_response)
+    }
+}
+
+struct WordFinderSuggestion;
+impl SuggestionOwner for WordFinderSuggestion {
+    /// Produces an inline-article suggestion prompting the user to use `f.LOOK_UP` to find a word.
+    ///
+    /// Returns an `InlineQueryResult::Article` (wrapped in `Some`) whose title invites the user to
+    /// "write `f.LOOK_UP` to try find a word matching blanks" and whose message content instructs
+    /// to write `@WordsLookupBot "f.LOOK_UP"` to perform the lookup.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use crate::WordFinderSuggestion;
+    /// # use teloxide::types::InlineQueryResult;
+    /// let suggestion = WordFinderSuggestion;
+    /// let result = suggestion.produce();
+    /// assert!(matches!(result, Some(InlineQueryResult::Article(_))));
+    /// ```
+    fn produce(self) -> Option<InlineQueryResult> {
+        let text = "Or write \"f.LOOK_UP\" to try find a word matching blanks";
+        let msg = InputMessageContentText::new(
+            "Write @WordsLookupBot \"f.LOOK_UP\" to try find a word matching blanks",
+        );
+        let msg = InputMessageContent::Text(msg);
+        let msg = InlineQueryResultArticle::new("word_finder", text, msg);
+        Some(InlineQueryResult::Article(msg))
     }
 }
 
@@ -261,19 +280,19 @@ where
     async fn send_suggestions(&self, wordle: Option<WordleDayAnswer>) -> anyhow::Result<()> {
         let suggestions = vec![
             HelpSuggestion.produce(),
+            WordleSuggestion { wordle }.produce(),
             UrbanSuggestion.produce(),
             ThesaurusSuggestion.produce(),
-            WordleSuggestion { wordle }.produce(),
+            WordFinderSuggestion.produce(),
         ];
         let answers = suggestions.into_iter().flatten().collect::<Vec<_>>();
         self.answer(answers).await?;
         Ok(())
     }
 
-    /// Builds a CommandHandler that prepares and sends inline suggestions, supplying a fresh Wordle answer if available.
+    /// Builds a CommandHandler that resolves an optional Wordle answer (if available) and sends a set of inline suggestions.
     ///
-    /// The handler first resolves an optional `WordleDayAnswer` via `Self::ensure_wordle_answer`, then invokes
-    /// `send_suggestions` on the bot with that optional answer.
+    /// The returned handler obtains up-to-date suggestion data and invokes the bot's suggestion-sending logic when executed.
     ///
     /// # Examples
     ///
