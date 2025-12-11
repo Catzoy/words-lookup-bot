@@ -84,9 +84,9 @@ impl InlineAnswer {
         self
     }
 
-    /// Set the answer's description to the given string when the description is still being built; do nothing if the description is already finalized.
+    /// Replace the in-progress description with the provided string when the description is still being built.
     ///
-    /// If the description is in the Building state and its buffer already contains text, the buffer is reset before the provided string is appended. If the description is in the Done state, the method returns the same value unchanged.
+    /// If the answer's description is in the `Building` state and its buffer already contains text, the buffer is cleared before the provided string is appended. If the description is in the `Done` state, the answer is returned unchanged.
     ///
     /// # Examples
     ///
@@ -454,12 +454,13 @@ impl LookupFormatter for InlineFormatter {
     }
 }
 
-/// Builds the MarkdownV2-formatted message text for an inline answer.
+/// Compose the MarkdownV2-formatted message text for an inline answer.
 ///
-/// The returned string starts with the escaped title, optionally followed by a formatted
-/// meaning (separated by two newlines), and optionally followed by the escaped description
-/// on a new line. If the answer's description is a `Desc::Done(Err(_))`, that error is
-/// propagated.
+/// The resulting string begins with the escaped title. If `meaning` is present, it is
+/// appended on the next line using `meaning(...)`. If the answer's description is
+/// finalized (`Desc::Done`) and contains a string, that description is appended on a
+/// new line. If the description is `Desc::Done(Err(_))`, that UTF-8 conversion error is
+/// returned.
 ///
 /// # Examples
 ///
