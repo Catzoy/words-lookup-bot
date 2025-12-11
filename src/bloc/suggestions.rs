@@ -1,7 +1,6 @@
 use crate::bloc::common::CommandHandler;
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::LookupBot;
-use crate::format::ToEscaped;
 use crate::wordle::WordleDayAnswer;
 use crate::{
     commands::{FullMessageFormatter, MessageCommands},
@@ -41,7 +40,7 @@ impl SuggestionOwner for HelpSuggestion {
     fn produce(self) -> Option<InlineQueryResult> {
         let text = "Continue writing to look up a word or a phrase";
         let msg = MessageCommands::descriptions().to_string();
-        let msg = InputMessageContentText::new(msg.to_escaped());
+        let msg = InputMessageContentText::new(msg);
         let msg = InputMessageContent::Text(msg);
         let msg = InlineQueryResultArticle::new("help", text, msg);
         Some(InlineQueryResult::Article(msg))
@@ -177,6 +176,19 @@ impl SuggestionOwner for WordleSuggestion {
     }
 }
 
+struct WordFinderSuggestion;
+impl SuggestionOwner for WordFinderSuggestion {
+    fn produce(self) -> Option<InlineQueryResult> {
+        let text = "Or write \"f.LOOK_UP\" to try find a word matching blanks";
+        let msg = InputMessageContentText::new(
+            "Write @WordsLookupBot \"f.LOOK_UP\" to try find a word matching blanks",
+        );
+        let msg = InputMessageContent::Text(msg);
+        let msg = InlineQueryResultArticle::new("word_finder", text, msg);
+        Some(InlineQueryResult::Article(msg))
+    }
+}
+
 pub trait SuggestionsBot {}
 pub trait SuggestionsHandler {
     /// Attempts to obtain a fresh WordleDayAnswer from the provided cache.
@@ -261,9 +273,10 @@ where
     async fn send_suggestions(&self, wordle: Option<WordleDayAnswer>) -> anyhow::Result<()> {
         let suggestions = vec![
             HelpSuggestion.produce(),
+            WordleSuggestion { wordle }.produce(),
             UrbanSuggestion.produce(),
             ThesaurusSuggestion.produce(),
-            WordleSuggestion { wordle }.produce(),
+            WordFinderSuggestion.produce(),
         ];
         let answers = suggestions.into_iter().flatten().collect::<Vec<_>>();
         self.answer(answers).await?;

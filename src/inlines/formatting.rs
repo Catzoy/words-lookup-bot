@@ -1,5 +1,5 @@
 use crate::bloc::formatting::SynAntFormatterExt;
-use crate::format::{as_in, meaning, ToEscaped};
+use crate::format::{as_in, meaning, StringBuilderExt, ToEscaped};
 use crate::{
     format::{LinksProvider, LookupFormatter},
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
@@ -108,31 +108,31 @@ impl InlineAnswer {
     }
 
     /// Appends text to the answer's in-progress description buffer.
-    
+
     ///
-    
+
     /// If the answer's description is in the `Building` state, the provided string is
-    
+
     /// appended to that builder. If the description is already `Done`, this method
-    
+
     /// has no effect.
-    
+
     ///
-    
+
     /// # Examples
-    
+
     ///
-    
+
     /// ```
-    
+
     /// let ans = InlineAnswer::new("title".into())
-    
+
     ///     .append_description("first".into())
-    
+
     ///     .append_description(" second".into())
-    
+
     ///     .build_description();
-    
+
     /// ```
     fn append_description(mut self, string: String) -> Self {
         if let Desc::Building(ref mut builder) = self.description {
@@ -337,8 +337,9 @@ impl LookupFormatter for InlineFormatter {
         Self::push_syn_ant(&mut description, def, || {
             "Surprisingly, there are no synonyms or antonyms to this!".to_string()
         });
-        let mut answer = InlineAnswer::new(format!("#{} {} [{}]", i, def.term, def.part_of_speech))
-            .meaning(def.definition.clone());
+        let mut answer =
+            InlineAnswer::new(format!("#{} {} [{}]", i + 1, def.term, def.part_of_speech))
+                .meaning(def.definition.clone());
         if let Ok(description) = description.string() {
             answer = answer.description(description);
         }
@@ -475,16 +476,16 @@ impl LookupFormatter for InlineFormatter {
 /// ```
 fn compose_inline_answer(answer: &InlineAnswer) -> Result<String, FromUtf8Error> {
     let mut full_text = string_builder::Builder::default();
-    full_text.append(escape(&answer.title));
+    full_text.appendl(escape(&answer.title));
     if let Some(text) = &answer.meaning {
-        full_text.append("\n\n");
+        full_text.append("\n");
         full_text.append(meaning(&escape(text)));
     }
     if let Desc::Done(desc) = &answer.description {
         match desc {
             Ok(desc) => {
                 full_text.append("\n");
-                full_text.append(escape(desc));
+                full_text.append(desc.as_str());
             }
             Err(err) => {
                 return Err(err.clone());
