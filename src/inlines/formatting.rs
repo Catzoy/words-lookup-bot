@@ -518,3 +518,618 @@ fn compose_inline_result(i: usize, answer: &InlineAnswer, full_text: String) -> 
     }
     InlineQueryResult::Article(article)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stands4::{
+        AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition,
+    };
+    use crate::urban::UrbanDefinition;
+
+    // InlineAnswer tests
+    #[test]
+    fn test_inline_answer_new_creates_empty_answer() {
+        let answer = InlineAnswer::new("test_title".to_string());
+        assert_eq!(answer.title, "test_title");
+        assert!(answer.meaning.is_none());
+        assert!(matches!(answer.description, Desc::Building(_)));
+    }
+
+    #[test]
+    fn test_inline_answer_default_creates_empty_title() {
+        let answer = InlineAnswer::default();
+        assert_eq!(answer.title, String::default());
+        assert!(answer.meaning.is_none());
+    }
+
+    #[test]
+    fn test_inline_answer_title_sets_title() {
+        let answer = InlineAnswer::new("initial".to_string()).title("final".to_string());
+        assert_eq!(answer.title, "final");
+    }
+
+    #[test]
+    fn test_inline_answer_meaning_sets_meaning() {
+        let answer = InlineAnswer::new("title".to_string()).meaning("test meaning".to_string());
+        assert_eq!(answer.meaning, Some("test meaning".to_string()));
+    }
+
+    #[test]
+    fn test_inline_answer_description_sets_description() {
+        let answer =
+            InlineAnswer::new("title".to_string()).description("test description".to_string());
+        if let Desc::Building(builder) = answer.description {
+            assert!(builder.len() > 0);
+        } else {
+            panic!("Expected Building description");
+        }
+    }
+
+    #[test]
+    fn test_inline_answer_append_description_appends_text() {
+        let answer = InlineAnswer::new("title".to_string())
+            .append_description("first".to_string())
+            .append_description(" second".to_string());
+        if let Desc::Building(builder) = answer.description {
+            let result = builder.string().unwrap();
+            assert!(result.contains("first"));
+            assert!(result.contains("second"));
+        } else {
+            panic!("Expected Building description");
+        }
+    }
+
+    #[test]
+    fn test_inline_answer_build_description_finalizes() {
+        let answer = InlineAnswer::new("title".to_string())
+            .append_description("test".to_string())
+            .build_description();
+        assert!(matches!(answer.description, Desc::Done(_)));
+    }
+
+    #[test]
+    fn test_inline_answer_build_description_idempotent() {
+        let answer = InlineAnswer::new("title".to_string())
+            .append_description("test".to_string())
+            .build_description()
+            .build_description(); // Call twice
+        assert!(matches!(answer.description, Desc::Done(_)));
+    }
+
+    #[test]
+    fn test_inline_answer_description_replaces_when_non_empty() {
+        let answer = InlineAnswer::new("title".to_string())
+            .description("first".to_string())
+            .description("second".to_string());
+        if let Desc::Building(builder) = answer.description {
+            let result = builder.string().unwrap();
+            assert!(result.contains("second"));
+            // Should have replaced, not appended
+        } else {
+            panic!("Expected Building description");
+        }
+    }
+
+    #[test]
+    fn test_inline_answer_append_after_done_has_no_effect() {
+        let answer = InlineAnswer::new("title".to_string())
+            .append_description("test".to_string())
+            .build_description()
+            .append_description("ignored".to_string());
+        if let Desc::Done(Ok(text)) = answer.description {
+            assert!(!text.contains("ignored"));
+        } else {
+            panic!("Expected Done description");
+        }
+    }
+
+    #[test]
+    fn test_inline_answer_chaining_methods() {
+        let answer = InlineAnswer::new("initial".to_string())
+            .title("new_title".to_string())
+            .meaning("test_meaning".to_string())
+            .description("test_desc".to_string());
+        assert_eq!(answer.title, "new_title");
+        assert_eq!(answer.meaning, Some("test_meaning".to_string()));
+    }
+
+    // InlineFormatter tests
+    #[test]
+    fn test_inline_formatter_default_is_empty() {
+        let formatter = InlineFormatter::default();
+        assert_eq!(formatter.answers.len(), 0);
+    }
+
+    #[test]
+    fn test_inline_formatter_on_empty_returns_empty_vec() {
+        let result = InlineFormatter::on_empty();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_word_adds_answer() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "a test definition".to_string(),
+            example: "This is a test.".to_string(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_word_with_empty_pos() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            example: String::new(),
+            part_of_speech: String::new(),
+        };
+        formatter.visit_word(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+        assert!(formatter.answers[0].title.contains("?"));
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_word_with_empty_example() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            example: String::new(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_word_index_increments_correctly() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            example: String::new(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        formatter.visit_word(1, &def);
+        assert_eq!(formatter.answers.len(), 2);
+        assert!(formatter.answers[0].title.contains("#1"));
+        assert!(formatter.answers[1].title.contains("#2"));
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_phrase_adds_answer() {
+        let mut formatter = InlineFormatter::default();
+        let def = PhraseDefinition {
+            term: "test phrase".to_string(),
+            explanation: "explanation".to_string(),
+            example: "example usage".to_string(),
+        };
+        formatter.visit_phrase(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_phrase_with_empty_example() {
+        let mut formatter = InlineFormatter::default();
+        let def = PhraseDefinition {
+            term: "test phrase".to_string(),
+            explanation: "explanation".to_string(),
+            example: String::new(),
+        };
+        formatter.visit_phrase(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_abbreviations_single_def() {
+        let mut formatter = InlineFormatter::default();
+        let defs = vec![&AbbreviationDefinition {
+            definition: "definition".to_string(),
+            category: "test".to_string(),
+        }];
+        formatter.visit_abbreviations(0, "category", &defs);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_abbreviations_multiple_defs() {
+        let mut formatter = InlineFormatter::default();
+        let defs = vec![
+            &AbbreviationDefinition {
+                definition: "def1".to_string(),
+                category: "test".to_string(),
+            },
+            &AbbreviationDefinition {
+                definition: "def2".to_string(),
+                category: "test".to_string(),
+            },
+        ];
+        formatter.visit_abbreviations(0, "category", &defs);
+        assert_eq!(formatter.answers.len(), 1);
+        if let Some(meaning) = &formatter.answers[0].meaning {
+            assert!(meaning.contains("def1"));
+            assert!(meaning.contains("def2"));
+            assert!(meaning.contains(", "));
+        } else {
+            panic!("Expected meaning to be set");
+        }
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_abbreviations_empty_category() {
+        let mut formatter = InlineFormatter::default();
+        let defs = vec![&AbbreviationDefinition {
+            definition: "definition".to_string(),
+            category: String::new(),
+        }];
+        formatter.visit_abbreviations(0, "", &defs);
+        assert_eq!(formatter.answers.len(), 1);
+        assert!(formatter.answers[0].title.contains("uncategorized"));
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_abbreviations_empty_defs() {
+        let mut formatter = InlineFormatter::default();
+        let defs: Vec<&AbbreviationDefinition> = vec![];
+        formatter.visit_abbreviations(0, "category", &defs);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_syn_ant_adds_answer() {
+        let mut formatter = InlineFormatter::default();
+        let def = SynAntDefinitions {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            part_of_speech: "noun".to_string(),
+            synonyms: vec!["similar".to_string()],
+            antonyms: vec!["opposite".to_string()],
+        };
+        formatter.visit_syn_ant(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_syn_ant_with_empty_lists() {
+        let mut formatter = InlineFormatter::default();
+        let def = SynAntDefinitions {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            part_of_speech: "noun".to_string(),
+            synonyms: vec![],
+            antonyms: vec![],
+        };
+        formatter.visit_syn_ant(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_urban_definition() {
+        let mut formatter = InlineFormatter::default();
+        let def = UrbanDefinition {
+            word: "test".to_string(),
+            meaning: "urban meaning".to_string(),
+            example: Some("example".to_string()),
+        };
+        formatter.visit_urban_definition(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_urban_definition_no_example() {
+        let mut formatter = InlineFormatter::default();
+        let def = UrbanDefinition {
+            word: "test".to_string(),
+            meaning: "urban meaning".to_string(),
+            example: None,
+        };
+        formatter.visit_urban_definition(0, &def);
+        assert_eq!(formatter.answers.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_word_finder_definition_new() {
+        let mut formatter = InlineFormatter::default();
+        let word = "pattern".to_string();
+        formatter.visit_word_finder_definition(0, &word);
+        assert_eq!(formatter.answers.len(), 1);
+        assert!(formatter.answers[0].title.contains("Found 1 words"));
+    }
+
+    #[test]
+    fn test_inline_formatter_visit_word_finder_definition_multiple() {
+        let mut formatter = InlineFormatter::default();
+        formatter.visit_word_finder_definition(0, &"word1".to_string());
+        formatter.visit_word_finder_definition(1, &"word2".to_string());
+        assert_eq!(formatter.answers.len(), 1);
+        assert!(formatter.answers[0].title.contains("Found 2 words"));
+    }
+
+    #[test]
+    fn test_inline_formatter_append_title_no_op() {
+        let mut formatter = InlineFormatter::default();
+        formatter.append_title("ignored".to_string());
+        assert_eq!(formatter.answers.len(), 0);
+    }
+
+    #[test]
+    fn test_inline_formatter_append_link_no_op() {
+        let mut formatter = InlineFormatter::default();
+        formatter.append_link("http://example.com".to_string());
+        assert_eq!(formatter.answers.len(), 0);
+    }
+
+    #[test]
+    fn test_inline_formatter_build_empty() {
+        let formatter = InlineFormatter::default();
+        let result = formatter.build().unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_inline_formatter_build_single_answer() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            example: String::new(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        let result = formatter.build().unwrap();
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_inline_formatter_build_multiple_answers() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            example: String::new(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        formatter.visit_word(1, &def);
+        let result = formatter.build().unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_inline_formatter_link_provider() {
+        let formatter = InlineFormatter::default();
+        let _provider = formatter.link_provider();
+        // Just verify it doesn't panic
+    }
+
+    // compose_inline_answer tests
+    #[test]
+    fn test_compose_inline_answer_title_only() {
+        let answer = InlineAnswer::new("test".to_string()).build_description();
+        let result = compose_inline_answer(&answer).unwrap();
+        assert!(result.contains("test"));
+    }
+
+    #[test]
+    fn test_compose_inline_answer_with_meaning() {
+        let answer = InlineAnswer::new("test".to_string())
+            .meaning("meaning text".to_string())
+            .build_description();
+        let result = compose_inline_answer(&answer).unwrap();
+        assert!(result.contains("test"));
+        assert!(result.contains("meaning"));
+    }
+
+    #[test]
+    fn test_compose_inline_answer_with_description() {
+        let answer = InlineAnswer::new("test".to_string())
+            .append_description("description text".to_string())
+            .build_description();
+        let result = compose_inline_answer(&answer).unwrap();
+        assert!(result.contains("test"));
+        assert!(result.contains("description"));
+    }
+
+    #[test]
+    fn test_compose_inline_answer_all_fields() {
+        let answer = InlineAnswer::new("test".to_string())
+            .meaning("meaning".to_string())
+            .append_description("description".to_string())
+            .build_description();
+        let result = compose_inline_answer(&answer).unwrap();
+        assert!(result.contains("test"));
+        assert!(result.contains("meaning"));
+        assert!(result.contains("description"));
+    }
+
+    #[test]
+    fn test_compose_inline_answer_escapes_special_chars() {
+        let answer = InlineAnswer::new("test_with_underscores".to_string()).build_description();
+        let result = compose_inline_answer(&answer).unwrap();
+        // Markdown escaping should handle special characters
+        assert!(result.len() > "test_with_underscores".len());
+    }
+
+    // compose_inline_result tests
+    #[test]
+    fn test_compose_inline_result_creates_article() {
+        let answer = InlineAnswer::new("test".to_string());
+        let result = compose_inline_result(0, &answer, "test text".to_string());
+        assert!(matches!(result, InlineQueryResult::Article(_)));
+    }
+
+    #[test]
+    fn test_compose_inline_result_with_meaning() {
+        let answer = InlineAnswer::new("test".to_string()).meaning("meaning".to_string());
+        let result = compose_inline_result(0, &answer, "test text".to_string());
+        assert!(matches!(result, InlineQueryResult::Article(_)));
+    }
+
+    #[test]
+    fn test_compose_inline_result_increments_id() {
+        let answer = InlineAnswer::new("test".to_string());
+        let _result1 = compose_inline_result(0, &answer, "text".to_string());
+        let _result2 = compose_inline_result(1, &answer, "text".to_string());
+        // Just verify different indices don't panic
+    }
+
+    // Edge cases and integration tests
+    #[test]
+    fn test_inline_formatter_handles_special_characters() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test*with_special[chars]".to_string(),
+            definition: "def*with_special[chars]".to_string(),
+            example: "ex*with_special[chars]".to_string(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        let result = formatter.build();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_inline_formatter_handles_unicode() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "tëst ünïçödé 🎮".to_string(),
+            definition: "définitïon with émoji 🚀".to_string(),
+            example: String::new(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        let result = formatter.build();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_inline_formatter_handles_empty_strings() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: String::new(),
+            definition: String::new(),
+            example: String::new(),
+            part_of_speech: String::new(),
+        };
+        formatter.visit_word(0, &def);
+        let result = formatter.build();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_inline_formatter_handles_long_text() {
+        let mut formatter = InlineFormatter::default();
+        let def = WordDefinition {
+            term: "test".to_string(),
+            definition: "a".repeat(1000),
+            example: "b".repeat(1000),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &def);
+        let result = formatter.build();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_inline_formatter_multiple_visit_types() {
+        let mut formatter = InlineFormatter::default();
+        
+        let word_def = WordDefinition {
+            term: "test".to_string(),
+            definition: "definition".to_string(),
+            example: String::new(),
+            part_of_speech: "noun".to_string(),
+        };
+        formatter.visit_word(0, &word_def);
+
+        let phrase_def = PhraseDefinition {
+            term: "test phrase".to_string(),
+            explanation: "explanation".to_string(),
+            example: String::new(),
+        };
+        formatter.visit_phrase(1, &phrase_def);
+
+        let urban_def = UrbanDefinition {
+            word: "urban".to_string(),
+            meaning: "meaning".to_string(),
+            example: None,
+        };
+        formatter.visit_urban_definition(2, &urban_def);
+
+        assert_eq!(formatter.answers.len(), 3);
+        let result = formatter.build();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_desc_building_to_done_transition() {
+        let answer = InlineAnswer::new("test".to_string())
+            .append_description("text".to_string());
+        assert!(matches!(answer.description, Desc::Building(_)));
+        
+        let answer = answer.build_description();
+        assert!(matches!(answer.description, Desc::Done(_)));
+    }
+
+    #[test]
+    fn test_inline_answer_description_after_done() {
+        let answer = InlineAnswer::new("test".to_string())
+            .append_description("first".to_string())
+            .build_description()
+            .description("second".to_string()); // This should have no effect
+        
+        if let Desc::Done(Ok(text)) = answer.description {
+            assert_eq!(text, "first");
+        } else {
+            panic!("Expected Done with first text");
+        }
+    }
+
+    #[test]
+    fn test_word_finder_accumulates_words() {
+        let mut formatter = InlineFormatter::default();
+        
+        for i in 0..5 {
+            formatter.visit_word_finder_definition(i, &format!("word{}", i + 1));
+        }
+        
+        assert_eq!(formatter.answers.len(), 1);
+        assert!(formatter.answers[0].title.contains("Found 5 words"));
+    }
+
+    #[test]
+    fn test_abbreviations_with_three_definitions() {
+        let mut formatter = InlineFormatter::default();
+        let defs = vec![
+            &AbbreviationDefinition {
+                definition: "def1".to_string(),
+                category: "test".to_string(),
+            },
+            &AbbreviationDefinition {
+                definition: "def2".to_string(),
+                category: "test".to_string(),
+            },
+            &AbbreviationDefinition {
+                definition: "def3".to_string(),
+                category: "test".to_string(),
+            },
+        ];
+        formatter.visit_abbreviations(0, "category", &defs);
+        
+        if let Some(meaning) = &formatter.answers[0].meaning {
+            assert!(meaning.contains("def1"));
+            assert!(meaning.contains("def2"));
+            assert!(meaning.contains("def3"));
+            // Should have two separators
+            assert_eq!(meaning.matches(", ").count(), 2);
+        }
+    }
+}

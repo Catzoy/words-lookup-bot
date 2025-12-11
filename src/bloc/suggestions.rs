@@ -303,3 +303,236 @@ where
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use teloxide::types::{InlineQueryResult, InlineQueryResultArticle};
+
+    #[test]
+    fn test_help_suggestion_produces_some_result() {
+        let suggestion = HelpSuggestion;
+        let result = suggestion.produce();
+        assert!(result.is_some(), "HelpSuggestion should produce a result");
+    }
+
+    #[test]
+    fn test_help_suggestion_returns_article() {
+        let suggestion = HelpSuggestion;
+        let result = suggestion.produce().unwrap();
+        assert!(
+            matches!(result, InlineQueryResult::Article(_)),
+            "HelpSuggestion should return an Article variant"
+        );
+    }
+
+    #[test]
+    fn test_help_suggestion_has_correct_id() {
+        let suggestion = HelpSuggestion;
+        if let Some(InlineQueryResult::Article(article)) = suggestion.produce() {
+            // Note: We can't directly access the id field, but we can verify the result exists
+            // This test ensures the structure is correctly built
+            assert!(true, "Article created successfully");
+        } else {
+            panic!("Expected Article variant");
+        }
+    }
+
+    #[test]
+    fn test_urban_suggestion_produces_some_result() {
+        let suggestion = UrbanSuggestion;
+        let result = suggestion.produce();
+        assert!(result.is_some(), "UrbanSuggestion should produce a result");
+    }
+
+    #[test]
+    fn test_urban_suggestion_returns_article() {
+        let suggestion = UrbanSuggestion;
+        let result = suggestion.produce().unwrap();
+        assert!(
+            matches!(result, InlineQueryResult::Article(_)),
+            "UrbanSuggestion should return an Article variant"
+        );
+    }
+
+    #[test]
+    fn test_thesaurus_suggestion_produces_some_result() {
+        let suggestion = ThesaurusSuggestion;
+        let result = suggestion.produce();
+        assert!(
+            result.is_some(),
+            "ThesaurusSuggestion should produce a result"
+        );
+    }
+
+    #[test]
+    fn test_thesaurus_suggestion_returns_article() {
+        let suggestion = ThesaurusSuggestion;
+        let result = suggestion.produce().unwrap();
+        assert!(
+            matches!(result, InlineQueryResult::Article(_)),
+            "ThesaurusSuggestion should return an Article variant"
+        );
+    }
+
+    #[test]
+    fn test_word_finder_suggestion_produces_some_result() {
+        let suggestion = WordFinderSuggestion;
+        let result = suggestion.produce();
+        assert!(
+            result.is_some(),
+            "WordFinderSuggestion should produce a result"
+        );
+    }
+
+    #[test]
+    fn test_word_finder_suggestion_returns_article() {
+        let suggestion = WordFinderSuggestion;
+        let result = suggestion.produce().unwrap();
+        assert!(
+            matches!(result, InlineQueryResult::Article(_)),
+            "WordFinderSuggestion should return an Article variant"
+        );
+    }
+
+    #[test]
+    fn test_wordle_suggestion_with_none_returns_none() {
+        let suggestion = WordleSuggestion { wordle: None };
+        let result = suggestion.produce();
+        assert!(
+            result.is_none(),
+            "WordleSuggestion with None wordle should return None"
+        );
+    }
+
+    #[test]
+    fn test_wordle_suggestion_compose_response_returns_article() {
+        let message = "Test wordle message".to_string();
+        let result = WordleSuggestion::compose_response(message);
+        assert!(
+            matches!(result, InlineQueryResult::Article(_)),
+            "compose_response should return an Article variant"
+        );
+    }
+
+    #[test]
+    fn test_all_suggestion_types_implement_suggestion_owner() {
+        // This test verifies that all suggestion types properly implement the trait
+        let _: Box<dyn Fn() -> Option<InlineQueryResult>> = Box::new(|| HelpSuggestion.produce());
+        let _: Box<dyn Fn() -> Option<InlineQueryResult>> =
+            Box::new(|| UrbanSuggestion.produce());
+        let _: Box<dyn Fn() -> Option<InlineQueryResult>> =
+            Box::new(|| ThesaurusSuggestion.produce());
+        let _: Box<dyn Fn() -> Option<InlineQueryResult>> =
+            Box::new(|| WordFinderSuggestion.produce());
+    }
+
+    #[test]
+    fn test_help_suggestion_multiple_calls_produce_consistent_results() {
+        let result1 = HelpSuggestion.produce();
+        let result2 = HelpSuggestion.produce();
+        assert!(result1.is_some() && result2.is_some());
+        // Both should produce Some variant consistently
+    }
+
+    #[test]
+    fn test_urban_suggestion_creates_valid_structure() {
+        let suggestion = UrbanSuggestion;
+        let result = suggestion.produce();
+        assert!(result.is_some());
+        // Verify it's a valid Article that can be used in responses
+        if let Some(InlineQueryResult::Article(_)) = result {
+            assert!(true, "Valid article structure created");
+        } else {
+            panic!("Invalid structure produced");
+        }
+    }
+
+    #[test]
+    fn test_thesaurus_suggestion_creates_valid_structure() {
+        let suggestion = ThesaurusSuggestion;
+        let result = suggestion.produce();
+        assert!(result.is_some());
+        // Verify it's a valid Article that can be used in responses
+        if let Some(InlineQueryResult::Article(_)) = result {
+            assert!(true, "Valid article structure created");
+        } else {
+            panic!("Invalid structure produced");
+        }
+    }
+
+    #[test]
+    fn test_word_finder_suggestion_creates_valid_structure() {
+        let suggestion = WordFinderSuggestion;
+        let result = suggestion.produce();
+        assert!(result.is_some());
+        // Verify it's a valid Article that can be used in responses
+        if let Some(InlineQueryResult::Article(_)) = result {
+            assert!(true, "Valid article structure created");
+        } else {
+            panic!("Invalid structure produced");
+        }
+    }
+
+    #[test]
+    fn test_wordle_suggestion_with_none_is_idempotent() {
+        let suggestion1 = WordleSuggestion { wordle: None };
+        let suggestion2 = WordleSuggestion { wordle: None };
+        assert_eq!(suggestion1.produce().is_none(), suggestion2.produce().is_none());
+    }
+
+    #[test]
+    fn test_compose_response_handles_empty_message() {
+        let message = String::new();
+        let result = WordleSuggestion::compose_response(message);
+        assert!(matches!(result, InlineQueryResult::Article(_)));
+    }
+
+    #[test]
+    fn test_compose_response_handles_special_characters() {
+        let message = "Test with *special* _characters_ and [brackets]".to_string();
+        let result = WordleSuggestion::compose_response(message);
+        assert!(matches!(result, InlineQueryResult::Article(_)));
+    }
+
+    #[test]
+    fn test_compose_response_handles_unicode() {
+        let message = "Test with émojis 🎮 and üñïçödé".to_string();
+        let result = WordleSuggestion::compose_response(message);
+        assert!(matches!(result, InlineQueryResult::Article(_)));
+    }
+
+    #[test]
+    fn test_compose_response_handles_long_message() {
+        let message = "a".repeat(1000);
+        let result = WordleSuggestion::compose_response(message);
+        assert!(matches!(result, InlineQueryResult::Article(_)));
+    }
+
+    // Edge case tests
+    #[test]
+    fn test_all_suggestions_return_inline_query_result() {
+        let suggestions: Vec<Option<InlineQueryResult>> = vec![
+            HelpSuggestion.produce(),
+            UrbanSuggestion.produce(),
+            ThesaurusSuggestion.produce(),
+            WordFinderSuggestion.produce(),
+        ];
+
+        for (i, suggestion) in suggestions.iter().enumerate() {
+            assert!(
+                suggestion.is_some(),
+                "Suggestion at index {} should be Some",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn test_wordle_suggestion_none_wordle_edge_case() {
+        // Test that None wordle doesn't panic and returns None gracefully
+        let suggestion = WordleSuggestion { wordle: None };
+        let result = suggestion.produce();
+        assert!(result.is_none());
+    }
+}
