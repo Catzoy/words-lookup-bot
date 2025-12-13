@@ -230,7 +230,7 @@ impl LookupFormatter for InlineFormatter {
             InlineAnswer::new(format!("#{} - {} ({})", i + 1, def.term, part_of_speech))
                 .meaning(def.definition.clone());
         if !def.example.is_empty() {
-            answer = answer.description(def.example.clone());
+            answer = answer.description(def.example.to_escaped());
         }
         self.answers.push(answer);
     }
@@ -258,7 +258,7 @@ impl LookupFormatter for InlineFormatter {
         let mut answer = InlineAnswer::new(format!("#{} - {}", i + 1, def.term))
             .meaning(def.explanation.clone());
         if !def.example.is_empty() {
-            answer = answer.description(as_in(&def.example));
+            answer = answer.description(as_in(&def.example.to_escaped()));
         }
 
         self.answers.push(answer);
@@ -368,7 +368,7 @@ impl LookupFormatter for InlineFormatter {
         let mut answer =
             InlineAnswer::new(format!("#{} - {}", i + 1, def.word)).meaning(def.meaning.clone());
         if let Some(example) = &def.example {
-            answer = answer.description(as_in(example));
+            answer = answer.description(as_in(&example.to_escaped()));
         }
         self.answers.push(answer);
     }
