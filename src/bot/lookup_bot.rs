@@ -184,10 +184,10 @@ where
         match response {
             Ok(values) => Some(values),
             Err(_) => {
-                let resp = &self.answer(Self::error_response()).await;
+                let resp = self.answer(Self::error_response()).await;
                 if let Err(e) = resp {
                     log::error!("Couldn't send error-response: {:?}", e);
-                    let _ = &self.answer_generic_err().await;
+                    let _ = self.answer_generic_err().await;
                 }
                 None
             }
