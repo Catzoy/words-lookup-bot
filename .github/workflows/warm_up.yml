@@ -1,0 +1,13 @@
+name: warm_up.yml
+on:
+  schedule:
+    - '5 0 * * *'
+  workflow_dispatch:
+
+
+jobs:
+  warm_up:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Do it
+        run: curl -X GET https://words-lookup-bot-st7l.shuttle.app/warm_up
