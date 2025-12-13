@@ -7,7 +7,7 @@ pub trait HelpBot<Value> {
 }
 
 pub trait HelpHandler {
-    async fn send_help(&self) -> anyhow::Result<()>;
+    fn send_help(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
     fn help_handler() -> CommandHandler;
 }
 impl<Bot> HelpHandler for Bot

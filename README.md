@@ -238,26 +238,31 @@ Can look up English words from Stands4 API.
     <tr>
         <td>:x:</td>
         <td>0.13.0</td>
-        <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
+        <td>Add semi-automatic Wordle cache warmup every midnight</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.14.0</td>
-        <td>Add caching of frequent requests per API route</td>
+        <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.15.0</td>
-        <td>Add single api inline lookups</td>
+        <td>Add caching of frequent requests per API route</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.16.0</td>
-        <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
+        <td>Add single api inline lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
         <td>0.17.0</td>
+        <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.18.0</td>
         <td>Send wordle hidden by default & shown if button is pressed</td>
     </tr>
     <tr>

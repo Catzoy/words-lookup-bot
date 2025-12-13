@@ -1,8 +1,6 @@
 use crate::bloc::common::LookupError;
 use crate::format::LookupFormatter;
-use shuttle_runtime::async_trait;
 
-#[async_trait]
 pub trait LookupBot: Clone {
     type Request: Clone + Send + Sync;
     type Formatter: LookupFormatter + Default;
@@ -41,7 +39,67 @@ pub trait LookupBot: Clone {
         Self::Response::default()
     }
 
-    async fn answer(&self, response: Self::Response) -> anyhow::Result<()>;
+    fn answer(&self, response: Self::Response) -> impl Future<Output = anyhow::Result<()>> + Send;
+}
+
+pub trait LookupBotX: LookupBot {
+    /// Checks whether the given phrase is non-empty and, if empty, sends a provided empty response and stops processing.
+    ///
+    /// When `phrase` is empty, `on_empty()` is called and its returned response is sent with `answer`; the method then returns `false`. If `phrase` is non-empty, the method returns `true`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Assume `bot` implements `LookupBot`.
+    /// // let keep = bot.drop_empty("hello".to_string(), || bot.formatter().format_empty()).await;
+    /// // assert!(keep);
+    /// ```
+    fn drop_empty<F>(&self, phrase: String, on_empty: F) -> impl Future<Output = bool> + Send
+    where
+        F: Fn() -> Self::Response + Send;
+
+    /// Convert a lookup `Result` into an `Option`, sending an error response when the result is an error.
+    ///
+    /// If `response` is `Ok(entity)`, returns `Some(entity)`. If `response` is `Err(_)`, attempts to send
+    /// the trait's `error_response` via `answer`; if sending that response fails the failure is logged
+    /// and `answer_generic_err` is attempted. In the error case, returns `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn run_example<B: LookupBot>() {
+    /// let bot: B = /* implementor */ todo!();
+    /// let maybe = bot.ensure_request_success(Ok(42)).await;
+    /// assert_eq!(maybe, Some(42));
+    /// # }
+    /// ```
+    fn ensure_request_success<Entity>(
+        &self,
+        response: Result<Entity, LookupError>,
+    ) -> impl Future<Output = Option<Entity>> + Send
+    where
+        Entity: Send;
+
+    /// Attempts to extract a successfully built response, sending a generic error reply on failure.
+    ///
+    /// If `response` is `Ok`, returns `Some` of the contained response. If `response` is `Err`,
+    /// logs the error, attempts to send a generic error response via `answer_generic_err`, logs
+    /// any failure to send that generic response, and returns `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Given `bot` implements `LookupBot`, this demonstrates the expected usage.
+    /// // let maybe_response = bot.retrieve_or_generic_err(build_result).await;
+    /// // if let Some(response) = maybe_response {
+    /// //     // use the successful response
+    /// // }
+    /// ```
+    fn retrieve_or_generic_err(
+        &self,
+        response: Result<Self::Response, LookupError>,
+    ) -> impl Future<Output = Option<Self::Response>> + Send;
+
     /// Sends the bot's default error response.
     ///
     /// Attempts to send the response produced by `Self::error_response()`. Returns `Ok(())` if the response
@@ -61,7 +119,6 @@ pub trait LookupBot: Clone {
     ///
     /// struct MockBot;
     ///
-    /// #[async_trait]
     /// impl LookupBot for MockBot {
     ///     type Request = String;
     ///     type Formatter = MockFormatter;
@@ -80,22 +137,30 @@ pub trait LookupBot: Clone {
     ///     Ok(())
     /// }
     /// ```
-    async fn answer_generic_err(&self) -> anyhow::Result<()> {
-        self.answer(Self::error_response()).await?;
-        Ok(())
-    }
+    fn answer_generic_err(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Checks whether the given phrase is non-empty and, if empty, sends a provided empty response and stops processing.
+    /// Send a response to the requester, falling back to the bot's generic error response if sending fails.
     ///
-    /// When `phrase` is empty, `on_empty()` is called and its returned response is sent with `answer`; the method then returns `false`. If `phrase` is non-empty, the method returns `true`.
+    /// If `answer` returns an error the failure is logged and `answer_generic_err` is attempted. The function
+    /// swallows send errors and always returns `Ok(())` after handling.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` after attempting to send the response; send failures are logged and a generic error send is attempted.
     ///
     /// # Examples
     ///
     /// ```
-    /// // Assume `bot` implements `LookupBot`.
-    /// // let keep = bot.drop_empty("hello".to_string(), || bot.formatter().format_empty()).await;
-    /// // assert!(keep);
+    /// // Given an implementor `bot` of `LookupBot`:
+    /// // bot.respond(response).await.unwrap();
     /// ```
+    fn respond(&self, response: Self::Response) -> impl Future<Output = anyhow::Result<()>> + Send;
+}
+
+impl<T> LookupBotX for T
+where
+    T: LookupBot + Sync,
+{
     async fn drop_empty<F>(&self, phrase: String, on_empty: F) -> bool
     where
         F: Fn() -> Self::Response + Send,
@@ -109,21 +174,6 @@ pub trait LookupBot: Clone {
         }
     }
 
-    /// Convert a lookup `Result` into an `Option`, sending an error response when the result is an error.
-    ///
-    /// If `response` is `Ok(entity)`, returns `Some(entity)`. If `response` is `Err(_)`, attempts to send
-    /// the trait's `error_response` via `answer`; if sending that response fails the failure is logged
-    /// and `answer_generic_err` is attempted. In the error case, returns `None`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # async fn run_example<B: LookupBot>() {
-    /// let bot: B = /* implementor */ todo!();
-    /// let maybe = bot.ensure_request_success(Ok(42)).await;
-    /// assert_eq!(maybe, Some(42));
-    /// # }
-    /// ```
     async fn ensure_request_success<Entity>(
         &self,
         response: Result<Entity, LookupError>,
@@ -134,30 +184,16 @@ pub trait LookupBot: Clone {
         match response {
             Ok(values) => Some(values),
             Err(_) => {
-                let resp = &self.answer(Self::error_response()).await;
+                let resp = self.answer(Self::error_response()).await;
                 if let Err(e) = resp {
                     log::error!("Couldn't send error-response: {:?}", e);
-                    let _ = &self.answer_generic_err().await;
+                    let _ = self.answer_generic_err().await;
                 }
                 None
             }
         }
     }
-    /// Attempts to extract a successfully built response, sending a generic error reply on failure.
-    ///
-    /// If `response` is `Ok`, returns `Some` of the contained response. If `response` is `Err`,
-    /// logs the error, attempts to send a generic error response via `answer_generic_err`, logs
-    /// any failure to send that generic response, and returns `None`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// // Given `bot` implements `LookupBot`, this demonstrates the expected usage.
-    /// // let maybe_response = bot.retrieve_or_generic_err(build_result).await;
-    /// // if let Some(response) = maybe_response {
-    /// //     // use the successful response
-    /// // }
-    /// ```
+
     async fn retrieve_or_generic_err(
         &self,
         response: Result<Self::Response, LookupError>,
@@ -175,21 +211,11 @@ pub trait LookupBot: Clone {
         }
     }
 
-    /// Send a response to the requester, falling back to the bot's generic error response if sending fails.
-    ///
-    /// If `answer` returns an error the failure is logged and `answer_generic_err` is attempted. The function
-    /// swallows send errors and always returns `Ok(())` after handling.
-    ///
-    /// # Returns
-    ///
-    /// `Ok(())` after attempting to send the response; send failures are logged and a generic error send is attempted.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// // Given an implementor `bot` of `LookupBot`:
-    /// // bot.respond(response).await.unwrap();
-    /// ```
+    async fn answer_generic_err(&self) -> anyhow::Result<()> {
+        self.answer(Self::error_response()).await?;
+        Ok(())
+    }
+
     async fn respond(&self, response: Self::Response) -> anyhow::Result<()> {
         let res = self.answer(response).await;
         if let Err(e) = res {

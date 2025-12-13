@@ -4,12 +4,13 @@ mod commands;
 mod datamuse;
 mod format;
 mod inlines;
+mod server;
 mod service;
 mod stands4;
 mod urban;
 mod wordle;
 
-use crate::service::TelegramService;
+use crate::service::telegram::TelegramService;
 use anyhow::Context as _;
 use shuttle_runtime::{Error, SecretStore};
 use stands4::client::Stands4Client;
