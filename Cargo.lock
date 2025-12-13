@@ -3029,7 +3029,7 @@ dependencies = [
 
 [[package]]
 name = "words-lookup-bot"
-version = "0.12.2"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "axum",
