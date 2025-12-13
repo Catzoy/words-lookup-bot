@@ -1,7 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
-use crate::bot::LookupBot;
+use crate::bot::{LookupBot, LookupBotX};
 use crate::datamuse::client::DatamuseClient;
-use crate::format::{LookupFormatter, ToEscaped};
+use crate::format::LookupFormatter;
 use teloxide::dptree::entry;
 
 pub trait WordFinderBot<Response>

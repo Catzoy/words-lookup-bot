@@ -1,17 +1,15 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
-use crate::bot::LookupBot;
+use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
 use crate::wordle::cache::WordleCache;
 use crate::wordle::WordleDayAnswer;
-use shuttle_runtime::async_trait;
 use teloxide::dptree::entry;
 
 pub trait WordleBot<Response> {
     fn wordle_error_response() -> Response;
 }
 
-#[async_trait]
 pub trait WordleHandler {
     /// Obtain a fresh WordleDayAnswer from the provided cache.
     ///
@@ -41,10 +39,10 @@ pub trait WordleHandler {
         })
     }
 
-    async fn retrieve_or_failed_cache(
+    fn retrieve_or_failed_cache(
         &self,
         answer: Result<WordleDayAnswer, LookupError>,
-    ) -> Option<WordleDayAnswer>;
+    ) -> impl Future<Output = Option<WordleDayAnswer>>;
 
     fn wordle_handler() -> CommandHandler;
 }
@@ -85,7 +83,6 @@ where
     }
 }
 
-#[async_trait]
 impl<Bot, Formatter> WordleHandler for Bot
 where
     Bot: WordleBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,

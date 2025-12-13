@@ -1,9 +1,8 @@
 use crate::bloc::common::{CommandHandler, LookupError};
-use crate::bot::LookupBot;
+use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
-use shuttle_runtime::async_trait;
 use teloxide::dptree::entry;
 
 type Entity = (Vec<WordDefinition>, Vec<AbbreviationDefinition>);
@@ -31,7 +30,6 @@ where
     }
 }
 
-#[async_trait]
 pub trait WordLookupHandler {
     /// Performs concurrent lookups for both word definitions and abbreviation definitions.
     ///

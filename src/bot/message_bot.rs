@@ -11,7 +11,6 @@ use crate::bloc::wordle::WordleBot;
 use crate::bot::LookupBot;
 use crate::commands::{FullMessageFormatter, MessageCommands};
 use crate::format::ToEscaped;
-use shuttle_runtime::async_trait;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
 use teloxide::types::{Message, ParseMode};
@@ -24,7 +23,6 @@ pub struct MessageBot {
     pub message: Message,
 }
 
-#[async_trait]
 impl LookupBot for MessageBot {
     type Request = Message;
     type Formatter = FullMessageFormatter;

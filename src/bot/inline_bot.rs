@@ -6,7 +6,6 @@ use crate::bloc::word_finder::WordFinderBot;
 use crate::bloc::word_lookup::WordLookupBot;
 use crate::bot::LookupBot;
 use crate::inlines::formatting::InlineFormatter;
-use shuttle_runtime::async_trait;
 use teloxide::prelude::{InlineQuery, Requester};
 use teloxide::types::InlineQueryResult;
 use teloxide::Bot;
@@ -17,7 +16,6 @@ pub struct InlineBot {
     pub query: InlineQuery,
 }
 
-#[async_trait]
 impl LookupBot for InlineBot {
     type Request = InlineQuery;
     type Formatter = InlineFormatter;
