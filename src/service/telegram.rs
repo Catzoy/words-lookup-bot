@@ -14,28 +14,33 @@ pub struct TelegramService {
 
 #[shuttle_runtime::async_trait]
 impl shuttle_runtime::Service for TelegramService {
-    /// Starts and runs the Telegram bot dispatcher with its required dependencies and a polling update listener.
+    /// Starts and runs the Telegram bot dispatcher and the HTTP server until completion.
     ///
-    /// The service constructs the bot and dependency set, registers command and inline handler trees,
-    /// ignores non-message updates, and runs the dispatcher until completion.
+    /// Constructs the service dependencies, registers command and inline handlers, ignores non-message updates, and runs the server and bot dispatcher concurrently.
+    ///
+    /// # Parameters
+    ///
+    /// * `addr` - Socket address to bind the HTTP server to.
     ///
     /// # Returns
     ///
-    /// `Ok(())` if the dispatcher runs to completion; an `Error` otherwise.
+    /// `Ok(())` if both the server and bot dispatcher complete successfully, `Error` otherwise.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use std::net::SocketAddr;
-    /// # use tokio::runtime::Runtime;
-    /// # use my_crate::TelegramService;
-    /// # fn make_service() -> TelegramService { unimplemented!() }
-    /// # let mut rt = Runtime::new().unwrap();
-    /// # rt.block_on(async {
-    /// let svc = make_service();
-    /// let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
-    /// let _ = svc.bind(addr).await;
-    /// # });
+    /// use std::net::SocketAddr;
+    /// use tokio::runtime::Runtime;
+    /// use my_crate::TelegramService;
+    ///
+    /// fn make_service() -> TelegramService { unimplemented!() }
+    ///
+    /// let mut rt = Runtime::new().unwrap();
+    /// rt.block_on(async {
+    ///     let svc = make_service();
+    ///     let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
+    ///     let _ = svc.bind(addr).await;
+    /// });
     /// ```
     async fn bind(self, addr: SocketAddr) -> Result<(), Error> {
         let wordle_cache = WordleCache::new(WordleClient::default(), self.stands4_client.clone());
