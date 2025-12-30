@@ -1,6 +1,5 @@
 use crate::urban::{UrbanDefinition, UrbanResponse};
 use reqwest::Client;
-use shuttle_runtime::__internals::serde_json;
 
 const API_URL: &str = "https://unofficialurbandictionaryapi.com/api/search";
 
@@ -28,9 +27,11 @@ impl UrbanDictionaryClient {
         let response =
             serde_json::from_slice::<UrbanResponse>(txt.as_bytes()).map_err(anyhow::Error::msg)?;
         if response.status_code != 200 {
-            anyhow::bail!(response
-                .message
-                .unwrap_or_else(|| "Urban lookup failed without an error!".to_string()));
+            anyhow::bail!(
+                response
+                    .message
+                    .unwrap_or_else(|| "Urban lookup failed without an error!".to_string())
+            );
         }
         Ok(response.data)
     }

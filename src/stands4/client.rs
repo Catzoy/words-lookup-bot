@@ -1,13 +1,12 @@
+use crate::stands4::SynAntDefinitions;
 use crate::stands4::entities::{
     AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
 };
 use crate::stands4::responses::{
     AbbreviationResult, PhraseResult, Results, SynAntResult, WordResult,
 };
-use crate::stands4::SynAntDefinitions;
 use reqwest::{Client, RequestBuilder};
 use serde::de::DeserializeOwned;
-use shuttle_runtime::__internals::serde_json;
 
 const WORDS_API_URL: &str = "https://www.stands4.com/services/v2/defs.php";
 const PHRASES_API_URL: &str = "https://www.stands4.com/services/v2/phrases.php";
@@ -107,7 +106,6 @@ impl Stands4Client {
 mod tests {
     use crate::stands4::client::{Results, WordResult};
     use crate::stands4::responses::{PhraseResult, VecMixedType};
-    use shuttle_runtime::__internals::serde_json;
 
     #[test]
     fn parsing_words_works() {

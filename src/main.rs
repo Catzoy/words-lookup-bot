@@ -11,29 +11,30 @@ mod urban;
 mod wordle;
 
 use crate::service::telegram::TelegramService;
-use anyhow::Context as _;
-use shuttle_runtime::{Error, SecretStore};
+use serde::Deserialize;
 use stands4::client::Stands4Client;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-#[shuttle_runtime::main]
-async fn telegram(
-    #[shuttle_runtime::Secrets] secret_store: SecretStore,
-) -> Result<TelegramService, Error> {
-    let token = secret_store
-        .get("TELOXIDE_TOKEN")
-        .context("TELOXIDE_TOKEN not found")?;
-    let stands4_user_id = secret_store
-        .get("STANDS4_USER_ID")
-        .context("STANDS4_USER_ID not found")?;
-    let stands4_token = secret_store
-        .get("STANDS4_TOKEN")
-        .context("STANDS4_TOKEN not found")?;
-    let stands4_client = Stands4Client::new(stands4_user_id, stands4_token);
+#[derive(Deserialize)]
+struct Config {
+    #[serde(rename = "TELOXIDE_TOKEN")]
+    teloxide_token: String,
+    #[serde(rename = "STANDS4_USER_ID")]
+    stands4_user_id: String,
+    #[serde(rename = "STANDS4_TOKEN")]
+    stands4_token: String,
+}
 
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    let config_str = std::fs::read_to_string("Secrets.toml")?;
+    let config: Config = toml::from_str(&config_str)?;
+    let ip = Ipv4Addr::new(127, 0, 0, 1);
+    let addr = SocketAddr::new(IpAddr::V4(ip), 8080);
+    let stands4_client = Stands4Client::new(config.stands4_user_id, config.stands4_token);
     let service = TelegramService {
-        token,
+        token: config.teloxide_token,
         stands4_client,
     };
-
-    Ok(service)
+    service.bind(addr).await
 }

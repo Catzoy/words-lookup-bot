@@ -1,9 +1,8 @@
 use crate::bot::runner::BotRunner;
 use crate::server::runner::ServerRunner;
 use crate::stands4::client::Stands4Client;
-use crate::wordle::cache::WordleCache;
 use crate::wordle::WordleClient;
-use shuttle_runtime::Error;
+use crate::wordle::cache::WordleCache;
 use std::net::SocketAddr;
 
 #[derive(Clone)]
@@ -12,8 +11,7 @@ pub struct TelegramService {
     pub(crate) stands4_client: Stands4Client,
 }
 
-#[shuttle_runtime::async_trait]
-impl shuttle_runtime::Service for TelegramService {
+impl TelegramService {
     /// Starts and runs the Telegram bot dispatcher and the HTTP server until completion.
     ///
     /// Constructs the service dependencies, registers command and inline handlers, ignores non-message updates, and runs the server and bot dispatcher concurrently.
@@ -42,7 +40,7 @@ impl shuttle_runtime::Service for TelegramService {
     ///     let _ = svc.bind(addr).await;
     /// });
     /// ```
-    async fn bind(self, addr: SocketAddr) -> Result<(), Error> {
+    pub(crate) async fn bind(self, addr: SocketAddr) -> Result<(), anyhow::Error> {
         let wordle_cache = WordleCache::new(WordleClient::default(), self.stands4_client.clone());
 
         tokio::try_join!(

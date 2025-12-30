@@ -1,9 +1,8 @@
+use crate::stands4::SynAntDefinitions;
 use crate::stands4::entities::{
     AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
 };
-use crate::stands4::SynAntDefinitions;
 use serde::Deserialize;
-use shuttle_runtime::__internals::serde_json;
 
 #[derive(Deserialize, Debug)]
 pub struct Results<T>
