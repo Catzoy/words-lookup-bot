@@ -27,7 +27,7 @@ features = ["json", "query"]
 
 [dependencies.tokio]
 version = "1.48"
-features = ["rt-multi-thread", "macros"]
+features = ["rt-multi-thread", "macros", "signal"]
 
 [dependencies.tokio-cron-scheduler]
 version = "0.15.1"
