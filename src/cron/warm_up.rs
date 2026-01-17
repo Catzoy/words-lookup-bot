@@ -2,6 +2,17 @@ use chrono::Local;
 use reqwest::Client;
 use tokio_cron_scheduler::{Job, JobBuilder};
 
+/// Creates a cron job that runs daily at 00:00 in the local timezone and invokes `refresh_wordle`.
+///
+/// The returned `Job` is configured with the local timezone, a schedule of `0 0 0 * * *` (daily at
+/// midnight), and an asynchronous runner that calls `refresh_wordle` and logs success or failure.
+///
+/// # Examples
+///
+/// ```
+/// let job = wordle_self_warmup_job();
+/// // `job` is ready to be added to a scheduler; constructing it should not panic.
+/// ```
 pub fn wordle_self_warmup_job() -> Job {
     JobBuilder::new()
         .with_timezone(Local::now().timezone())
@@ -24,6 +35,22 @@ pub fn wordle_self_warmup_job() -> Job {
         .expect("Wordle job must succeed")
 }
 
+/// Triggers the local Wordle warm-up endpoint.
+///
+/// Sends an HTTP GET to http://127.0.0.1:8080/warm_up and returns success if the request completes.
+///
+/// # Errors
+/// Returns an error if building or executing the HTTP request fails.
+///
+/// # Examples
+///
+/// ```no_run
+/// use anyhow::Result;
+/// # async fn run() -> Result<()> {
+/// refresh_wordle().await?;
+/// # Ok(())
+/// # }
+/// ```
 async fn refresh_wordle() -> anyhow::Result<()> {
     let client = Client::new();
     let request = client.get("http://127.0.0.1:8080/warm_up").build()?;

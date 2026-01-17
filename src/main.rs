@@ -26,6 +26,19 @@ struct Config {
     stands4_token: String,
 }
 
+/// Application entry point: initializes logging, loads configuration from `Secrets.toml`,
+/// constructs required clients and services, and binds the Telegram service to 127.0.0.1:8080.
+///
+/// Attempts to:
+/// - initialize the standard logger,
+/// - read and parse `Secrets.toml` into `Config`,
+/// - create a `Stands4Client` and `TelegramService`,
+/// - bind and run the service on `127.0.0.1:8080`.
+///
+/// # Returns
+///
+/// `Ok(())` if the service starts and binds successfully, `Err` if configuration loading,
+/// client construction, or binding fails.
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     std_logger::Config::logfmt().init();
