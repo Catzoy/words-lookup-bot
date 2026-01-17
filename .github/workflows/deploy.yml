@@ -1,4 +1,4 @@
-name: Deployment on Shuttle
+name: Create Release
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
         run: cargo build --verbose
 
       - name: Collect sources
-        run: zip SourceCode.zip Cargo.lock Cargo.toml src/
+        run: zip -r SourceCode.zip Cargo.lock Cargo.toml src/
 
       - name: Release
         uses: softprops/action-gh-release@v2
