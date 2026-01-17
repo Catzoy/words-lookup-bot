@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-    
+    tags:
+      - "v*.*.*"
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -12,17 +14,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
-    - name: Build
-      run: cargo build --verbose
-    - name: Deploy with Shuttle
-      uses: shuttle-hq/deploy-action@v2
-      with:
-        shuttle-api-key: ${{ secrets.SHUTTLE_API_KEY }}
-        project-id: proj_01K2N047B24NMDNY1F0K2VRJ62
-        secrets: |
-          TELOXIDE_TOKEN = '${{ secrets.TELOXIDE_TOKEN }}'
-          
-          STANDS4_USER_ID = '${{ secrets.STANDS4_USER_ID }}'
-          STANDS4_TOKEN = '${{ secrets.STANDS4_TOKEN }}'
-          
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Collect sources
+        run: zip SourceCode.zip Cargo.lock Cargo.toml src/
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SourceCode.zip
