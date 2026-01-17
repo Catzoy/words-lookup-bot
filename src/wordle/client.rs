@@ -1,5 +1,5 @@
 use crate::wordle::WordleAnswer;
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use reqwest::Client;
 
 #[derive(Clone)]
