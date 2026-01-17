@@ -22,8 +22,12 @@ version = "0.17.0"
 features = ["macros"]
 
 [dependencies.reqwest]
-version = "0.13.0"
-features = ["json", "query"]
+version = "0.13.1"
+features = ["json", "query", "rustls-no-provider"]
+
+[dependencies.rustls]
+version = "0.23.35"
+features = ["ring"]
 
 [dependencies.tokio]
 version = "1.48"
@@ -32,3 +36,6 @@ features = ["rt-multi-thread", "macros", "signal"]
 [dependencies.tokio-cron-scheduler]
 version = "0.15.1"
 features = ["signal"]
+
+[profile.release]
+lto = true
