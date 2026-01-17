@@ -22,7 +22,7 @@ features = ["macros"]
 
 [dependencies.reqwest]
 version = "0.13.0"
-features = ["json"]
+features = ["json", "query"]
 
 [dependencies.tokio]
 version = "1.48"
