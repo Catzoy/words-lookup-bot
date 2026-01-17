@@ -1,4 +1,5 @@
 use crate::bot::runner::BotRunner;
+use crate::cron::runner::CronRunner;
 use crate::server::runner::ServerRunner;
 use crate::stands4::client::Stands4Client;
 use crate::wordle::WordleClient;
@@ -12,17 +13,13 @@ pub struct TelegramService {
 }
 
 impl TelegramService {
-    /// Starts and runs the Telegram bot dispatcher and the HTTP server until completion.
+    /// Runs the Telegram cron routine, the HTTP server bound to `addr`, and the Telegram bot dispatcher concurrently until they complete.
     ///
-    /// Constructs the service dependencies, registers command and inline handlers, ignores non-message updates, and runs the server and bot dispatcher concurrently.
-    ///
-    /// # Parameters
-    ///
-    /// * `addr` - Socket address to bind the HTTP server to.
+    /// A shared WordleCache is created and passed to the server and bot tasks; this function awaits the cron, server, and bot tasks and propagates any error returned by them.
     ///
     /// # Returns
     ///
-    /// `Ok(())` if both the server and bot dispatcher complete successfully, `Error` otherwise.
+    /// `Ok(())` if all tasks complete successfully, `Err` if any task returns an error.
     ///
     /// # Examples
     ///
@@ -44,6 +41,7 @@ impl TelegramService {
         let wordle_cache = WordleCache::new(WordleClient::default(), self.stands4_client.clone());
 
         tokio::try_join!(
+            self.run_cron(),
             self.run_server(addr, &wordle_cache),
             self.run_bot(&wordle_cache)
         )?;

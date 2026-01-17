@@ -1,11 +1,12 @@
+use crate::server::ServerState;
 use crate::server::runner::ServerRunner;
 use crate::server::warm_up::warm_up;
-use crate::server::ServerState;
 use crate::service::telegram::TelegramService;
 use crate::wordle::cache::WordleCache;
 use axum::routing::get;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio::signal;
 
 impl ServerRunner for TelegramService {
     /// Start an HTTP server bound to `addr` that serves the Telegram service routes.
@@ -45,7 +46,33 @@ impl ServerRunner for TelegramService {
             .route("/warm_up", get(warm_up))
             .with_state(state);
         let listener = tokio::net::TcpListener::bind(addr).await?;
-        axum::serve(listener, app).await?;
+        axum::serve(listener, app)
+            .with_graceful_shutdown(shutdown_signal())
+            .await?;
         Ok(())
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
     }
 }

@@ -11,6 +11,15 @@ pub struct WordleCache {
 }
 
 impl WordleCache {
+    /// Creates a new WordleCache containing the given clients and an initially empty cached answer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let wordle_client = WordleClient::new(/* config */);
+    /// let stands4_client = Stands4Client::new(/* config */);
+    /// let cache = WordleCache::new(wordle_client, stands4_client);
+    /// ```
     pub fn new(wordle_client: WordleClient, stands4_client: Stands4Client) -> WordleCache {
         WordleCache {
             latest: Arc::default(),
@@ -19,8 +28,24 @@ impl WordleCache {
         }
     }
 
+    /// Fetches and the current local day's Wordle answer, returning a cached value when it already matches today's date.
+    ///
+    /// If the cache contains an entry for the current local day, that cached `WordleDayAnswer` is returned; otherwise the function obtains the latest answer from the configured clients, updates the cache, and returns the new value.
+    ///
+    /// # Returns
+    ///
+    /// `WordleDayAnswer` for the current local day.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(mut cache: WordleCache) {
+    /// let today_answer = cache.require_fresh_answer().await.unwrap();
+    /// println!("{}", today_answer.answer.solution);
+    /// # }
+    /// ```
     pub async fn require_fresh_answer(&mut self) -> anyhow::Result<WordleDayAnswer> {
-        let today = chrono::Utc::now();
+        let today = chrono::Local::now();
         let mut latest = self.latest.lock().await;
         if let Some(latest) = latest.as_ref() {
             let today = today.format("%Y-%m-%d").to_string();
