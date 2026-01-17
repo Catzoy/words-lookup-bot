@@ -20,7 +20,7 @@ impl WordleCache {
     }
 
     pub async fn require_fresh_answer(&mut self) -> anyhow::Result<WordleDayAnswer> {
-        let today = chrono::Utc::now();
+        let today = chrono::Local::now();
         let mut latest = self.latest.lock().await;
         if let Some(latest) = latest.as_ref() {
             let today = today.format("%Y-%m-%d").to_string();

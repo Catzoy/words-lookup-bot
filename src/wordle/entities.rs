@@ -9,7 +9,6 @@ pub struct WordleAnswer {
     pub(crate) days_since_launch: i32,
 }
 
-
 impl ToEscaped for WordleAnswer {
     fn to_escaped(&self) -> Self {
         Self {
@@ -22,11 +21,10 @@ impl ToEscaped for WordleAnswer {
 
 #[derive(Clone, Debug)]
 pub struct WordleDayAnswer {
-    pub(crate) day: chrono::DateTime<chrono::Utc>,
+    pub(crate) day: chrono::DateTime<chrono::Local>,
     pub(crate) answer: WordleAnswer,
     pub(crate) definitions: Vec<WordDefinition>,
 }
-
 
 impl ToEscaped for WordleDayAnswer {
     fn to_escaped(&self) -> Self {

@@ -1,4 +1,5 @@
 use crate::bot::runner::BotRunner;
+use crate::cron::runner::CronRunner;
 use crate::server::runner::ServerRunner;
 use crate::stands4::client::Stands4Client;
 use crate::wordle::WordleClient;
@@ -44,6 +45,7 @@ impl TelegramService {
         let wordle_cache = WordleCache::new(WordleClient::default(), self.stands4_client.clone());
 
         tokio::try_join!(
+            self.run_cron(),
             self.run_server(addr, &wordle_cache),
             self.run_bot(&wordle_cache)
         )?;

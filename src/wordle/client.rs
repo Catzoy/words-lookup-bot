@@ -1,5 +1,5 @@
 use crate::wordle::WordleAnswer;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use reqwest::Client;
 
 #[derive(Clone)]
@@ -12,7 +12,7 @@ impl WordleClient {
         WordleClient { client }
     }
 
-    pub async fn get_word(&self, day: &DateTime<Utc>) -> anyhow::Result<WordleAnswer> {
+    pub async fn get_word(&self, day: &DateTime<Local>) -> anyhow::Result<WordleAnswer> {
         let url = format!(
             "https://www.nytimes.com/svc/wordle/v2/{}.json",
             day.format("%Y-%m-%d").to_string()

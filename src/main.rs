@@ -1,6 +1,7 @@
 mod bloc;
 mod bot;
 mod commands;
+mod cron;
 mod datamuse;
 mod format;
 mod inlines;
@@ -27,6 +28,7 @@ struct Config {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    std_logger::Config::logfmt().init();
     let config_str = std::fs::read_to_string("Secrets.toml")?;
     let config: Config = toml::from_str(&config_str)?;
     let ip = Ipv4Addr::new(127, 0, 0, 1);
