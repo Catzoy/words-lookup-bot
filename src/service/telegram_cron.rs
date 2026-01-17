@@ -20,6 +20,7 @@ impl CronRunner for TelegramService {
     async fn run_cron(&self) -> anyhow::Result<()> {
         let scheduler = JobScheduler::new().await?;
         scheduler.add(wordle_self_warmup_job()).await?;
+        scheduler.shutdown_on_ctrl_c();
         scheduler.start().await?;
         Ok(())
     }
