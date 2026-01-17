@@ -41,7 +41,9 @@ struct Config {
 /// client construction, or binding fails.
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    rustls::crypto::ring::default_provider().install_default()?;
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .map_err(|_| anyhow::anyhow!("Failed to install crypto provider"))?;
     std_logger::Config::logfmt().init();
     let config_str = std::fs::read_to_string("Secrets.toml")?;
     let config: Config = toml::from_str(&config_str)?;
