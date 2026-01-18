@@ -1,15 +1,50 @@
+use crate::bot::runner::BotRunner;
 use crate::commands::commands_tree;
 use crate::datamuse::client::DatamuseClient;
-use crate::inlines::{inlines_tree, InlineQueryDebouncer};
+use crate::inlines::{InlineQueryDebouncer, inlines_tree};
 use crate::service::telegram::TelegramService;
 use crate::urban::UrbanDictionaryClient;
-use crate::wordle::cache::WordleCache;
-use teloxide::dispatching::Dispatcher;
+use teloxide::dispatching::{DefaultKey, Dispatcher};
 use teloxide::dptree::{deps, entry};
 use teloxide::error_handlers::LoggingErrorHandler;
-use teloxide::{update_listeners, Bot};
+use teloxide::prelude::{DependencyMap, Requester};
+use teloxide::types::{ChatId, Recipient};
+use teloxide::{Bot, update_listeners};
 
-impl crate::bot::runner::BotRunner for TelegramService {
+impl TelegramService {
+    fn deps(&self) -> DependencyMap {
+        deps![
+            self.stands4_client.clone(),
+            self.wordle_cache.clone(),
+            InlineQueryDebouncer::default(),
+            UrbanDictionaryClient::default(),
+            DatamuseClient::default()
+        ]
+    }
+
+    fn build_dispatcher(&self, bot: Bot) -> Dispatcher<Bot, anyhow::Error, DefaultKey> {
+        // Other update types are of no interest to use since this REPL is only for
+        // messages. See <https://github.com/teloxide/teloxide/issues/557>.
+        let ignore_update = |_upd| Box::pin(async {});
+        let tree = entry().branch(inlines_tree()).branch(commands_tree());
+
+        Dispatcher::builder(bot.clone(), tree)
+            .default_handler(ignore_update)
+            .dependencies(self.deps())
+            .enable_ctrlc_handler()
+            .build()
+    }
+
+    async fn notify_ready(&self, bot: Bot) {
+        let msg = "Bot ready!";
+        let recipient = Recipient::Id(ChatId(self.admin_chat));
+        if let Err(e) = bot.send_message(recipient, msg).await {
+            log::error!("Could not notify owner of Bot availability, {:?}", e);
+        }
+    }
+}
+
+impl BotRunner for TelegramService {
     /// Starts the Teloxide-based Telegram bot dispatcher and runs it until shutdown.
     ///
     /// This configures a bot with the service's token, a dependency set (including
@@ -38,30 +73,15 @@ impl crate::bot::runner::BotRunner for TelegramService {
     ///
     /// `Ok(())` if the dispatcher exits normally, or an `Err` if startup or runtime
     /// errors occur.
-    async fn run_bot(&self, wordle_cache: &WordleCache) -> anyhow::Result<()> {
-        // Other update types are of no interest to use since this REPL is only for
-        // messages. See <https://github.com/teloxide/teloxide/issues/557>.
-        let ignore_update = |_upd| Box::pin(async {});
+    async fn run_bot(&self) -> anyhow::Result<()> {
         let bot = Bot::new(self.token.clone());
-        let cloned_bot = bot.clone();
-        let deps = deps![
-            self.stands4_client.clone(),
-            InlineQueryDebouncer::default(),
-            UrbanDictionaryClient::default(),
-            DatamuseClient::default(),
-            wordle_cache.clone()
-        ];
-        let tree = entry().branch(inlines_tree()).branch(commands_tree());
-        Dispatcher::builder(bot, tree)
-            .default_handler(ignore_update)
-            .dependencies(deps)
-            .enable_ctrlc_handler()
-            .build()
+        self.build_dispatcher(bot.clone())
             .dispatch_with_listener(
-                update_listeners::polling_default(cloned_bot).await,
+                update_listeners::polling_default(bot.clone()).await,
                 LoggingErrorHandler::with_custom_text("An error from the update listener"),
             )
             .await;
+        self.notify_ready(bot.clone()).await;
         Ok(())
     }
 }

@@ -18,6 +18,8 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[derive(Deserialize)]
 struct Config {
+    #[serde(rename = "ADMIN_CHAT_ID")]
+    admin_chat: i64,
     #[serde(rename = "TELOXIDE_TOKEN")]
     teloxide_token: String,
     #[serde(rename = "STANDS4_USER_ID")]
@@ -46,10 +48,6 @@ async fn main() -> Result<(), anyhow::Error> {
     let config: Config = toml::from_str(&config_str)?;
     let ip = Ipv4Addr::new(127, 0, 0, 1);
     let addr = SocketAddr::new(IpAddr::V4(ip), 8080);
-    let stands4_client = Stands4Client::new(config.stands4_user_id, config.stands4_token);
-    let service = TelegramService {
-        token: config.teloxide_token,
-        stands4_client,
-    };
+    let service = TelegramService::new(config);
     service.bind(addr).await
 }

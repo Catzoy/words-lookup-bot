@@ -2,7 +2,6 @@ use crate::server::ServerState;
 use crate::server::runner::ServerRunner;
 use crate::server::warm_up::warm_up;
 use crate::service::telegram::TelegramService;
-use crate::wordle::cache::WordleCache;
 use axum::routing::get;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -37,9 +36,9 @@ impl ServerRunner for TelegramService {
     /// handle.abort();
     /// # }
     /// ```
-    async fn run_server(&self, addr: SocketAddr, wordle_cache: &WordleCache) -> anyhow::Result<()> {
+    async fn run_server(&self, addr: SocketAddr) -> anyhow::Result<()> {
         let state = Arc::new(ServerState {
-            wordle_cache: wordle_cache.clone(),
+            wordle_cache: self.wordle_cache.clone(),
         });
 
         let app = axum::Router::new()

@@ -1,3 +1,4 @@
+use crate::Config;
 use crate::bot::runner::BotRunner;
 use crate::cron::runner::CronRunner;
 use crate::server::runner::ServerRunner;
@@ -8,11 +9,24 @@ use std::net::SocketAddr;
 
 #[derive(Clone)]
 pub struct TelegramService {
+    pub(crate) admin_chat: i64,
     pub(crate) token: String,
     pub(crate) stands4_client: Stands4Client,
+    pub(crate) wordle_cache: WordleCache,
 }
 
 impl TelegramService {
+    pub fn new(config: Config) -> Self {
+        let stands4_client = Stands4Client::new(config.stands4_user_id, config.stands4_token);
+        let wordle_cache = WordleCache::new(WordleClient::default(), stands4_client.clone());
+        TelegramService {
+            admin_chat: config.admin_chat,
+            token: config.teloxide_token,
+            stands4_client,
+            wordle_cache,
+        }
+    }
+
     /// Runs the Telegram cron routine, the HTTP server bound to `addr`, and the Telegram bot dispatcher concurrently until they complete.
     ///
     /// A shared WordleCache is created and passed to the server and bot tasks; this function awaits the cron, server, and bot tasks and propagates any error returned by them.
@@ -38,13 +52,7 @@ impl TelegramService {
     /// });
     /// ```
     pub(crate) async fn bind(self, addr: SocketAddr) -> Result<(), anyhow::Error> {
-        let wordle_cache = WordleCache::new(WordleClient::default(), self.stands4_client.clone());
-
-        tokio::try_join!(
-            self.run_cron(),
-            self.run_server(addr, &wordle_cache),
-            self.run_bot(&wordle_cache)
-        )?;
+        tokio::try_join!(self.run_cron(), self.run_server(addr), self.run_bot())?;
         Ok(())
     }
 }
