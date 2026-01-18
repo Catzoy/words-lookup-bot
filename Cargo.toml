@@ -7,27 +7,24 @@ edition = "2024"
 anyhow = "1.0.100"
 axum = "0.8.7"
 chrono = "0.4.41"
+env_logger = "0.11.8"
 futures = "0.3.31"
 log = "0.4.29"
 regex = "1.12.2"
 serde = "1.0.228"
 serde_json = "1.0.148"
-std-logger = "0.5.7"
 string-builder = "0.2.0"
 toml = "0.9.10"
 urlencoding = "2.1.3"
 
+[dependencies.reqwest]
+default-features = false
+version = "0.13.1"
+features = ["json", "query", "native-tls"]
+
 [dependencies.teloxide]
 version = "0.17.0"
 features = ["macros"]
-
-[dependencies.reqwest]
-version = "0.13.1"
-features = ["json", "query", "rustls-no-provider"]
-
-[dependencies.rustls]
-version = "0.23.35"
-features = ["ring"]
 
 [dependencies.tokio]
 version = "1.48"
@@ -36,6 +33,3 @@ features = ["rt-multi-thread", "macros", "signal"]
 [dependencies.tokio-cron-scheduler]
 version = "0.15.1"
 features = ["signal"]
-
-[profile.release]
-lto = true

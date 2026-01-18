@@ -1,4 +1,5 @@
 use crate::urban::{UrbanDefinition, UrbanResponse};
+use log::log_enabled;
 use reqwest::Client;
 
 const API_URL: &str = "https://unofficialurbandictionaryapi.com/api/search";
@@ -22,7 +23,9 @@ impl UrbanDictionaryClient {
 
         let response = self.client.execute(request).await?;
         let txt = response.text().await?;
-        log::info!("RESPONSE={:?}", txt);
+        if log_enabled!(log::Level::Debug) {
+            log::debug!("RESPONSE={:?}", txt);
+        }
 
         let response =
             serde_json::from_slice::<UrbanResponse>(txt.as_bytes()).map_err(anyhow::Error::msg)?;

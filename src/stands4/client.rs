@@ -5,6 +5,7 @@ use crate::stands4::entities::{
 use crate::stands4::responses::{
     AbbreviationResult, PhraseResult, Results, SynAntResult, WordResult,
 };
+use log::log_enabled;
 use reqwest::{Client, RequestBuilder};
 use serde::de::DeserializeOwned;
 
@@ -43,7 +44,9 @@ impl Stands4Client {
 
         let response = self.client.execute(request).await?;
         let txt = response.text().await?;
-        log::info!("RESPONSE={:?}", txt);
+        if log_enabled!(log::Level::Debug) {
+            log::info!("RESPONSE={:?}", txt);
+        }
 
         if txt.is_empty() {
             return Ok(Vec::default());
