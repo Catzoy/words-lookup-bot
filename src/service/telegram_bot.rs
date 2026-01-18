@@ -4,12 +4,15 @@ use crate::datamuse::client::DatamuseClient;
 use crate::inlines::{InlineQueryDebouncer, inlines_tree};
 use crate::service::telegram::TelegramService;
 use crate::urban::UrbanDictionaryClient;
+use futures::FutureExt;
+use std::time::Duration;
 use teloxide::dispatching::{DefaultKey, Dispatcher};
 use teloxide::dptree::{deps, entry};
 use teloxide::error_handlers::LoggingErrorHandler;
 use teloxide::prelude::{DependencyMap, Requester};
 use teloxide::types::{ChatId, Recipient};
 use teloxide::{Bot, update_listeners};
+use tokio::time::sleep;
 
 impl TelegramService {
     fn deps(&self) -> DependencyMap {
@@ -62,9 +65,8 @@ impl BotRunner for TelegramService {
     /// #[tokio::main]
     /// async fn main() -> anyhow::Result<()> {
     ///     // Constructing TelegramService is omitted; replace with your initializer.
-    ///     let service = TelegramService::new("YOUR_TELEGRAM_BOT_TOKEN".into());
-    ///     let cache = WordleCache::default();
-    ///     service.run_bot(&cache).await?;
+    ///     let service = TelegramService::new(your_config);
+    ///     service.run_bot().await?;
     ///     Ok(())
     /// }
     /// ```
@@ -75,13 +77,13 @@ impl BotRunner for TelegramService {
     /// errors occur.
     async fn run_bot(&self) -> anyhow::Result<()> {
         let bot = Bot::new(self.token.clone());
-        self.build_dispatcher(bot.clone())
-            .dispatch_with_listener(
-                update_listeners::polling_default(bot.clone()).await,
-                LoggingErrorHandler::with_custom_text("An error from the update listener"),
-            )
-            .await;
-        self.notify_ready(bot.clone()).await;
+        let poller = update_listeners::polling_default(bot.clone()).await;
+        let err_handler =
+            LoggingErrorHandler::with_custom_text("An error from the update listener");
+        let mut dispatcher = self.build_dispatcher(bot.clone());
+        let dispatch = dispatcher.dispatch_with_listener(poller, err_handler);
+        let notify = sleep(Duration::from_secs(2)).then(|_| self.notify_ready(bot.clone()));
+        tokio::join!(dispatch, notify);
         Ok(())
     }
 }
