@@ -15,6 +15,19 @@ use teloxide::{Bot, update_listeners};
 use tokio::time::sleep;
 
 impl TelegramService {
+    /// Builds the dependency map used by the dispatcher.
+    ///
+    /// The map contains the service's shared dependencies: the STANDS4 client, the Wordle
+    /// cache, an inline-query debouncer, an UrbanDictionary client, and a Datamuse client.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use crate::service::TelegramService;
+    /// # let service: TelegramService = todo!();
+    /// let deps = service.deps();
+    /// // `deps` is ready to be attached to a Dispatcher during initialization.
+    /// ```
     fn deps(&self) -> DependencyMap {
         deps![
             self.stands4_client.clone(),
@@ -25,6 +38,24 @@ impl TelegramService {
         ]
     }
 
+    /// Builds and returns a Dispatcher for the given bot, wired with the bot's command and inline query trees.
+    ///
+    /// The returned dispatcher is configured with:
+    /// - a branch tree composed of inline and command handlers,
+    /// - a default no-op handler for updates that are not of interest,
+    /// - the service's dependency map, and
+    /// - Ctrl+C shutdown handling.
+    ///
+    /// # Returns
+    ///
+    /// A `Dispatcher<Bot, anyhow::Error, DefaultKey>` configured with the trees and dependencies described above.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // `svc` is an initialized `TelegramService` and `bot` is a `teloxide::Bot`.
+    /// let dispatcher = svc.build_dispatcher(bot);
+    /// ```
     fn build_dispatcher(&self, bot: Bot) -> Dispatcher<Bot, anyhow::Error, DefaultKey> {
         // Other update types are of no interest to use since this REPL is only for
         // messages. See <https://github.com/teloxide/teloxide/issues/557>.
@@ -38,6 +69,17 @@ impl TelegramService {
             .build()
     }
 
+    /// Sends a readiness notification to the configured admin chat.
+    ///
+    /// Sends the message "Bot ready!" to the admin chat ID stored on this service. If sending fails, an error is logged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(svc: &crate::service::TelegramService, bot: teloxide::Bot) {
+    /// svc.notify_ready(bot).await;
+    /// # }
+    /// ```
     async fn notify_ready(&self, bot: Bot) {
         let msg = "Bot ready!";
         let recipient = Recipient::Id(ChatId(self.admin_chat));

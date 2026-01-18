@@ -30,6 +30,31 @@ impl Stands4Client {
         }
     }
 
+    /// Execute a prepared HTTP request and convert the JSON results into domain entities.
+    ///
+    /// If the HTTP response body is empty, this returns an empty `Vec`.
+    ///
+    /// # Parameters
+    ///
+    /// * `request` - A `reqwest::RequestBuilder` that will be executed.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec` of `Response::Output` parsed from the JSON `Results<Response>` payload; `Vec::new()` if the response body is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use reqwest::Client;
+    /// # use crate::stands4::client::Stands4Client;
+    /// # use crate::stands4::responses::WordResult;
+    /// # async fn example() -> anyhow::Result<()> {
+    /// let client = Stands4Client::new("uid".into(), "token".into());
+    /// let req = client.client.get("https://example.com/api"); // RequestBuilder
+    /// let items: Vec<<WordResult as crate::stands4::traits::ToEntity>::Output> = client.handle_request::<WordResult>(req).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn handle_request<Response>(
         &self,
         request: RequestBuilder,
