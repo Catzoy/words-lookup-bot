@@ -10,11 +10,11 @@ use crate::bloc::word_finder::WordFinderHandler;
 use crate::bloc::word_lookup::WordLookupHandler;
 use crate::bloc::wordle::WordleHandler;
 use crate::bot::MessageBot;
+use teloxide::Bot;
 use teloxide::dispatching::UpdateFilterExt;
 use teloxide::prelude::{Message, Update};
 use teloxide::types::Me;
 use teloxide::utils::command::{BotCommands, ParseError};
-use teloxide::Bot;
 
 #[derive(Clone, BotCommands, Debug)]
 #[command(
@@ -143,6 +143,9 @@ fn extract_command(message: Message, me: Me) -> MessageCommands {
 pub fn commands_tree() -> CommandHandler {
     Update::filter_message()
         .map(extract_command)
+        .inspect(|message: Message| {
+            log::debug!("Answering chat {:?}", message.chat.id);
+        })
         .map(|bot: Bot, message: Message| MessageBot { bot, message })
         .branch(
             teloxide::dptree::case![MessageCommands::Finder(mask)]

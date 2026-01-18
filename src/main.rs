@@ -18,6 +18,8 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[derive(Deserialize)]
 struct Config {
+    #[serde(rename = "ADMIN_CHAT_ID")]
+    admin_chat: i64,
     #[serde(rename = "TELOXIDE_TOKEN")]
     teloxide_token: String,
     #[serde(rename = "STANDS4_USER_ID")]
@@ -26,19 +28,23 @@ struct Config {
     stands4_token: String,
 }
 
-/// Application entry point: initializes logging, loads configuration from `Secrets.toml`,
-/// constructs required clients and services, and binds the Telegram service to 127.0.0.1:8080.
+/// Program entry point that initializes logging, loads configuration from `Secrets.toml`,
+/// constructs required services, and binds the Telegram service to 127.0.0.1:8080.
 ///
-/// Attempts to:
-/// - initialize the standard logger,
-/// - read and parse `Secrets.toml` into `Config`,
-/// - create a `Stands4Client` and `TelegramService`,
-/// - bind and run the service on `127.0.0.1:8080`.
+/// On success the Telegram service is bound and the function returns normally; failures from
+/// reading the file, parsing the configuration, or binding the service are propagated.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Run the async `main` from a synchronous context.
+/// let rt = tokio::runtime::Runtime::new().unwrap();
+/// rt.block_on(crate::main()).unwrap();
+/// ```
 ///
 /// # Returns
 ///
-/// `Ok(())` if the service starts and binds successfully, `Err` if configuration loading,
-/// client construction, or binding fails.
+/// `Ok(())` if the service binds successfully, `Err` if configuration loading, parsing, or binding fails.
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
@@ -46,10 +52,6 @@ async fn main() -> Result<(), anyhow::Error> {
     let config: Config = toml::from_str(&config_str)?;
     let ip = Ipv4Addr::new(127, 0, 0, 1);
     let addr = SocketAddr::new(IpAddr::V4(ip), 8080);
-    let stands4_client = Stands4Client::new(config.stands4_user_id, config.stands4_token);
-    let service = TelegramService {
-        token: config.teloxide_token,
-        stands4_client,
-    };
+    let service = TelegramService::new(config);
     service.bind(addr).await
 }
