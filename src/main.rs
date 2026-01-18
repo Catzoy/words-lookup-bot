@@ -28,19 +28,23 @@ struct Config {
     stands4_token: String,
 }
 
-/// Application entry point: initializes logging, loads configuration from `Secrets.toml`,
-/// constructs required clients and services, and binds the Telegram service to 127.0.0.1:8080.
+/// Program entry point that initializes logging, loads configuration from `Secrets.toml`,
+/// constructs required services, and binds the Telegram service to 127.0.0.1:8080.
 ///
-/// Attempts to:
-/// - initialize the standard logger,
-/// - read and parse `Secrets.toml` into `Config`,
-/// - create a `Stands4Client` and `TelegramService`,
-/// - bind and run the service on `127.0.0.1:8080`.
+/// On success the Telegram service is bound and the function returns normally; failures from
+/// reading the file, parsing the configuration, or binding the service are propagated.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Run the async `main` from a synchronous context.
+/// let rt = tokio::runtime::Runtime::new().unwrap();
+/// rt.block_on(crate::main()).unwrap();
+/// ```
 ///
 /// # Returns
 ///
-/// `Ok(())` if the service starts and binds successfully, `Err` if configuration loading,
-/// client construction, or binding fails.
+/// `Ok(())` if the service binds successfully, `Err` if configuration loading, parsing, or binding fails.
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
