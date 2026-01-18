@@ -45,7 +45,7 @@ impl Stands4Client {
         let response = self.client.execute(request).await?;
         let txt = response.text().await?;
         if log_enabled!(log::Level::Debug) {
-            log::info!("RESPONSE={:?}", txt);
+            log::debug!("RESPONSE={:?}", txt);
         }
 
         if txt.is_empty() {
