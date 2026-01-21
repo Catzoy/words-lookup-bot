@@ -1,33 +1,28 @@
-use crate::stands4::SynAntDefinitions;
-use crate::stands4::entities::{
-    AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
-};
-use crate::stands4::responses::{
-    AbbreviationResult, PhraseResult, Results, SynAntResult, WordResult,
-};
+use crate::stands4::config::Stands4Config;
+use crate::stands4::entities::ToEntity;
+use crate::stands4::responses::Results;
 use log::log_enabled;
-use reqwest::{Client, RequestBuilder};
+use reqwest::Client;
+use rustify::Client as RustifyClient;
+use rustify::Endpoint;
 use serde::de::DeserializeOwned;
-
-const WORDS_API_URL: &str = "https://www.stands4.com/services/v2/defs.php";
-const PHRASES_API_URL: &str = "https://www.stands4.com/services/v2/phrases.php";
-const ABBR_API_URL: &str = "https://www.stands4.com/services/v2/abbr.php";
-const SYNO_API_URL: &str = "https://www.stands4.com/services/v2/syno.php";
 
 #[derive(Clone)]
 pub struct Stands4Client {
     client: Client,
-    user_id: String,
-    token: String,
+    config: Stands4Config,
 }
 
 impl Stands4Client {
     pub fn new(user_id: String, token: String) -> Self {
         Stands4Client {
             client: Client::new(),
-            user_id,
-            token,
+            config: Stands4Config::new(user_id, token),
         }
+    }
+
+    fn rustify_client(&self) -> RustifyClient {
+        RustifyClient::new("https://www.stands4.com/services/v2", self.client.clone())
     }
 
     /// Execute a prepared HTTP request and convert the JSON results into domain entities.
@@ -55,85 +50,31 @@ impl Stands4Client {
     /// # Ok(())
     /// # }
     /// ```
-    async fn handle_request<Response>(
+    pub async fn exec<R, E: Endpoint<Response = Results<R>>>(
         &self,
-        request: RequestBuilder,
-    ) -> anyhow::Result<Vec<Response::Output>>
+        request: E,
+    ) -> <Results<R> as ToEntity>::Output
     where
-        Response: DeserializeOwned,
-        Response: ToEntity,
+        R: std::fmt::Debug + ToEntity + Send + Sync + DeserializeOwned,
     {
-        let request = request.build()?;
-        let url = request.url().to_string();
+        let client = self.rustify_client();
+        let url = request.url(client.base.as_str())?;
         log::info!("REQUEST URL {:?}", url);
 
-        let response = self.client.execute(request).await?;
-        let txt = response.text().await?;
+        let response = request.with_middleware(&self.config).exec(&client).await?;
+        let response = response.parse()?;
         if log_enabled!(log::Level::Debug) {
-            log::debug!("RESPONSE={:?}", txt);
+            log::debug!("RESPONSE={:?}", response);
         }
 
-        if txt.is_empty() {
-            return Ok(Vec::default());
-        }
-
-        let vec = serde_json::from_slice::<Results<Response>>(txt.as_bytes())
-            .map_err(anyhow::Error::msg)?
-            .to_entity()?;
-        Ok(vec)
-    }
-    pub async fn search_word(&self, word: &str) -> anyhow::Result<Vec<WordDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("word", word),
-        ];
-        let request = self.client.get(WORDS_API_URL).query(query);
-        Ok(self.handle_request::<WordResult>(request).await?)
-    }
-
-    pub async fn search_abbreviation(
-        &self,
-        abbreviation: &str,
-    ) -> anyhow::Result<Vec<AbbreviationDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("term", abbreviation),
-        ];
-        let request = self.client.get(ABBR_API_URL).query(query);
-        Ok(self.handle_request::<AbbreviationResult>(request).await?)
-    }
-
-    pub async fn search_phrase(&self, phrase: &str) -> anyhow::Result<Vec<PhraseDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("phrase", phrase),
-        ];
-        let request = self.client.get(PHRASES_API_URL).query(query);
-        Ok(self.handle_request::<PhraseResult>(request).await?)
-    }
-
-    pub async fn search_syn_ant(&self, term: &str) -> anyhow::Result<Vec<SynAntDefinitions>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("word", term),
-        ];
-        let request = self.client.get(SYNO_API_URL).query(query);
-        Ok(self.handle_request::<SynAntResult>(request).await?)
+        response.to_entity()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::stands4::client::{Results, WordResult};
-    use crate::stands4::responses::{PhraseResult, VecMixedType};
+    use crate::stands4::client::Results;
+    use crate::stands4::responses::{PhraseResult, VecMixedType, WordResult};
 
     #[test]
     fn parsing_words_works() {

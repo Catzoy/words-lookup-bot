@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::stands4::requests::SearchSynoRequest;
 use crate::stands4::{Stands4Client, SynAntDefinitions};
 use teloxide::dptree::entry;
 
@@ -43,10 +44,13 @@ pub trait ThesaurusLookupHandler {
         client: Stands4Client,
         term: String,
     ) -> Result<Vec<SynAntDefinitions>, LookupError> {
-        client.search_syn_ant(&term).await.map_err(|e| {
-            log::error!("term lookup error: {:?}", e);
-            LookupError::FailedRequest
-        })
+        client
+            .exec(SearchSynoRequest { word: term })
+            .await
+            .map_err(|e| {
+                log::error!("term lookup error: {:?}", e);
+                LookupError::FailedRequest
+            })
     }
 
     fn thesaurus_lookup_handler() -> CommandHandler;

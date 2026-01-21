@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::stands4::requests::{SearchAbbrsRequest, SearchWordRequest};
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
 use teloxide::dptree::entry;
@@ -47,14 +48,18 @@ pub trait WordLookupHandler {
     /// ```
     async fn get_definitions(client: Stands4Client, word: String) -> Entity {
         futures::future::join(
-            client.search_word(&word).unwrap_or_else(|err| {
-                log::error!("Failed to retrieve definitions of a word: {:?}", err);
-                vec![]
-            }),
-            client.search_abbreviation(&word).unwrap_or_else(|err| {
-                log::error!("Failed to retrieve definitions of an abbr: {:?}", err);
-                vec![]
-            }),
+            client
+                .exec(SearchWordRequest { word: word.clone() })
+                .unwrap_or_else(|err| {
+                    log::error!("Failed to retrieve definitions of a word: {:?}", err);
+                    vec![]
+                }),
+            client
+                .exec(SearchAbbrsRequest { term: word.clone() })
+                .unwrap_or_else(|err| {
+                    log::error!("Failed to retrieve definitions of an abbr: {:?}", err);
+                    vec![]
+                }),
         )
         .await
     }
