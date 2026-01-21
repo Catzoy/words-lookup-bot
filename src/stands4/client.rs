@@ -1,5 +1,6 @@
 use crate::stands4::config::Stands4Config;
 use crate::stands4::entities::ToEntity;
+use crate::stands4::fix_response_middleware::FixEmptyResponseMiddleware;
 use crate::stands4::responses::Results;
 use log::log_enabled;
 use reqwest::Client;
@@ -61,7 +62,11 @@ impl Stands4Client {
         let url = request.url(client.base.as_str())?;
         log::info!("REQUEST URL {:?}", url);
 
-        let response = request.with_middleware(&self.config).exec(&client).await?;
+        let response = request
+            .with_middleware(&self.config)
+            .with_middleware(&FixEmptyResponseMiddleware)
+            .exec(&client)
+            .await?;
         let response = response.parse()?;
         if log_enabled!(log::Level::Debug) {
             log::debug!("RESPONSE={:?}", response);
