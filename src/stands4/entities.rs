@@ -1,10 +1,5 @@
 use crate::format::ToEscaped;
 
-pub trait ToEntity {
-    type Output;
-    fn to_entity(&self) -> Self::Output;
-}
-
 #[derive(Clone, Debug)]
 pub struct WordDefinition {
     pub(crate) term: String,

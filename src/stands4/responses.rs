@@ -1,16 +1,26 @@
-use crate::stands4::SynAntDefinitions;
-use crate::stands4::entities::{
-    AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
-};
+use crate::stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-pub struct Results<T>
-where
-    T: ToEntity,
-{
+pub struct Results<T> {
     pub(crate) error: Option<StringMixedType>,
     pub(crate) result: Option<VecMixedType<T>>,
+}
+
+impl<X, R> From<Results<X>> for anyhow::Result<Vec<R>>
+where
+    R: From<X>,
+{
+    fn from(value: Results<X>) -> Self {
+        if let Some(result) = value.result {
+            Ok(result.into())
+        } else if let Some(error) = value.error {
+            let str: String = error.into();
+            Err(anyhow::anyhow!("{}", str))
+        } else {
+            Ok(Vec::default()) // such bullshit
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -22,16 +32,47 @@ pub struct WordResult {
     example: StringMixedType,
 }
 
+impl From<WordResult> for WordDefinition {
+    fn from(value: WordResult) -> Self {
+        WordDefinition {
+            term: value.term.into(),
+            definition: value.definition.into(),
+            part_of_speech: value.part_of_speech.into(),
+            example: value.example.into(),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct PhraseResult {
     term: StringMixedType,
     explanation: StringMixedType,
     example: StringMixedType,
 }
+
+impl From<PhraseResult> for PhraseDefinition {
+    fn from(value: PhraseResult) -> Self {
+        PhraseDefinition {
+            term: value.term.into(),
+            explanation: value.explanation.into(),
+            example: value.example.into(),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct AbbreviationResult {
     definition: StringMixedType,
     category: StringMixedType,
+}
+
+impl From<AbbreviationResult> for AbbreviationDefinition {
+    fn from(value: AbbreviationResult) -> Self {
+        AbbreviationDefinition {
+            definition: value.definition.into(),
+            category: value.category.into(),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -44,6 +85,41 @@ pub struct SynAntResult {
     antonyms: VecMixedType<StringMixedType>,
 }
 
+impl From<SynAntResult> for SynAntDefinitions {
+    fn from(value: SynAntResult) -> Self {
+        SynAntDefinitions {
+            term: value.term.into(),
+            definition: value.definition.into(),
+            part_of_speech: value.part_of_speech.into(),
+            synonyms: value.synonyms.into(),
+            antonyms: value.antonyms.into(),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+// note, this causes deserialization to try the variants top-to-bottom
+#[serde(untagged)]
+pub enum VecMixedType<T> {
+    Vec(Vec<T>),
+    Single(T),
+    #[allow(dead_code)]
+    Other(serde_json::Value),
+}
+
+impl<X, R> From<VecMixedType<X>> for Vec<R>
+where
+    R: From<X>,
+{
+    fn from(value: VecMixedType<X>) -> Self {
+        match value {
+            VecMixedType::Vec(vec) => vec.into_iter().map(R::from).collect(),
+            VecMixedType::Single(value) => vec![value.into()],
+            VecMixedType::Other(_) => Vec::default(),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 // note, this causes deserialization to try the variants top-to-bottom
 #[serde(untagged)]
@@ -53,102 +129,9 @@ pub enum StringMixedType {
     Other(serde_json::Value),
 }
 
-#[derive(Deserialize, Debug)]
-// note, this causes deserialization to try the variants top-to-bottom
-#[serde(untagged)]
-pub enum VecMixedType<T>
-where
-    T: ToEntity,
-{
-    Vec(Vec<T>),
-    Single(T),
-    #[allow(dead_code)]
-    Other(serde_json::Value),
-}
-
-impl ToEntity for WordResult {
-    type Output = WordDefinition;
-    fn to_entity(&self) -> Self::Output {
-        WordDefinition {
-            term: self.term.to_entity(),
-            definition: self.definition.to_entity(),
-            part_of_speech: self.part_of_speech.to_entity(),
-            example: self.example.to_entity(),
-        }
-    }
-}
-
-impl ToEntity for PhraseResult {
-    type Output = PhraseDefinition;
-    fn to_entity(&self) -> Self::Output {
-        PhraseDefinition {
-            term: self.term.to_entity(),
-            explanation: self.explanation.to_entity(),
-            example: self.example.to_entity(),
-        }
-    }
-}
-
-impl ToEntity for AbbreviationResult {
-    type Output = AbbreviationDefinition;
-
-    fn to_entity(&self) -> Self::Output {
-        AbbreviationDefinition {
-            definition: self.definition.to_entity(),
-            category: self.category.to_entity(),
-        }
-    }
-}
-
-impl ToEntity for SynAntResult {
-    type Output = SynAntDefinitions;
-
-    fn to_entity(&self) -> Self::Output {
-        SynAntDefinitions {
-            term: self.term.to_entity(),
-            definition: self.definition.to_entity(),
-            part_of_speech: self.part_of_speech.to_entity(),
-            synonyms: self.synonyms.to_entity(),
-            antonyms: self.antonyms.to_entity(),
-        }
-    }
-}
-
-impl<T> ToEntity for VecMixedType<T>
-where
-    T: ToEntity,
-{
-    type Output = Vec<T::Output>;
-    fn to_entity(&self) -> Self::Output {
-        match self {
-            VecMixedType::Vec(vec) => vec.iter().map(ToEntity::to_entity).collect(),
-            VecMixedType::Single(value) => vec![value.to_entity()],
-            VecMixedType::Other(_) => Vec::default(),
-        }
-    }
-}
-
-impl<T> ToEntity for Results<T>
-where
-    T: ToEntity,
-{
-    type Output = anyhow::Result<Vec<T::Output>>;
-    fn to_entity(&self) -> Self::Output {
-        if let Some(result) = &self.result {
-            Ok(result.to_entity())
-        } else if let Some(error) = &self.error {
-            Err(anyhow::anyhow!("{}", error.to_entity()))
-        } else {
-            Ok(Vec::default()) // such bullshit
-        }
-    }
-}
-
-impl ToEntity for StringMixedType {
-    type Output = String;
-
-    fn to_entity(&self) -> Self::Output {
-        match self {
+impl From<StringMixedType> for String {
+    fn from(value: StringMixedType) -> Self {
+        match value {
             StringMixedType::String(it) => it.into(),
             StringMixedType::Other(_) => String::default(),
         }

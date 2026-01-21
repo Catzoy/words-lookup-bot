@@ -1,23 +1,21 @@
 use crate::stands4::config::Stands4Config;
-use crate::stands4::entities::ToEntity;
 use crate::stands4::fix_response_middleware::FixEmptyResponseMiddleware;
 use crate::stands4::responses::Results;
 use log::log_enabled;
-use reqwest::Client;
 use rustify::Client as RustifyClient;
 use rustify::Endpoint;
 use serde::de::DeserializeOwned;
 
 #[derive(Clone)]
 pub struct Stands4Client {
-    client: Client,
+    client: reqwest::Client,
     config: Stands4Config,
 }
 
 impl Stands4Client {
     pub fn new(user_id: String, token: String) -> Self {
         Stands4Client {
-            client: Client::new(),
+            client: Default::default(),
             config: Stands4Config::new(user_id, token),
         }
     }
@@ -51,12 +49,13 @@ impl Stands4Client {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn exec<R, E: Endpoint<Response = Results<R>>>(
+    pub async fn exec<X, R, E: Endpoint<Response = Results<R>>>(
         &self,
         request: E,
-    ) -> <Results<R> as ToEntity>::Output
+    ) -> anyhow::Result<Vec<X>>
     where
-        R: std::fmt::Debug + ToEntity + Send + Sync + DeserializeOwned,
+        R: std::fmt::Debug + Send + Sync + DeserializeOwned,
+        X: From<R>,
     {
         let client = self.rustify_client();
         let url = request.url(client.base.as_str())?;
@@ -72,7 +71,7 @@ impl Stands4Client {
             log::debug!("RESPONSE={:?}", response);
         }
 
-        response.to_entity()
+        response.into()
     }
 }
 
