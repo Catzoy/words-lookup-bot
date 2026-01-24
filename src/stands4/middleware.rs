@@ -6,6 +6,31 @@ use rustify::{Endpoint, MiddleWare};
 use std::str::FromStr;
 
 impl MiddleWare for Stands4Config {
+    /// Adds Stands4 authentication and response-format query parameters to the request URI.
+    ///
+    /// This method parses the request URI, appends the `uid`, `tokenid`, and `format` query
+    /// parameters taken from the `Stands4Config`, and replaces the request's URI with the
+    /// updated value.
+    ///
+    /// Returns `Ok(())` on success; returns `ClientError::UrlParseError` if the original URI
+    /// cannot be parsed as a `Url`, or `ClientError::UrlBuildError` if the modified URL
+    /// cannot be converted back into a `Uri`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustify::Request;
+    /// use http::Uri;
+    ///
+    /// // Assuming `cfg` is a Stands4Config with fields `user_id`, `token`, and `format`.
+    /// let mut req = Request::builder()
+    ///     .uri(Uri::from_static("https://api.example.com/lookup"))
+    ///     .body(Vec::new())
+    ///     .unwrap();
+    ///
+    /// // cfg.request(&endpoint, &mut req).unwrap();
+    /// // After calling, req.uri() will include `?uid=...&tokenid=...&format=...`
+    /// ```
     fn request<E: Endpoint>(
         &self,
         _endpoint: &E,
@@ -24,6 +49,24 @@ impl MiddleWare for Stands4Config {
         Ok(())
     }
 
+    /// Ensures the response has a non-empty body by replacing an empty body with the JSON object `{}`.
+    ///
+    /// If the response body is empty, it is replaced with the bytes of the string `"{}"`. Otherwise
+    /// the response is left unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustify::response::Response;
+    /// use stands4::Stands4Config;
+    ///
+    /// let config = Stands4Config::default();
+    /// let mut resp = Response::new(Vec::new());
+    ///
+    /// // After middleware runs, empty body becomes "{}"
+    /// config.response(&(), &mut resp).unwrap();
+    /// assert_eq!(resp.body(), b"{}");
+    /// ```
     fn response<E: Endpoint>(
         &self,
         _endpoint: &E,

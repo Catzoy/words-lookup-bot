@@ -6,6 +6,26 @@ pub struct ApiClient {
 }
 
 impl ApiClient {
+    /// Execute an endpoint against the client's base URL and return the parsed response converted into `Entity`.
+    ///
+    /// This sends the provided `request` using the client's HTTP runtime, parses the response body into the
+    /// endpoint's `Response` type, and converts that parsed response into `Entity` via `From<Response>`.
+    ///
+    /// # Returns
+    ///
+    /// `Entity` converted from the endpoint's parsed response.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // async context required
+    /// # async fn example_usage() -> anyhow::Result<()> {
+    /// // let client = ApiClient { client: /* initialized rustify::Client */ };
+    /// // let request = /* an Endpoint implementation */;
+    /// // let entity = client.exec(request).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub(crate) async fn exec<Entity, Response, Endpoint>(
         &self,
         request: Endpoint,

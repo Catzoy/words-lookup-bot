@@ -11,6 +11,14 @@ pub struct Stands4Client {
 }
 
 impl Stands4Client {
+    /// Creates a new Stands4Client configured with the given user ID and token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let client = Stands4Client::new("user_id".to_string(), "token".to_string());
+    /// // use `client` to execute requests against the Stands4 API
+    /// ```
     pub fn new(user_id: String, token: String) -> Self {
         Stands4Client {
             client: Default::default(),
@@ -18,6 +26,16 @@ impl Stands4Client {
         }
     }
 
+    /// Creates an ApiClient configured for the Stands4 v2 service using the client's internal HTTP client.
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let s = Stands4Client::new("user".into(), "token".into());
+    /// let api = s.client();
+    /// // `api` is ready to execute endpoints against https://www.stands4.com/services/v2
+    /// ```
     fn client(&self) -> ApiClient {
         ApiClient {
             client: rustify::Client::new(
@@ -27,28 +45,28 @@ impl Stands4Client {
         }
     }
 
-    /// Execute a prepared HTTP request and convert the JSON results into domain entities.
+    /// Execute a rustify `Endpoint` that yields a `Results<Response>` payload and convert each item into domain `Entity`s.
     ///
-    /// If the HTTP response body is empty, this returns an empty `Vec`.
+    /// The provided `Endpoint` is executed with the client's middleware; each `Response` item from the `Results` payload is converted into an `Entity` via `From<Response>`. If the payload contains no results, an empty `Vec` is returned.
     ///
     /// # Parameters
     ///
-    /// * `request` - A `reqwest::RequestBuilder` that will be executed.
+    /// * `request` - The `Endpoint` to execute. Its `Response` associated type must match `Results<Response>`.
     ///
     /// # Returns
     ///
-    /// A `Vec` of `Response::Output` parsed from the JSON `Results<Response>` payload; `Vec::new()` if the response body is empty.
+    /// `Vec<Entity>` containing entities produced from the response items; empty if the response contains no results.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use reqwest::Client;
-    /// # use crate::stands4::client::Stands4Client;
-    /// # use crate::stands4::responses::WordResult;
     /// # async fn example() -> anyhow::Result<()> {
+    /// use crate::stands4::client::Stands4Client;
+    /// use crate::stands4::responses::WordResult;
+    ///
     /// let client = Stands4Client::new("uid".into(), "token".into());
-    /// let req = client.client.get("https://example.com/api"); // RequestBuilder
-    /// let items: Vec<<WordResult as crate::stands4::traits::ToEntity>::Output> = client.handle_request::<WordResult>(req).await?;
+    /// let req = client.client().get("https://example.com/api");
+    /// let items: Vec<WordResult> = client.exec(req).await?;
     /// # Ok(())
     /// # }
     /// ```
