@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::stands4::requests::{SearchAbbrsRequest, SearchWordRequest};
 use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
 use futures::TryFutureExt;
 use teloxide::dptree::entry;
@@ -31,30 +32,36 @@ where
 }
 
 pub trait WordLookupHandler {
-    /// Performs concurrent lookups for both word definitions and abbreviation definitions.
+    /// Perform concurrent lookups for both word definitions and abbreviation definitions.
     ///
-    /// If either lookup fails the function logs the error and substitutes an empty vector for that result.
+    /// If either lookup fails, the error is logged and an empty vector is substituted for that result.
+    ///
+    /// Returns a tuple `(words, abbrs)` where `words` is a `Vec<WordDefinition>` from the word lookup
+    /// and `abbrs` is a `Vec<AbbreviationDefinition>` from the abbreviation lookup.
     ///
     /// # Examples
     ///
     /// ```ignore
-    /// // Example usage — `Stands4Client` must implement the async search methods used here.
-    /// // This snippet demonstrates the call pattern; replace with a real client in tests.
+    /// // `client` must implement the `Stands4Client` API used here.
     /// # async fn example(client: Stands4Client) {
     /// let (words, abbrs) = get_definitions(client, "rust".to_string()).await;
-    /// // `words` is a Vec<WordDefinition>, `abbrs` is a Vec<AbbreviationDefinition>.
+    /// // `words` is Vec<WordDefinition>, `abbrs` is Vec<AbbreviationDefinition>.
     /// # }
     /// ```
     async fn get_definitions(client: Stands4Client, word: String) -> Entity {
         futures::future::join(
-            client.search_word(&word).unwrap_or_else(|err| {
-                log::error!("Failed to retrieve definitions of a word: {:?}", err);
-                vec![]
-            }),
-            client.search_abbreviation(&word).unwrap_or_else(|err| {
-                log::error!("Failed to retrieve definitions of an abbr: {:?}", err);
-                vec![]
-            }),
+            client
+                .exec(SearchWordRequest { word: word.clone() })
+                .unwrap_or_else(|err| {
+                    log::error!("Failed to retrieve definitions of a word: {:?}", err);
+                    vec![]
+                }),
+            client
+                .exec(SearchAbbrsRequest { term: word.clone() })
+                .unwrap_or_else(|err| {
+                    log::error!("Failed to retrieve definitions of an abbr: {:?}", err);
+                    vec![]
+                }),
         )
         .await
     }

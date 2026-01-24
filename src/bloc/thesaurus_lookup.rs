@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::stands4::requests::SearchSynoRequest;
 use crate::stands4::{Stands4Client, SynAntDefinitions};
 use teloxide::dptree::entry;
 
@@ -25,8 +26,11 @@ where
 pub trait ThesaurusLookupHandler {
     /// Retrieve synonym and antonym definitions for a term from the Stands4 service.
     ///
-    /// On success returns a vector of `SynAntDefinitions`. If the underlying client request
-    /// fails the function logs the error and returns `LookupError::FailedRequest`.
+    /// If the underlying request fails, the error is logged and `LookupError::FailedRequest` is returned.
+    ///
+    /// # Returns
+    ///
+    /// `Vec<SynAntDefinitions>` containing definitions for the provided term.
     ///
     /// # Examples
     ///
@@ -34,7 +38,7 @@ pub trait ThesaurusLookupHandler {
     /// # use crate::clients::stands4::Stands4Client;
     /// # use crate::bloc::thesaurus_lookup::get_definitions;
     /// # async fn example() -> Result<(), crate::bloc::common::LookupError> {
-    /// let client = Stands4Client::new(); // create/configure client as appropriate
+    /// let client = Stands4Client::new();
     /// let defs = get_definitions(client, "happy".to_string()).await?;
     /// assert!(defs.len() >= 0);
     /// # Ok(()) }
@@ -43,10 +47,13 @@ pub trait ThesaurusLookupHandler {
         client: Stands4Client,
         term: String,
     ) -> Result<Vec<SynAntDefinitions>, LookupError> {
-        client.search_syn_ant(&term).await.map_err(|e| {
-            log::error!("term lookup error: {:?}", e);
-            LookupError::FailedRequest
-        })
+        client
+            .exec(SearchSynoRequest { word: term })
+            .await
+            .map_err(|e| {
+                log::error!("term lookup error: {:?}", e);
+                LookupError::FailedRequest
+            })
     }
 
     fn thesaurus_lookup_handler() -> CommandHandler;

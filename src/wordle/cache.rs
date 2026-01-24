@@ -1,4 +1,6 @@
 use crate::stands4::Stands4Client;
+use crate::stands4::requests::SearchWordRequest;
+use crate::wordle::requests::WordleAnswerRequest;
 use crate::wordle::{WordleClient, WordleDayAnswer};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -28,18 +30,19 @@ impl WordleCache {
         }
     }
 
-    /// Fetches and the current local day's Wordle answer, returning a cached value when it already matches today's date.
+    /// Obtain the WordleDayAnswer for the current local day, using the cache when possible.
     ///
-    /// If the cache contains an entry for the current local day, that cached `WordleDayAnswer` is returned; otherwise the function obtains the latest answer from the configured clients, updates the cache, and returns the new value.
+    /// If the cached entry matches today's date, that cached `WordleDayAnswer` is returned.
+    /// Otherwise the function fetches the latest answer and definitions, updates the cache, and returns the newly fetched `WordleDayAnswer`.
     ///
     /// # Returns
     ///
-    /// `WordleDayAnswer` for the current local day.
+    /// The `WordleDayAnswer` for the current local day.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # async fn example(mut cache: WordleCache) {
+    /// # async fn example(mut cache: crate::wordle::WordleCache) {
     /// let today_answer = cache.require_fresh_answer().await.unwrap();
     /// println!("{}", today_answer.answer.solution);
     /// # }
@@ -57,8 +60,14 @@ impl WordleCache {
         }
         log::info!("Wordle cache miss!");
 
-        let newest = self.wordle_client.get_word(&today).await?;
-        let definitions = self.stands4_client.search_word(&newest.solution).await?;
+        let newest = {
+            let request = WordleAnswerRequest::new(&today);
+            self.wordle_client.exec(request).await?
+        };
+        let sw_request = SearchWordRequest {
+            word: today.to_string(),
+        };
+        let definitions = self.stands4_client.exec(sw_request).await?;
         let answer = WordleDayAnswer {
             day: today,
             answer: newest,

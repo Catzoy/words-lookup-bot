@@ -1,62 +1,90 @@
-use crate::wordle::WordleAnswer;
-use chrono::{DateTime, Local};
-use reqwest::Client;
+use crate::networking::api_client::ApiClient;
+use rustify::Endpoint;
 
 #[derive(Clone)]
 pub struct WordleClient {
-    client: Client,
+    client: reqwest::Client,
 }
 
 impl WordleClient {
-    /// Creates a WordleClient that uses the provided HTTP client.
+    /// Constructs a WordleClient that uses the provided reqwest HTTP client.
     ///
     /// # Examples
     ///
     /// ```
     /// use reqwest::Client;
+    ///
     /// let client = Client::new();
     /// let wc = crate::WordleClient::new(client);
     /// ```
-    pub fn new(client: Client) -> WordleClient {
+    pub fn new(client: reqwest::Client) -> WordleClient {
         WordleClient { client }
     }
 
-    /// Fetches the Wordle answer for the specified local date from the NYT Wordle service.
+    /// Constructs an ApiClient configured for the NYT Wordle v2 API using the internal HTTP client.
+    ///
+    /// The returned `ApiClient` wraps a `rustify::Client` rooted at
+    /// "https://www.nytimes.com/svc/wordle/v2" and reuses this instance's `reqwest::Client`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let wc = WordleClient::default();
+    /// let api = wc.client();
+    /// // `api` is ready to execute endpoints against the NYT Wordle v2 service.
+    /// ```
+    fn client(&self) -> ApiClient {
+        ApiClient {
+            client: rustify::Client::new(
+                "https://www.nytimes.com/svc/wordle/v2",
+                self.client.clone(),
+            ),
+        }
+    }
+
+    /// Execute the given rustify `Endpoint` against the NYT Wordle API using this client's configured HTTP client.
+    ///
+    /// The provided `request` describes the HTTP operation and expected response type; this method performs the request and returns the deserialized response.
     ///
     /// # Parameters
     ///
-    /// - `day`: The local date for which to retrieve the Wordle answer; only the date (YYYY-MM-DD) portion is used.
+    /// - `request`: The endpoint to execute; its associated `Response` type is returned on success.
     ///
     /// # Returns
     ///
-    /// `WordleAnswer` parsed from the service response on success, or an error if the request or deserialization fails.
+    /// `E::Response` on success, `anyhow::Error` on failure.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use chrono::Local;
-    /// # use crate::WordleClient;
-    ///
+    /// # use rustify::Endpoint;
+    /// # use crate::wordle::client::WordleClient;
+    /// # async fn example() -> anyhow::Result<()> {
     /// let client = WordleClient::default();
-    /// let day = Local::now();
-    /// let answer = tokio::runtime::Runtime::new()
-    ///     .unwrap()
-    ///     .block_on(async { client.get_word(&day).await })
-    ///     .unwrap();
-    /// println!("Wordle answer for {}: {:?}", day.format("%Y-%m-%d"), answer);
+    /// // `my_endpoint` must implement `Endpoint` and set its `Response` type.
+    /// let my_endpoint = /* construct endpoint implementing `Endpoint` */;
+    /// let resp = client.exec(my_endpoint).await?;
+    /// println!("{:?}", resp);
+    /// # Ok(())
+    /// # }
     /// ```
-    pub async fn get_word(&self, day: &DateTime<Local>) -> anyhow::Result<WordleAnswer> {
-        let url = format!(
-            "https://www.nytimes.com/svc/wordle/v2/{}.json",
-            day.format("%Y-%m-%d").to_string()
-        );
-        let res = self.client.get(&url).send().await?;
-        Ok(res.json::<WordleAnswer>().await?)
+    pub async fn exec<E: Endpoint<Response: std::fmt::Debug>>(
+        &self,
+        request: E,
+    ) -> anyhow::Result<E::Response> {
+        self.client().exec(request).await
     }
 }
 
 impl Default for WordleClient {
+    /// Creates a WordleClient using a default-configured reqwest HTTP client.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let client = WordleClient::default();
+    /// ```
     fn default() -> WordleClient {
-        WordleClient::new(Client::new())
+        WordleClient::new(reqwest::Client::new())
     }
 }

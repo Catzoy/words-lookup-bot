@@ -1,4 +1,5 @@
 use crate::datamuse::responses::Word;
+use crate::networking::api_client::ApiClient;
 
 #[derive(Debug, Clone, Default)]
 pub struct DatamuseClient {
@@ -6,31 +7,34 @@ pub struct DatamuseClient {
 }
 
 impl DatamuseClient {
-    /// Builds a Datamuse API URL for a word pattern, converting underscores to Datamuse `?` wildcards.
+    /// Creates an ApiClient configured for the Datamuse API.
     ///
-    /// The returned `String` is the full HTTP GET URL querying Datamuse words with the given pattern.
-    /// Underscores in `mask` are replaced with `?` before being inserted into the `sp` query parameter.
+    /// This constructs an `ApiClient` that uses this instance's HTTP client and is targeted
+    /// at the Datamuse base URL.
     ///
     /// # Examples
     ///
     /// ```
-    /// let url = finding("a_e_".to_string());
-    /// assert!(url.starts_with("https://api.datamuse.com/words?sp="));
-    /// assert!(url.contains("a?e?"));
+    /// // Assuming `datamuse` is a `DatamuseClient`
+    /// // let api = datamuse.client();
     /// ```
-    fn finding(mask: String) -> String {
-        format!(
-            "https://api.datamuse.com/words?sp={:}",
-            mask.replace("_", "?")
-        )
+    fn client(&self) -> ApiClient {
+        ApiClient {
+            client: rustify::Client::new("https://api.datamuse.com", self.client.clone()),
+        }
     }
-    /// Query the Datamuse API for words matching a pattern and return the matching words sorted in ascending order.
+    /// Execute a Datamuse API endpoint and return the words from its response sorted in ascending order.
     ///
-    /// The `mask` may contain underscore characters (`_`) which are treated as single-character wildcards (they are converted to Datamuse `?` placeholders before the request).
+    /// The provided `request` must implement `rustify::Endpoint` with `Response = Vec<Word>`. The result is the list
+    /// of `word` fields from the response, sorted lexicographically.
+    ///
+    /// # Parameters
+    ///
+    /// - `request`: An endpoint describing the Datamuse API request; its response type must be `Vec<Word>`.
     ///
     /// # Returns
     ///
-    /// A `Vec<String>` containing the matching words sorted ascending by the word.
+    /// A `Vec<String>` containing the `word` values from the endpoint response, sorted ascending by the word.
     ///
     /// # Examples
     ///
@@ -38,15 +42,18 @@ impl DatamuseClient {
     /// # use crate::datamuse::client::DatamuseClient;
     /// # async fn example() -> anyhow::Result<()> {
     /// let client = DatamuseClient::default();
-    /// let words = client.find("c_t".to_string()).await?;
-    /// // `words` is a sorted `Vec<String>`; network access is required for real results.
+    /// // `request` should be any type implementing `rustify::Endpoint<Response = Vec<crate::datamuse::Word>>`
+    /// let request = /* build request */ ;
+    /// let words = client.exec(request).await?; // network access required
     /// assert!(words.len() >= 0);
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn find(&self, mask: String) -> anyhow::Result<Vec<String>> {
-        let response = self.client.get(Self::finding(mask)).send().await?;
-        let mut words = response.json::<Vec<Word>>().await?;
+    pub async fn exec<Endpoint: rustify::Endpoint<Response = Vec<Word>>>(
+        &self,
+        request: Endpoint,
+    ) -> anyhow::Result<Vec<String>> {
+        let mut words: Vec<Word> = self.client().exec(request).await?;
         words.sort_by(|a, b| a.word.cmp(&b.word));
         Ok(words.into_iter().map(|word| word.word).collect())
     }

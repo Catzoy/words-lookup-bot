@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::urban::requests::SearchUrbanRequest;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
 use teloxide::dptree::entry;
 
@@ -28,24 +29,20 @@ where
 }
 
 pub trait UrbanLookupHandler {
-    /// Fetches definitions for `term` from Urban Dictionary using the provided client.
-    ///
-    /// # Parameters
-    ///
-    /// - `term`: The search term to query Urban Dictionary for.
+    /// Fetches Urban Dictionary definitions for the given term using the provided client.
     ///
     /// # Returns
     ///
-    /// `Ok` with a vector of `UrbanDefinition` when the lookup succeeds; `Err(LookupError::FailedRequest)` if the remote request fails.
+    /// `Ok` with a `Vec<UrbanDefinition>` when the lookup succeeds; `Err(LookupError::FailedRequest)` if the remote request fails.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// # use your_crate::{get_definitions, UrbanDictionaryClient, UrbanDefinition, LookupError};
     /// # async fn example() -> Result<(), LookupError> {
-    /// let client = UrbanDictionaryClient::new(); // construct client appropriately
+    /// let client = UrbanDictionaryClient::new();
     /// let defs: Vec<UrbanDefinition> = get_definitions(client, "rust".to_string()).await?;
-    /// assert!(!defs.is_empty() || defs.is_empty()); // placeholder assertion
+    /// assert!(defs.is_empty() || !defs.is_empty());
     /// # Ok(())
     /// # }
     /// ```
@@ -53,7 +50,7 @@ pub trait UrbanLookupHandler {
         client: UrbanDictionaryClient,
         term: String,
     ) -> Result<Vec<UrbanDefinition>, LookupError> {
-        client.search_term(&term).await.map_err(|e| {
+        client.exec(SearchUrbanRequest { term }).await.map_err(|e| {
             log::error!("term lookup error: {:?}", e);
             LookupError::FailedRequest
         })

@@ -5,6 +5,7 @@ mod cron;
 mod datamuse;
 mod format;
 mod inlines;
+mod networking;
 mod server;
 mod service;
 mod stands4;
@@ -13,7 +14,6 @@ mod wordle;
 
 use crate::service::telegram::TelegramService;
 use serde::Deserialize;
-use stands4::client::Stands4Client;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[derive(Deserialize)]

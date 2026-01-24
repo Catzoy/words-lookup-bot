@@ -1,6 +1,6 @@
 [package]
 name = "words-lookup-bot"
-version = "0.15.0"
+version = "0.16.0"
 edition = "2024"
 
 [dependencies]
@@ -11,6 +11,8 @@ env_logger = "0.11.8"
 futures = "0.3.31"
 log = "0.4.29"
 regex = "1.12.2"
+rustify = "0.6.1"
+rustify_derive = "0.5.4"
 serde = "1.0.228"
 serde_json = "1.0.148"
 string-builder = "0.2.0"
@@ -18,16 +20,18 @@ toml = "0.9.10"
 urlencoding = "2.1.3"
 
 [dependencies.reqwest]
-default-features = false
-version = "0.13.1"
-features = [
-    "charset",
-    "http2",
-    "native-tls",
-    "system-proxy",
-    "json",
-    "query",
-]
+version = "0.12.28"
+features = ["json"]
+# after 0.13 enable these:
+#default-features = false
+#features = [
+#    "charset",
+#    "http2",
+#    "native-tls",
+#    "system-proxy",
+#    "json",
+#    "query",
+#]
 
 [dependencies.teloxide]
 version = "0.17.0"

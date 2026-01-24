@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::datamuse::client::DatamuseClient;
+use crate::datamuse::request::FindWordByMaskRequest;
 use crate::format::LookupFormatter;
 use teloxide::dptree::entry;
 
@@ -76,30 +77,36 @@ where
 }
 
 pub trait WordFinderHandler {
-    /// Fetches candidate words that match a pattern from the Datamuse service.
+    /// Fetches words from Datamuse that match a mask pattern.
     ///
-    /// The `mask` uses `'_'` to represent unknown letters (blanks); other characters are treated as filled letters.
+    /// The `mask` uses `'_'` to represent unknown letters; other characters are treated as fixed letters
+    /// that must match the corresponding positions in returned words.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// // Example usage (requires async runtime):
+    /// // Requires an async runtime.
     /// // let client = DatamuseClient::new();
-    /// // let words = get_possible_words(client, "_at".into()).await?;
+    /// // let words = tokio::runtime::Runtime::new().unwrap().block_on(async {
+    /// //     get_possible_words(client, "_at".into()).await
+    /// // })?;
     /// // assert!(words.iter().any(|w| w.ends_with("at")));
     /// ```
     ///
     /// # Returns
     ///
-    /// A `Vec<String>` containing words matching the provided mask, or `LookupError::FailedRequest` if the remote request fails.
+    /// `Ok(Vec<String>)` with words matching `mask`, or `Err(LookupError::FailedRequest)` if the remote request fails.
     async fn get_possible_words(
         client: DatamuseClient,
         mask: String,
     ) -> Result<Vec<String>, LookupError> {
-        client.find(mask).await.map_err(|err| {
-            log::error!("WF failed request: {}", err);
-            LookupError::FailedRequest
-        })
+        client
+            .exec(FindWordByMaskRequest::new(mask))
+            .await
+            .map_err(|err| {
+                log::error!("WF failed request: {}", err);
+                LookupError::FailedRequest
+            })
     }
 
     async fn ensure_valid(&self, mask: String) -> bool;

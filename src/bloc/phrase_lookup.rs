@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::stands4::requests::SearchPhraseRequest;
 use crate::stands4::{PhraseDefinition, Stands4Client};
 use teloxide::dptree::entry;
 
@@ -53,10 +54,13 @@ pub trait PhraseLookupHandler {
         client: Stands4Client,
         phrase: String,
     ) -> Result<Vec<PhraseDefinition>, LookupError> {
-        client.search_phrase(phrase.as_str()).await.map_err(|e| {
-            log::error!("phrase search error: {:?}", e);
-            LookupError::FailedRequest
-        })
+        client
+            .exec(SearchPhraseRequest { phrase })
+            .await
+            .map_err(|e| {
+                log::error!("phrase search error: {:?}", e);
+                LookupError::FailedRequest
+            })
     }
 
     fn phrase_lookup_handler() -> CommandHandler;

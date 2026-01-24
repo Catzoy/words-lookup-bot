@@ -1,139 +1,92 @@
-use crate::stands4::SynAntDefinitions;
-use crate::stands4::entities::{
-    AbbreviationDefinition, PhraseDefinition, ToEntity, WordDefinition,
-};
-use crate::stands4::responses::{
-    AbbreviationResult, PhraseResult, Results, SynAntResult, WordResult,
-};
-use log::log_enabled;
-use reqwest::{Client, RequestBuilder};
+use crate::networking::api_client::ApiClient;
+use crate::stands4::config::Stands4Config;
+use crate::stands4::responses::Results;
 use serde::de::DeserializeOwned;
-
-const WORDS_API_URL: &str = "https://www.stands4.com/services/v2/defs.php";
-const PHRASES_API_URL: &str = "https://www.stands4.com/services/v2/phrases.php";
-const ABBR_API_URL: &str = "https://www.stands4.com/services/v2/abbr.php";
-const SYNO_API_URL: &str = "https://www.stands4.com/services/v2/syno.php";
+use std::fmt::Debug;
 
 #[derive(Clone)]
 pub struct Stands4Client {
-    client: Client,
-    user_id: String,
-    token: String,
+    client: reqwest::Client,
+    config: Stands4Config,
 }
 
 impl Stands4Client {
-    pub fn new(user_id: String, token: String) -> Self {
-        Stands4Client {
-            client: Client::new(),
-            user_id,
-            token,
-        }
-    }
-
-    /// Execute a prepared HTTP request and convert the JSON results into domain entities.
-    ///
-    /// If the HTTP response body is empty, this returns an empty `Vec`.
-    ///
-    /// # Parameters
-    ///
-    /// * `request` - A `reqwest::RequestBuilder` that will be executed.
-    ///
-    /// # Returns
-    ///
-    /// A `Vec` of `Response::Output` parsed from the JSON `Results<Response>` payload; `Vec::new()` if the response body is empty.
+    /// Creates a new Stands4Client configured with the given user ID and token.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use reqwest::Client;
-    /// # use crate::stands4::client::Stands4Client;
-    /// # use crate::stands4::responses::WordResult;
+    /// let client = Stands4Client::new("user_id".to_string(), "token".to_string());
+    /// // use `client` to execute requests against the Stands4 API
+    /// ```
+    pub fn new(user_id: String, token: String) -> Self {
+        Stands4Client {
+            client: Default::default(),
+            config: Stands4Config::new(user_id, token),
+        }
+    }
+
+    /// Creates an ApiClient configured for the Stands4 v2 service using the client's internal HTTP client.
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let s = Stands4Client::new("user".into(), "token".into());
+    /// let api = s.client();
+    /// // `api` is ready to execute endpoints against https://www.stands4.com/services/v2
+    /// ```
+    fn client(&self) -> ApiClient {
+        ApiClient {
+            client: rustify::Client::new(
+                "https://www.stands4.com/services/v2",
+                self.client.clone(),
+            ),
+        }
+    }
+
+    /// Execute a rustify `Endpoint` that yields a `Results<Response>` payload and convert each item into domain `Entity`s.
+    ///
+    /// The provided `Endpoint` is executed with the client's middleware; each `Response` item from the `Results` payload is converted into an `Entity` via `From<Response>`. If the payload contains no results, an empty `Vec` is returned.
+    ///
+    /// # Parameters
+    ///
+    /// * `request` - The `Endpoint` to execute. Its `Response` associated type must match `Results<Response>`.
+    ///
+    /// # Returns
+    ///
+    /// `Vec<Entity>` containing entities produced from the response items; empty if the response contains no results.
+    ///
+    /// # Examples
+    ///
+    /// ```
     /// # async fn example() -> anyhow::Result<()> {
+    /// use crate::stands4::client::Stands4Client;
+    /// use crate::stands4::responses::WordResult;
+    ///
     /// let client = Stands4Client::new("uid".into(), "token".into());
-    /// let req = client.client.get("https://example.com/api"); // RequestBuilder
-    /// let items: Vec<<WordResult as crate::stands4::traits::ToEntity>::Output> = client.handle_request::<WordResult>(req).await?;
+    /// let req = client.client().get("https://example.com/api");
+    /// let items: Vec<WordResult> = client.exec(req).await?;
     /// # Ok(())
     /// # }
     /// ```
-    async fn handle_request<Response>(
+    pub async fn exec<Entity, Response, Endpoint: rustify::Endpoint<Response = Results<Response>>>(
         &self,
-        request: RequestBuilder,
-    ) -> anyhow::Result<Vec<Response::Output>>
+        request: Endpoint,
+    ) -> anyhow::Result<Vec<Entity>>
     where
-        Response: DeserializeOwned,
-        Response: ToEntity,
+        Response: Debug + Send + Sync + DeserializeOwned,
+        Entity: From<Response>,
     {
-        let request = request.build()?;
-        let url = request.url().to_string();
-        log::info!("REQUEST URL {:?}", url);
-
-        let response = self.client.execute(request).await?;
-        let txt = response.text().await?;
-        if log_enabled!(log::Level::Debug) {
-            log::debug!("RESPONSE={:?}", txt);
-        }
-
-        if txt.is_empty() {
-            return Ok(Vec::default());
-        }
-
-        let vec = serde_json::from_slice::<Results<Response>>(txt.as_bytes())
-            .map_err(anyhow::Error::msg)?
-            .to_entity()?;
-        Ok(vec)
-    }
-    pub async fn search_word(&self, word: &str) -> anyhow::Result<Vec<WordDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("word", word),
-        ];
-        let request = self.client.get(WORDS_API_URL).query(query);
-        Ok(self.handle_request::<WordResult>(request).await?)
-    }
-
-    pub async fn search_abbreviation(
-        &self,
-        abbreviation: &str,
-    ) -> anyhow::Result<Vec<AbbreviationDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("term", abbreviation),
-        ];
-        let request = self.client.get(ABBR_API_URL).query(query);
-        Ok(self.handle_request::<AbbreviationResult>(request).await?)
-    }
-
-    pub async fn search_phrase(&self, phrase: &str) -> anyhow::Result<Vec<PhraseDefinition>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("phrase", phrase),
-        ];
-        let request = self.client.get(PHRASES_API_URL).query(query);
-        Ok(self.handle_request::<PhraseResult>(request).await?)
-    }
-
-    pub async fn search_syn_ant(&self, term: &str) -> anyhow::Result<Vec<SynAntDefinitions>> {
-        let query = &[
-            ("uid", self.user_id.as_str()),
-            ("tokenid", self.token.as_str()),
-            ("format", "json"),
-            ("word", term),
-        ];
-        let request = self.client.get(SYNO_API_URL).query(query);
-        Ok(self.handle_request::<SynAntResult>(request).await?)
+        let request = request.with_middleware(&self.config);
+        self.client().exec(request).await?
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::stands4::client::{Results, WordResult};
-    use crate::stands4::responses::{PhraseResult, VecMixedType};
+    use crate::stands4::client::Results;
+    use crate::stands4::responses::{PhraseResult, VecMixedType, WordResult};
 
     #[test]
     fn parsing_words_works() {
