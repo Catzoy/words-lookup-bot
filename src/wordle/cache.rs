@@ -1,5 +1,6 @@
 use crate::stands4::Stands4Client;
 use crate::stands4::requests::SearchWordRequest;
+use crate::wordle::requests::WordleAnswerRequest;
 use crate::wordle::{WordleClient, WordleDayAnswer};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -58,7 +59,10 @@ impl WordleCache {
         }
         log::info!("Wordle cache miss!");
 
-        let newest = self.wordle_client.get_word(&today).await?;
+        let newest = {
+            let request = WordleAnswerRequest::new(&today);
+            self.wordle_client.exec(request).await?
+        };
         let sw_request = SearchWordRequest {
             word: today.to_string(),
         };

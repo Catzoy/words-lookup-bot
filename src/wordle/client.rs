@@ -1,10 +1,9 @@
-use crate::wordle::WordleAnswer;
-use chrono::{DateTime, Local};
-use reqwest::Client;
+use crate::networking::api_client::ApiClient;
+use rustify::Endpoint;
 
 #[derive(Clone)]
 pub struct WordleClient {
-    client: Client,
+    client: reqwest::Client,
 }
 
 impl WordleClient {
@@ -17,8 +16,17 @@ impl WordleClient {
     /// let client = Client::new();
     /// let wc = crate::WordleClient::new(client);
     /// ```
-    pub fn new(client: Client) -> WordleClient {
+    pub fn new(client: reqwest::Client) -> WordleClient {
         WordleClient { client }
+    }
+
+    fn client(&self) -> ApiClient {
+        ApiClient {
+            client: rustify::Client::new(
+                "https://www.nytimes.com/svc/wordle/v2",
+                self.client.clone(),
+            ),
+        }
     }
 
     /// Fetches the Wordle answer for the specified local date from the NYT Wordle service.
@@ -45,18 +53,16 @@ impl WordleClient {
     ///     .unwrap();
     /// println!("Wordle answer for {}: {:?}", day.format("%Y-%m-%d"), answer);
     /// ```
-    pub async fn get_word(&self, day: &DateTime<Local>) -> anyhow::Result<WordleAnswer> {
-        let url = format!(
-            "https://www.nytimes.com/svc/wordle/v2/{}.json",
-            day.format("%Y-%m-%d").to_string()
-        );
-        let res = self.client.get(&url).send().await?;
-        Ok(res.json::<WordleAnswer>().await?)
+    pub async fn exec<E: Endpoint<Response: std::fmt::Debug>>(
+        &self,
+        request: E,
+    ) -> anyhow::Result<E::Response> {
+        self.client().exec(request).await
     }
 }
 
 impl Default for WordleClient {
     fn default() -> WordleClient {
-        WordleClient::new(Client::new())
+        WordleClient::new(reqwest::Client::new())
     }
 }
