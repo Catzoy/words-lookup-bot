@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::datamuse::client::DatamuseClient;
+use crate::datamuse::request::FindWordByMaskRequest;
 use crate::format::LookupFormatter;
 use teloxide::dptree::entry;
 
@@ -96,10 +97,13 @@ pub trait WordFinderHandler {
         client: DatamuseClient,
         mask: String,
     ) -> Result<Vec<String>, LookupError> {
-        client.find(mask).await.map_err(|err| {
-            log::error!("WF failed request: {}", err);
-            LookupError::FailedRequest
-        })
+        client
+            .exec(FindWordByMaskRequest::new(mask))
+            .await
+            .map_err(|err| {
+                log::error!("WF failed request: {}", err);
+                LookupError::FailedRequest
+            })
     }
 
     async fn ensure_valid(&self, mask: String) -> bool;
