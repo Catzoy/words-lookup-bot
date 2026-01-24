@@ -51,7 +51,12 @@ Can look up:
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.16.1</td>
+        <td>0.16.?</td>
+        <td>Handle Telegram's 4096 message length requirement</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.16.?</td>
         <td>Allow to ban X letters from word finder</td>
     </tr>
     <tr>
