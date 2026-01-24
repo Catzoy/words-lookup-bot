@@ -26,28 +26,38 @@ Can look up:
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.20.0</td>
+        <td>0.21.0</td>
         <td>Send Wordle hidden by default & shown if button is pressed</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.19.0</td>
+        <td>0.20.0</td>
         <td>Add more than 5 lookups to inlines; Add Full-text as an option</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.18.0</td>
+        <td>0.19.0</td>
         <td>Add single api inline lookups</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.17.0</td>
+        <td>0.18.0</td>
         <td>Add caching of frequent requests per API route</td>
     </tr>
     <tr>
         <td>:x:</td>
-        <td>0.16.0</td>
+        <td>0.17.0</td>
         <td>Add in-place buttons for contextual synonyms/antonyms look-up</td>
+    </tr>
+    <tr>
+        <td>:x:</td>
+        <td>0.16.1</td>
+        <td>Allow to ban X letters from word finder</td>
+    </tr>
+    <tr>
+        <td>:white_check_mark:</td>
+        <td>0.16.0</td>
+        <td>Use [rustify](https://crates.io/crates/rustify) crate to manage networking requests</td>
     </tr>
     <tr>
         <td>:white_check_mark:</td>
