@@ -7,18 +7,34 @@ pub struct DatamuseClient {
 }
 
 impl DatamuseClient {
+    /// Creates an ApiClient configured for the Datamuse API.
+    ///
+    /// This constructs an `ApiClient` that uses this instance's HTTP client and is targeted
+    /// at the Datamuse base URL.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Assuming `datamuse` is a `DatamuseClient`
+    /// // let api = datamuse.client();
+    /// ```
     fn client(&self) -> ApiClient {
         ApiClient {
             client: rustify::Client::new("https://api.datamuse.com", self.client.clone()),
         }
     }
-    /// Query the Datamuse API for words matching a pattern and return the matching words sorted in ascending order.
+    /// Execute a Datamuse API endpoint and return the words from its response sorted in ascending order.
     ///
-    /// The `mask` may contain underscore characters (`_`) which are treated as single-character wildcards (they are converted to Datamuse `?` placeholders before the request).
+    /// The provided `request` must implement `rustify::Endpoint` with `Response = Vec<Word>`. The result is the list
+    /// of `word` fields from the response, sorted lexicographically.
+    ///
+    /// # Parameters
+    ///
+    /// - `request`: An endpoint describing the Datamuse API request; its response type must be `Vec<Word>`.
     ///
     /// # Returns
     ///
-    /// A `Vec<String>` containing the matching words sorted ascending by the word.
+    /// A `Vec<String>` containing the `word` values from the endpoint response, sorted ascending by the word.
     ///
     /// # Examples
     ///
@@ -26,8 +42,9 @@ impl DatamuseClient {
     /// # use crate::datamuse::client::DatamuseClient;
     /// # async fn example() -> anyhow::Result<()> {
     /// let client = DatamuseClient::default();
-    /// let words = client.find("c_t".to_string()).await?;
-    /// // `words` is a sorted `Vec<String>`; network access is required for real results.
+    /// // `request` should be any type implementing `rustify::Endpoint<Response = Vec<crate::datamuse::Word>>`
+    /// let request = /* build request */ ;
+    /// let words = client.exec(request).await?; // network access required
     /// assert!(words.len() >= 0);
     /// # Ok(())
     /// # }

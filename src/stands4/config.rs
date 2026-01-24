@@ -6,6 +6,15 @@ pub struct Stands4Config {
 }
 
 impl Stands4Config {
+    /// Creates a Stands4Config for the given user ID and token with the `format` field set to `"json"`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::stands4::config::Stands4Config;
+    ///
+    /// let cfg = Stands4Config::new("user123".into(), "tokenABC".into());
+    /// ```
     pub fn new(user_id: String, token: String) -> Self {
         Stands4Config {
             user_id,
