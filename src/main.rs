@@ -5,6 +5,7 @@ mod cron;
 mod datamuse;
 mod format;
 mod inlines;
+mod networking;
 mod server;
 mod service;
 mod stands4;

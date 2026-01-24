@@ -1,40 +1,36 @@
+use crate::networking::api_client::ApiClient;
 use crate::urban::{UrbanDefinition, UrbanResponse};
-use log::log_enabled;
-use reqwest::Client;
-
-const API_URL: &str = "https://unofficialurbandictionaryapi.com/api/search";
+use std::default::Default;
 
 #[derive(Clone)]
 pub struct UrbanDictionaryClient {
-    client: Client,
+    client: reqwest::Client,
 }
 
 impl UrbanDictionaryClient {
-    pub fn new(client: Client) -> Self {
+    pub fn new(client: reqwest::Client) -> Self {
         UrbanDictionaryClient { client }
     }
 
-    pub async fn search_term(&self, term: &str) -> anyhow::Result<Vec<UrbanDefinition>> {
-        let query = &[("term", term)];
-        let request = self.client.get(API_URL).query(query);
-        let request = request.build()?;
-        let url = request.url().to_string();
-        log::info!("REQUEST URL {:?}", url);
-
-        let response = self.client.execute(request).await?;
-        let txt = response.text().await?;
-        if log_enabled!(log::Level::Debug) {
-            log::debug!("RESPONSE={:?}", txt);
+    fn client(&self) -> ApiClient {
+        ApiClient {
+            client: rustify::Client::new(
+                "https://unofficialurbandictionaryapi.com/api",
+                self.client.clone(),
+            ),
         }
+    }
 
-        let response =
-            serde_json::from_slice::<UrbanResponse>(txt.as_bytes()).map_err(anyhow::Error::msg)?;
+    pub async fn exec<Endpoint: rustify::Endpoint<Response = UrbanResponse>>(
+        &self,
+        request: Endpoint,
+    ) -> anyhow::Result<Vec<UrbanDefinition>> {
+        let response: UrbanResponse = self.client().exec(request).await?;
         if response.status_code != 200 {
-            anyhow::bail!(
-                response
-                    .message
-                    .unwrap_or_else(|| "Urban lookup failed without an error!".to_string())
-            );
+            let err_msg = response
+                .message
+                .unwrap_or_else(|| "Urban lookup failed without an error!".to_string());
+            anyhow::bail!(err_msg);
         }
         Ok(response.data)
     }
@@ -42,6 +38,6 @@ impl UrbanDictionaryClient {
 
 impl Default for UrbanDictionaryClient {
     fn default() -> Self {
-        UrbanDictionaryClient::new(Client::new())
+        UrbanDictionaryClient::new(Default::default())
     }
 }

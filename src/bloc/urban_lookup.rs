@@ -1,6 +1,7 @@
 use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
+use crate::urban::requests::SearchUrbanRequest;
 use crate::urban::{UrbanDefinition, UrbanDictionaryClient};
 use teloxide::dptree::entry;
 
@@ -53,7 +54,7 @@ pub trait UrbanLookupHandler {
         client: UrbanDictionaryClient,
         term: String,
     ) -> Result<Vec<UrbanDefinition>, LookupError> {
-        client.search_term(&term).await.map_err(|e| {
+        client.exec(SearchUrbanRequest { term }).await.map_err(|e| {
             log::error!("term lookup error: {:?}", e);
             LookupError::FailedRequest
         })

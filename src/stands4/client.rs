@@ -1,10 +1,10 @@
+use crate::networking::api_client::ApiClient;
 use crate::stands4::config::Stands4Config;
 use crate::stands4::fix_response_middleware::FixEmptyResponseMiddleware;
 use crate::stands4::responses::Results;
-use log::log_enabled;
-use rustify::Client as RustifyClient;
 use rustify::Endpoint;
 use serde::de::DeserializeOwned;
+use std::fmt::Debug;
 
 #[derive(Clone)]
 pub struct Stands4Client {
@@ -20,8 +20,13 @@ impl Stands4Client {
         }
     }
 
-    fn rustify_client(&self) -> RustifyClient {
-        RustifyClient::new("https://www.stands4.com/services/v2", self.client.clone())
+    fn client(&self) -> ApiClient {
+        ApiClient {
+            client: rustify::Client::new(
+                "https://www.stands4.com/services/v2",
+                self.client.clone(),
+            ),
+        }
     }
 
     /// Execute a prepared HTTP request and convert the JSON results into domain entities.
@@ -49,29 +54,18 @@ impl Stands4Client {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn exec<X, R, E: Endpoint<Response = Results<R>>>(
+    pub async fn exec<Entity, Response, Endpoint: rustify::Endpoint<Response = Results<Response>>>(
         &self,
-        request: E,
-    ) -> anyhow::Result<Vec<X>>
+        request: Endpoint,
+    ) -> anyhow::Result<Vec<Entity>>
     where
-        R: std::fmt::Debug + Send + Sync + DeserializeOwned,
-        X: From<R>,
+        Response: Debug + Send + Sync + DeserializeOwned,
+        Entity: From<Response>,
     {
-        let client = self.rustify_client();
-        let url = request.url(client.base.as_str())?;
-        log::info!("REQUEST URL {:?}", url);
-
-        let response = request
+        let request = request
             .with_middleware(&self.config)
-            .with_middleware(&FixEmptyResponseMiddleware)
-            .exec(&client)
-            .await?;
-        let response = response.parse()?;
-        if log_enabled!(log::Level::Debug) {
-            log::debug!("RESPONSE={:?}", response);
-        }
-
-        response.into()
+            .with_middleware(&FixEmptyResponseMiddleware);
+        self.client().exec(request).await?
     }
 }
 
