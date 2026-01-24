@@ -10,6 +10,8 @@ pub struct FindWordByMaskRequest {
 
 impl FindWordByMaskRequest {
     pub fn new(mask: String) -> Self {
-        Self { sp: mask }
+        Self {
+            sp: mask.replace("_", "?"),
+        }
     }
 }

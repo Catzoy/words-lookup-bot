@@ -1,9 +1,8 @@
-mod auth_middleware;
 pub mod client;
 mod config;
 pub mod entities;
 pub mod ext;
-mod fix_response_middleware;
+mod middleware;
 pub mod requests;
 pub mod responses;
 

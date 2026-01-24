@@ -1,8 +1,6 @@
 use crate::networking::api_client::ApiClient;
 use crate::stands4::config::Stands4Config;
-use crate::stands4::fix_response_middleware::FixEmptyResponseMiddleware;
 use crate::stands4::responses::Results;
-use rustify::Endpoint;
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 
@@ -62,9 +60,7 @@ impl Stands4Client {
         Response: Debug + Send + Sync + DeserializeOwned,
         Entity: From<Response>,
     {
-        let request = request
-            .with_middleware(&self.config)
-            .with_middleware(&FixEmptyResponseMiddleware);
+        let request = request.with_middleware(&self.config);
         self.client().exec(request).await?
     }
 }

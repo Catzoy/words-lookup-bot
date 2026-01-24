@@ -27,8 +27,12 @@ impl MiddleWare for Stands4Config {
     fn response<E: Endpoint>(
         &self,
         _endpoint: &E,
-        _resp: &mut Response<Vec<u8>>,
+        resp: &mut Response<Vec<u8>>,
     ) -> Result<(), ClientError> {
+        if resp.body().is_empty() {
+            let empty_json = "{}".to_string();
+            resp.body_mut().clone_from_slice(empty_json.as_bytes());
+        }
         Ok(())
     }
 }
