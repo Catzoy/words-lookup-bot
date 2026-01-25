@@ -55,9 +55,9 @@ Can look up:
         <td>Handle Telegram's 4096 message length requirement</td>
     </tr>
     <tr>
-        <td>:x:</td>
-        <td>0.16.?</td>
-        <td>Allow to ban X letters from word finder</td>
+        <td>:white_check_mark:</td>
+        <td>0.16.1</td>
+        <td>Allow to ban 13 letters from word finder</td>
     </tr>
     <tr>
         <td>:white_check_mark:</td>
