@@ -172,6 +172,7 @@ pub fn inlines_tree() -> CommandHandler {
         )
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
