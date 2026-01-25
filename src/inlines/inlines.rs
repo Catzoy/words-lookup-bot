@@ -10,11 +10,13 @@ use crate::inlines::debounce_inline_queries;
 use regex::Regex;
 use std::sync::LazyLock;
 use teloxide::{
+    Bot,
     dispatching::UpdateFilterExt,
     prelude::{InlineQuery, Update},
-    Bot,
 };
 
+static COMMAND_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(u.|sa.|f.)?(.+)").unwrap());
 #[derive(Debug, Clone)]
 pub enum QueryCommands {
     Suggestions,
@@ -24,8 +26,24 @@ pub enum QueryCommands {
     ThesaurusLookup(String),
     Finder(String),
 }
-static COMMAND_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(u.|sa.|f.)?(.+)").unwrap());
+
+enum CommandTag {
+    Urban,
+    Thesaurus,
+    Finder,
+}
+
+impl CommandTag {
+    fn from<S: Into<String>>(str: S) -> Option<Self> {
+        match str.into().as_str() {
+            "u." => Some(CommandTag::Urban),
+            "sa." => Some(CommandTag::Thesaurus),
+            "f." => Some(CommandTag::Finder),
+            _ => None,
+        }
+    }
+}
+
 /// Map an inline query string to a `QueryCommands` variant.
 ///
 /// Parses the query text using `COMMAND_PATTERN` and selects a command:
@@ -55,10 +73,21 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
     }
 
     let captures = COMMAND_PATTERN.captures(&query)?;
-    let cmd = match (captures.get(1), captures.get(2)) {
-        (None, Some(input)) => {
+    let input = captures.get(2)?.as_str();
+    let cmd = captures
+        .get(1)
+        .and_then(|m| CommandTag::from(m.as_str()))
+        .map(|tag| match tag {
+            CommandTag::Urban => QueryCommands::UrbanLookup(input.to_owned()),
+            CommandTag::Thesaurus => QueryCommands::ThesaurusLookup(input.to_owned()),
+            CommandTag::Finder => QueryCommands::Finder(input.to_owned()),
+        })
+        .unwrap_or_else(|| {
+            if input.contains("_") {
+                return QueryCommands::Finder(input.to_owned());
+            }
+
             let words = input
-                .as_str()
                 .split_whitespace()
                 .map(|s| s.to_lowercase())
                 .collect::<Vec<String>>();
@@ -67,18 +96,7 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
                 [word] => QueryCommands::WordLookup(word.to_owned()),
                 _ => QueryCommands::PhraseLookup(words.join(" ")),
             }
-        }
-        (Some(m), Some(phrase)) if m.as_str().eq("u.") => {
-            QueryCommands::UrbanLookup(phrase.as_str().to_string())
-        }
-        (Some(m), Some(phrase)) if m.as_str().eq("sa.") => {
-            QueryCommands::ThesaurusLookup(phrase.as_str().to_string())
-        }
-        (Some(m), Some(phrase)) if m.as_str().eq("f.") => {
-            QueryCommands::Finder(phrase.as_str().to_string())
-        }
-        _ => QueryCommands::Suggestions,
-    };
+        });
     Some(cmd)
 }
 
