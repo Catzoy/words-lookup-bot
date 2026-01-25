@@ -8,7 +8,8 @@ use std::collections::HashSet;
 use std::sync::LazyLock;
 use teloxide::dptree::entry;
 
-const WORD_FIND: LazyLock<Regex> = LazyLock::new(|| Regex::new("^([a-z_]+),? ?([a-z]*)$").unwrap());
+static WORD_FIND: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("^([a-z_]+),? ?([a-z]*)$").unwrap());
 
 pub trait WordFinderBot<Response>
 where
@@ -158,7 +159,7 @@ where
         defs: Vec<String>,
     ) -> Result<Formatter::Value, LookupError> {
         self.append_title(format!("Found {} words", defs.len()));
-        for (i, def) in defs.iter().enumerate() {
+        for (i, def) in defs.into_iter().enumerate() {
             self.visit_word_finder_definition(i, def);
         }
         self.build().map_err(|err| {

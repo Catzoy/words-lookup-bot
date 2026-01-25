@@ -272,7 +272,7 @@ impl From<StringMixedType> for String {
     /// ```
     fn from(value: StringMixedType) -> Self {
         match value {
-            StringMixedType::String(it) => it.into(),
+            StringMixedType::String(it) => it,
             StringMixedType::Other(_) => String::default(),
         }
     }

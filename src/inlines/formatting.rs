@@ -1,5 +1,5 @@
 use crate::bloc::formatting::SynAntFormatterExt;
-use crate::format::{as_in, meaning, StringBuilderExt, ToEscaped};
+use crate::format::{StringBuilderExt, ToEscaped, as_in, meaning};
 use crate::{
     format::{LinksProvider, LookupFormatter},
     stands4::{AbbreviationDefinition, PhraseDefinition, SynAntDefinitions, WordDefinition},
@@ -108,31 +108,18 @@ impl InlineAnswer {
     }
 
     /// Appends text to the answer's in-progress description buffer.
-
     ///
-
     /// If the answer's description is in the `Building` state, the provided string is
-
     /// appended to that builder. If the description is already `Done`, this method
-
     /// has no effect.
-
     ///
-
     /// # Examples
-
     ///
-
     /// ```
-
     /// let ans = InlineAnswer::new("title".into())
-
     ///     .append_description("first".into())
-
     ///     .append_description(" second".into())
-
     ///     .build_description();
-
     /// ```
     fn append_description(mut self, string: String) -> Self {
         if let Desc::Building(ref mut builder) = self.description {
@@ -279,28 +266,17 @@ impl LookupFormatter for InlineFormatter {
     /// // This will push a new InlineAnswer onto `fmt.answers`.
     /// // fmt.visit_abbreviations(0, "abbrs", &defs);
     /// ```
-    fn visit_abbreviations(
-        &mut self,
-        i: usize,
-        category: &str,
-        defs: &Vec<&AbbreviationDefinition>,
-    ) {
+    fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &[&AbbreviationDefinition]) {
         let category = match category.len() {
             0 => "uncategorized".to_string(),
             _ => category.to_string(),
         };
         let mut meaning = string_builder::Builder::default();
-        if let Some(d1) = defs.first() {
-            meaning.append(d1.definition.as_str());
-
-            let len = defs.len();
-            if len > 1 {
-                for def in defs.iter().skip(1) {
-                    meaning.append(", ");
-                    meaning.append(def.definition.as_str());
-                }
-            }
-        }
+        meaning.join(
+            defs,
+            |builder, def| builder.append(def.definition.as_str()),
+            |builder| builder.append(", "),
+        );
 
         let answer = InlineAnswer::new(format!("#{} in [{}]", i + 1, category)).meaning(
             meaning
@@ -387,7 +363,7 @@ impl LookupFormatter for InlineFormatter {
     /// let mut fmt = crate::inlines::formatting::InlineFormatter::default();
     /// fmt.visit_word_finder_definition(0, &"pattern".to_string());
     /// ```
-    fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
+    fn visit_word_finder_definition(&mut self, i: usize, def: String) {
         let def = def.to_escaped();
         let mut answer = self
             .answers

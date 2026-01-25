@@ -1,9 +1,9 @@
 use crate::bloc::formatting::SynAntFormatterExt;
-use crate::format::{as_in, meaning, ToEscaped};
+use crate::format::{ToEscaped, as_in, meaning};
 use crate::{
     format::{LinksProvider, LookupFormatter, StringBuilderExt},
-    stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition},
     stands4::SynAntDefinitions,
+    stands4::entities::{AbbreviationDefinition, PhraseDefinition, WordDefinition},
     urban::UrbanDefinition,
 };
 use std::ops::Not;
@@ -185,13 +185,8 @@ impl LookupFormatter for FullMessageFormatter {
     /// assert!(fmt.builder.out.contains("Alpha"));
     /// assert!(fmt.builder.out.contains("Beta"));
     /// ```
-    fn visit_abbreviations(
-        &mut self,
-        i: usize,
-        category: &str,
-        defs: &Vec<&AbbreviationDefinition>,
-    ) {
-        let defs = defs.iter().map(|d| d.to_escaped()).collect();
+    fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &[&AbbreviationDefinition]) {
+        let defs = defs.iter().map(|d| d.to_escaped()).collect::<Vec<_>>();
         let category = match category.len() {
             0 => "uncategorized".to_string(),
             _ => category.to_string(),
@@ -293,7 +288,7 @@ impl LookupFormatter for FullMessageFormatter {
     /// f.visit_word_finder_definition(1, &"nominee".to_string());
     /// assert_eq!(f.build().unwrap(), "candidate, nominee\n");
     /// ```
-    fn visit_word_finder_definition(&mut self, i: usize, def: &String) {
+    fn visit_word_finder_definition(&mut self, i: usize, def: String) {
         let def = def.to_escaped();
         match i {
             0 => self.builder.append(def.as_str()),
