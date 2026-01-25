@@ -11,11 +11,11 @@ use crate::bloc::wordle::WordleBot;
 use crate::bot::LookupBot;
 use crate::commands::{FullMessageFormatter, MessageCommands};
 use crate::format::ToEscaped;
+use teloxide::Bot;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
 use teloxide::types::{Message, ParseMode};
 use teloxide::utils::command::BotCommands;
-use teloxide::Bot;
 
 #[derive(Debug, Clone)]
 pub struct MessageBot {
@@ -249,23 +249,32 @@ impl WordFinderBot<String> for MessageBot {
         "Sorry, finder can only process up to 15 symbols, but at least two".to_string()
     }
 
-    /// Provide an error message for queries containing characters outside `a-z`, `A-Z`, or underscore.
+    /// Returns an error message describing the required input format for finder queries.
+    ///
+    /// The message explains that the query may contain letters (`a-Z`) and underscores with a
+    /// maximum length of 15 characters, and that the banned-list may contain only letters with a
+    /// maximum length of 13 characters.
     ///
     /// # Returns
     ///
-    /// `String` with an error message indicating only `a-z`, `A-Z`, and underscore are permitted.
+    /// `String` containing the user-facing error message.
     ///
     /// # Examples
     ///
     /// ```
-    /// let msg = on_unknown_character();
+    /// let msg = on_wrong_format();
     /// assert_eq!(
     ///     msg,
-    ///     "Sorry, your message contains unsupported characters - only a-z, A-Z and an underscore can be specified".to_string()
+    ///     "Sorry, your message is in the wrong format, you can only specify:\
+    /// 1. a-Z and an underscore characters for query, up to 15 chars;\
+    /// 2. a-Z characters for banned list, up to 13 chars".to_string()
     /// );
     /// ```
-    fn on_unknown_character() -> String {
-        "Sorry, your message contains unsupported characters - only a-z, A-Z and an underscore can be specified".to_string()
+    fn on_wrong_format() -> String {
+        "Sorry, your message is in the wrong format, you can only specify:\
+        1. a-Z and an underscore characters for query, up to 15 chars;\
+        2. a-Z characters for banned list, up to 13 chars"
+            .to_string()
     }
 
     /// Return an error message describing why a word-finder query is invalid.

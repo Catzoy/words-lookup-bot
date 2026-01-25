@@ -62,14 +62,20 @@ pub enum MessageCommands {
     #[command(
         description = "Get a list of words that have characters at specified positions.\n\
         For example, `___ly` will return all 5-letter words that end with `ly`.\
-        Also you can request to look up a word in any chat by writing `@WordsLookupBot f.___ly`,\
-        where `f.` will point try match words against the specified mask"
+        Also you can request to look up a word in any chat by writing `@WordsLookupBot f.___ly`, \
+        where `f.` will point try match words against the specified mask.\
+        Furthermore, you can specify a list of letters to exclude from being used in a word, \
+        just add a comma and a continuous string, like a `wqg`"
     )]
     Finder(String),
 }
-/// Convert plain text into a MessageCommands value based on word count and content.
+/// Convert plain text into a MessageCommands value based on content and word count.
 ///
-/// Maps empty input to `Teapot`; a single word containing an underscore to `Finder(word)`; a single other word to `WordLookup(word)`; and multiple words to `PhraseLookup(phrase)` where words are lowercased and joined with single spaces.
+/// If the input contains any underscore character, returns `Finder` with the original text.
+/// Otherwise splits the input on whitespace, lowercases tokens, and maps:
+/// - empty input -> `Teapot`
+/// - single token -> `WordLookup` with the lowercase token
+/// - multiple tokens -> `PhraseLookup` with tokens joined by single spaces
 ///
 /// # Examples
 ///
@@ -77,50 +83,46 @@ pub enum MessageCommands {
 /// assert_eq!(extract_text_command(""), MessageCommands::Teapot);
 /// assert_eq!(extract_text_command("Hello"), MessageCommands::WordLookup("hello".into()));
 /// assert_eq!(extract_text_command("f__nd_me"), MessageCommands::Finder("f__nd_me".into()));
+/// // underscore anywhere in the input takes the Finder path, even with spaces
+/// assert_eq!(extract_text_command("a_b c"), MessageCommands::Finder("a_b c".into()));
 /// assert_eq!(extract_text_command("Hello WORLD"), MessageCommands::PhraseLookup("hello world".into()));
 /// ```
 fn extract_text_command(text: &str) -> MessageCommands {
+    if text.contains("_") {
+        return MessageCommands::Finder(text.to_owned());
+    }
+
     let words = text
         .split_whitespace()
         .map(|s| s.to_lowercase())
         .collect::<Vec<String>>();
     match &words[..] {
         [] => MessageCommands::Teapot,
-        [word] if word.contains("_") => MessageCommands::Finder(word.to_owned()),
         [word] => MessageCommands::WordLookup(word.to_owned()),
         _ => MessageCommands::PhraseLookup(words.join(" ")),
     }
 }
-/// Parse a Telegram message together with the bot identity into a `MessageCommands` variant.
+/// Resolve a Telegram `Message` into a `MessageCommands` value using the bot's identity.
 ///
-/// Attempts to parse the message text as a bot command (taking the bot's username into account).
-/// If parsing yields an unknown slash command (starts with `/`) the function returns
-/// `MessageCommands::Unknown`. For other parse failures it falls back to text-based extraction:
-/// a single word becomes `MessageCommands::WordLookup`, multiple words become
-/// `MessageCommands::PhraseLookup`.
-///
-/// # Parameters
-///
-/// - `message` — the incoming Telegram `Message` whose text should be interpreted as a command or lookup.
-/// - `me` — the bot's `Me` identity used to resolve username-qualified commands.
-///
-/// # Returns
-///
-/// A `MessageCommands` value representing the resolved command or lookup.
+/// Attempts to parse the message text as a bot command (taking the bot username into account).
+/// If parsing yields an unknown slash command (one that starts with `/`) the function returns
+/// `MessageCommands::Unknown`. For other parse failures the function falls back to text-based
+/// extraction: input containing an underscore becomes `MessageCommands::Finder`, a single word
+/// becomes `MessageCommands::WordLookup`, and multiple words become `MessageCommands::PhraseLookup`.
 ///
 /// # Examples
 ///
 /// ```
 /// // Construct appropriate `Message` and `Me` values in your test harness and call:
 /// // let cmd = extract_command(message, me);
-/// // assert!(matches!(cmd, MessageCommands::WordLookup(_) | MessageCommands::PhraseLookup(_)));
+/// // assert!(matches!(cmd, MessageCommands::WordLookup(_) | MessageCommands::PhraseLookup(_) | MessageCommands::Unknown));
 /// ```
 fn extract_command(message: Message, me: Me) -> MessageCommands {
-    let text = message.text().unwrap_or_default();
+    let text = message.text().unwrap_or_default().to_lowercase();
     let username = me.username.clone().unwrap_or_default();
-    let cmd = MessageCommands::parse(text, &username).unwrap_or_else(|err| match err {
+    let cmd = MessageCommands::parse(text.as_str(), &username).unwrap_or_else(|err| match err {
         ParseError::UnknownCommand(cmd) if cmd.starts_with("/") => MessageCommands::Unknown,
-        _ => extract_text_command(text),
+        _ => extract_text_command(text.as_str()),
     });
 
     log::info!("Received message: {:?}", text);
