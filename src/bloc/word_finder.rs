@@ -9,7 +9,7 @@ use std::sync::LazyLock;
 use teloxide::dptree::entry;
 
 const WORD_FIND: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new("([a-zA-Z_]+),? ?[a-zA-Z]*").unwrap());
+    LazyLock::new(|| Regex::new("^([a-zA-Z_]+),? ?([a-zA-Z]*)$").unwrap());
 
 pub trait WordFinderBot<Response>
 where
@@ -160,12 +160,13 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FinderMask {
     mask: String,
     banned: String,
 }
 
+#[derive(Debug, PartialEq)]
 enum MaskParsingError {
     WrongFormat,
     InvalidLength,
@@ -182,7 +183,7 @@ impl FinderMask {
             .get(1)
             .map(|m| m.as_str())
             .ok_or(MaskParsingError::WrongFormat)?;
-        if 1 < finder_mask.len() && finder_mask.len() < 16 {
+        if finder_mask.len() < 2 || finder_mask.len() > 15 {
             return Err(MaskParsingError::InvalidLength);
         }
 
@@ -300,5 +301,94 @@ where
             .endpoint(
                 |bot: Bot, response: Bot::Response| async move { bot.respond(response).await },
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn finder_mask_disallows_small() {
+        let input = String::from("a");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::InvalidLength));
+    }
+    #[test]
+    fn finder_mask_disallows_big() {
+        let input = String::from("a").repeat(20);
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::InvalidLength));
+    }
+    #[test]
+    fn finder_mask_disallows_empty() {
+        let input = String::from("");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::WrongFormat));
+    }
+    #[test]
+    fn finder_mask_disallows_unknown_chars() {
+        let input = String::from("123");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::WrongFormat));
+    }
+    #[test]
+    fn finder_mask_disallows_wrong_format() {
+        let input = String::from("abc, abc, abc");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::WrongFormat));
+    }
+    #[test]
+    fn finder_mask_disallows_long_banlist() {
+        let input = String::from("abc, abcdefghijklmnopqrstuvwxyz");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::InvalidLength));
+    }
+    #[test]
+    fn finder_mask_disallows_wrong_mask_format_all_letters() {
+        let input = String::from("abc, jfk");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::InvalidQuery));
+    }
+    #[test]
+    fn finder_mask_disallows_wrong_mask_format_all_underscores() {
+        let input = String::from("abc, jfk");
+        let output = FinderMask::from(input);
+        assert_eq!(output, Err(MaskParsingError::InvalidQuery));
+    }
+    #[test]
+    fn finder_mask_allows_only_mask() {
+        let input = String::from("a__ow");
+        let output = FinderMask::from(input);
+        assert_eq!(
+            output,
+            Ok(FinderMask {
+                mask: String::from("a__ow"),
+                banned: String::from(""),
+            })
+        );
+    }
+    #[test]
+    fn finder_mask_allows_only_mask_partial_banlist() {
+        let input = String::from("a__ow,");
+        let output = FinderMask::from(input);
+        assert_eq!(
+            output,
+            Ok(FinderMask {
+                mask: String::from("a__ow"),
+                banned: String::from(""),
+            })
+        );
+    }
+    #[test]
+    fn finder_mask_allows_only_mask_with_banlist() {
+        let input = String::from("a__ow, jfk");
+        let output = FinderMask::from(input);
+        assert_eq!(
+            output,
+            Ok(FinderMask {
+                mask: String::from("a__ow"),
+                banned: String::from("jfk"),
+            })
+        );
     }
 }
