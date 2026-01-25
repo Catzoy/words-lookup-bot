@@ -37,6 +37,19 @@ enum CommandTag {
 }
 
 impl CommandTag {
+    /// Converts a short string tag into a corresponding `CommandTag`.
+    ///
+    /// Recognizes the tags `"u"`, `"sa"`, and `"f"` and maps them to `Urban`, `Thesaurus`,
+    /// and `Finder` respectively. Any other input yields `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(CommandTag::from("u"), Some(CommandTag::Urban));
+    /// assert_eq!(CommandTag::from("sa"), Some(CommandTag::Thesaurus));
+    /// assert_eq!(CommandTag::from("f"), Some(CommandTag::Finder));
+    /// assert_eq!(CommandTag::from("x"), None);
+    /// ```
     fn from<S: Into<String>>(str: S) -> Option<Self> {
         match str.into().as_str() {
             "u" => Some(CommandTag::Urban),
@@ -47,28 +60,32 @@ impl CommandTag {
     }
 }
 
-/// Map an inline query string to a `QueryCommands` variant.
+/// Determine the inline command represented by the given query string.
 ///
-/// Parses the query text using `COMMAND_PATTERN` and selects a command:
-/// - empty query → `QueryCommands::Suggestions`
-/// - no explicit prefix:
-///   - one word → `QueryCommands::WordLookup(word)`
-///   - multiple words → `QueryCommands::PhraseLookup(phrase)`
-/// - `u.` prefix → `QueryCommands::UrbanLookup(phrase)`
-/// - `sa.` prefix → `QueryCommands::ThesaurusLookup(phrase)`
-/// - `f.` prefix → `QueryCommands::Finder(phrase)`
+/// Parses the provided lowercase-insensitive query and maps it to a `QueryCommands` variant:
+/// - empty input → `Suggestions`
+/// - prefixed forms:
+///   - `u.<text>` → `UrbanLookup(text)`
+///   - `sa.<text>` → `ThesaurusLookup(text)`
+///   - `f.<text>` → `Finder(text)`
+/// - unprefixed forms:
+///   - a single word → `WordLookup(word)`
+///   - multiple words → `PhraseLookup(phrase)`
+/// - inputs containing underscores are treated as `Finder`.
 ///
 /// # Returns
 ///
-/// `Some(QueryCommands::...)` with the parsed command when the query matches `COMMAND_PATTERN`, or
-/// `None` if the query does not match `COMMAND_PATTERN`.
+/// `Some(QueryCommands::...)` with the parsed command, or `None` if the query does not match the recognized patterns.
 ///
 /// # Examples
 ///
 /// ```
-/// // Illustrative usage:
-/// // let iq = InlineQuery { query: "u.example".into(), .. };
-/// // assert!(matches!(extract_command(iq), Some(QueryCommands::UrbanLookup(p)) if p == "example"));
+/// assert!(matches!(extract_command("".into()), Some(QueryCommands::Suggestions)));
+/// assert!(matches!(extract_command("u.urban".into()), Some(QueryCommands::UrbanLookup(p)) if p == "urban"));
+/// assert!(matches!(extract_command("sa.thesaurus".into()), Some(QueryCommands::ThesaurusLookup(p)) if p == "thesaurus"));
+/// assert!(matches!(extract_command("f.f__der".into()), Some(QueryCommands::Finder(p)) if p == "f__der"));
+/// assert!(matches!(extract_command("look".into()), Some(QueryCommands::WordLookup(p)) if p == "look"));
+/// assert!(matches!(extract_command("turn down".into()), Some(QueryCommands::PhraseLookup(p)) if p == "turn down"));
 /// ```
 fn extract_command(query: String) -> Option<QueryCommands> {
     if query.is_empty() {
@@ -111,12 +128,11 @@ fn extract_command(query: String) -> Option<QueryCommands> {
         })
 }
 
-/// Builds the inline-query command handler that parses inline queries, debounces them, and dispatches each
-/// parsed command to its corresponding inline handler (suggestions, word lookup, phrase lookup, urban lookup,
-/// thesaurus lookup, or finder).
+/// Create a CommandHandler that processes inline queries, debounces them, and routes parsed commands to their respective inline handlers.
 ///
-/// The handler filters incoming updates for inline queries, converts each query into a `QueryCommands` variant,
-/// wraps it into an `InlineBot`, applies `debounce_inline_queries`, and routes to the appropriate handler.
+/// The handler filters updates for inline queries, converts each query into a `QueryCommands` variant, wraps it in an `InlineBot`,
+/// applies `debounce_inline_queries`, and dispatches to the matching handler (suggestions, word lookup, phrase lookup, urban lookup,
+/// thesaurus lookup, or finder).
 ///
 /// # Examples
 ///

@@ -46,13 +46,20 @@ where
         Default::default()
     }
 
-    /// Produce a response when the input mask contains an unsupported character.
+    /// Produce the user-facing response for masks that contain unsupported characters.
     ///
-    /// This hook is invoked when validation detects a character other than ASCII letters or `_` in the mask.
+    /// This hook is called when the provided mask contains characters other than ASCII letters or `_`.
     ///
     /// # Returns
     ///
-    /// `Response` to send to the user; the default implementation returns `Default::default()`.
+    /// The response value to send to the user; default implementation returns `Default::default()`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let default_resp: String = Default::default();
+    /// // `on_wrong_format()` returns the same default value for the bot's Response type.
+    /// ```
     fn on_wrong_format() -> Response {
         Default::default()
     }
@@ -82,25 +89,28 @@ where
 }
 
 pub trait WordFinderHandler {
-    /// Fetches words from Datamuse that match a mask pattern.
+    /// Retrieve candidate words from Datamuse that match a given `FinderMask`.
     ///
-    /// The `mask` uses `'_'` to represent unknown letters; other characters are treated as fixed letters
-    /// that must match the corresponding positions in returned words.
+    /// The request uses `mask.mask` as the Datamuse mask (where `'_'` denotes unknown letters),
+    /// and the resulting list is filtered to exclude words containing any characters from
+    /// `mask.banned`.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// // Requires an async runtime.
     /// // let client = DatamuseClient::new();
+    /// // let mask = FinderMask::from("_at, b".into()).unwrap();
     /// // let words = tokio::runtime::Runtime::new().unwrap().block_on(async {
-    /// //     get_possible_words(client, "_at".into()).await
+    /// //     get_possible_words(client, mask).await
     /// // })?;
     /// // assert!(words.iter().any(|w| w.ends_with("at")));
     /// ```
     ///
     /// # Returns
     ///
-    /// `Ok(Vec<String>)` with words matching `mask`, or `Err(LookupError::FailedRequest)` if the remote request fails.
+    /// `Ok(Vec<String>)` with words matching the mask and not containing banned letters,
+    /// or `Err(LookupError::FailedRequest)` if the remote request fails.
     async fn get_possible_words(
         client: DatamuseClient,
         mask: FinderMask,
@@ -130,20 +140,19 @@ where
 {
     /// Compose a formatted response value from a list of word definitions.
     ///
-    /// The formatter adds a title "Found N words" where N is the number of
-    /// provided definitions, visits each definition in order, and builds the
-    /// final response value.
+    /// Appends a title `"Found N words"` where `N` is the number of provided definitions,
+    /// visits each definition in order, and finalizes the formatter.
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```rust
     /// let defs = vec!["apple".to_string(), "angle".to_string()];
     /// let response = Formatter::new().compose_word_finder_response(defs).unwrap();
     /// ```
     ///
     /// # Returns
     ///
-    /// The constructed formatter value on success, or a `LookupError::FailedResponseBuilder` if building fails.
+    /// The constructed formatter value on success, or `LookupError::FailedResponseBuilder` if building fails.
     fn compose_word_finder_response(
         mut self,
         defs: Vec<String>,
@@ -173,6 +182,23 @@ enum MaskParsingError {
 }
 
 impl FinderMask {
+    /// Parse a user-provided mask string into a `FinderMask`, validating format, lengths, and content.
+    ///
+    /// The input may include an optional comma-separated banlist (e.g. `"a__ow, jfk"`) or consist of only the mask (`"a__ow"`).
+    /// Validations performed:
+    /// - Mask length must be between 2 and 15 characters.
+    /// - Banlist length must be at most 13 characters.
+    /// - Mask must contain at least one underscore (`'_'`) and at least one non-underscore character.
+    ///
+    /// On success returns a `FinderMask` with `mask` set to the parsed mask and `banned` set to the parsed banlist (or an empty string when absent).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let fm = FinderMask::from("a__ow, jfk".to_string()).unwrap();
+    /// assert_eq!(fm.mask, "a__ow");
+    /// assert_eq!(fm.banned, "jfk");
+    /// ```
     fn from(mask: String) -> Result<FinderMask, MaskParsingError> {
         let parsed = WORD_FIND
             .captures(&mask)
@@ -207,6 +233,19 @@ impl FinderMask {
         Ok(combo)
     }
 
+    /// Filter candidate words by removing any that contain characters from `self.banned`.
+    ///
+    /// The method returns a new vector containing only the input words that do not include any banned character.
+    /// If the input vector is empty or the banlist cannot be compiled into a regex, the original vector is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mask = FinderMask { mask: "a__".into(), banned: "bd".into() };
+    /// let words = vec!["cat".to_string(), "dog".to_string(), "bat".to_string()];
+    /// let filtered = mask.retain_only_allowed(words);
+    /// assert_eq!(filtered, vec!["cat".to_string()]);
+    /// ```
     fn retain_only_allowed(&self, vec: Vec<String>) -> Vec<String> {
         if vec.is_empty() {
             return vec;
@@ -233,26 +272,21 @@ where
     Bot: WordFinderBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
     Formatter: LookupFormatter<Value = Bot::Response>,
 {
-    /// Validate a word-mask pattern and notify the user when the mask is invalid.
+    /// Validate a mask string and send a user-facing response when it is invalid.
     ///
-    /// The mask must be 2–15 characters long, contain at least one underscore (`_`)
-    /// and at least one ASCII letter (`A`–`Z`, `a`–`z`), and may contain only
-    /// letters or underscores. When the mask fails any check this method sends the
-    /// corresponding user-facing response (via `Self::on_length_invalid`,
-    /// `Self::on_unknown_character`, or `Self::on_invalid_query`) and returns `false`.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the mask meets length and content requirements, `false` otherwise.
+    /// Parses the provided mask into a `FinderMask` and returns `Some(FinderMask)` on success.
+    /// If parsing fails, sends the corresponding response (`on_wrong_format`, `on_length_invalid`,
+    /// or `on_invalid_query`) and returns `None`.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// # use std::future::Future;
-    /// # // This example demonstrates the call shape; replace `Bot` with your bot type.
-    /// # async fn example<B: std::marker::Send + ?Sized>(_bot: &B) {}
-    /// # async {
-    /// // let ok = bot.ensure_valid("a__le".to_string()).await;
+    /// # async fn run<B: crate::bloc::word_finder::WordFinderBot<B::Response> + Send + Sync + 'static>(bot: &B) {
+    /// let maybe_mask = bot.ensure_valid("a__le, xyz".to_string()).await;
+    /// match maybe_mask {
+    ///     Some(mask) => { /* use mask */ }
+    ///     None => { /* user was notified about the error */ }
+    /// }
     /// # }
     /// ```
     async fn ensure_valid(&self, mask: String) -> Option<FinderMask> {
@@ -269,7 +303,11 @@ where
             }
         }
     }
-    /// Create a Teloxide command handler for the word-finder feature.
+    /// Constructs the Teloxide command handler for the word-finder feature.
+    ///
+    /// The handler validates a user-provided mask, performs a lookup for matching words,
+    /// filters results according to any banned letters, formats the response, and sends it
+    /// back to the user.
     ///
     /// # Examples
     ///
@@ -401,6 +439,16 @@ mod tests {
         let retained = mask.retain_only_allowed(words.clone());
         assert_eq!(retained, words);
     }
+    /// Asserts that no words are removed when the ban list is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mask = FinderMask { mask: String::from(""), banned: String::from("") };
+    /// let words = vec![String::from("abra"), String::from("cadabra")];
+    /// let retained = mask.retain_only_allowed(words.clone());
+    /// assert_eq!(retained, words);
+    /// ```
     #[test]
     fn finder_mask_retains_every_on_empty_banlist() {
         let mask = FinderMask {
