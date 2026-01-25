@@ -3,7 +3,13 @@ use crate::bot::{LookupBot, LookupBotX};
 use crate::datamuse::client::DatamuseClient;
 use crate::datamuse::request::FindWordByMaskRequest;
 use crate::format::LookupFormatter;
+use regex::Regex;
+use std::collections::HashSet;
+use std::sync::LazyLock;
 use teloxide::dptree::entry;
+
+const WORD_FIND: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("([a-zA-Z_]+),? ?[a-zA-Z]*").unwrap());
 
 pub trait WordFinderBot<Response>
 where
@@ -48,7 +54,7 @@ where
     /// # Returns
     ///
     /// `Response` to send to the user; the default implementation returns `Default::default()`.
-    fn on_unknown_character() -> Response {
+    fn on_wrong_format() -> Response {
         Default::default()
     }
 
@@ -98,18 +104,19 @@ pub trait WordFinderHandler {
     /// `Ok(Vec<String>)` with words matching `mask`, or `Err(LookupError::FailedRequest)` if the remote request fails.
     async fn get_possible_words(
         client: DatamuseClient,
-        mask: String,
+        mask: FinderMask,
     ) -> Result<Vec<String>, LookupError> {
         client
-            .exec(FindWordByMaskRequest::new(mask))
+            .exec(FindWordByMaskRequest::new(mask.mask.clone()))
             .await
+            .map(|vec| mask.retain_only_allowed(vec))
             .map_err(|err| {
                 log::error!("WF failed request: {}", err);
                 LookupError::FailedRequest
             })
     }
 
-    async fn ensure_valid(&self, mask: String) -> bool;
+    async fn ensure_valid(&self, mask: String) -> Option<FinderMask>;
 
     fn word_finder_handler() -> CommandHandler;
 }
@@ -153,6 +160,74 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct FinderMask {
+    mask: String,
+    banned: String,
+}
+
+enum MaskParsingError {
+    WrongFormat,
+    InvalidLength,
+    InvalidQuery,
+}
+
+impl FinderMask {
+    fn from(mask: String) -> Result<FinderMask, MaskParsingError> {
+        let parsed = WORD_FIND
+            .captures(&mask)
+            .ok_or(MaskParsingError::WrongFormat)?;
+
+        let finder_mask = parsed
+            .get(1)
+            .map(|m| m.as_str())
+            .ok_or(MaskParsingError::WrongFormat)?;
+        if 1 < finder_mask.len() && finder_mask.len() < 16 {
+            return Err(MaskParsingError::InvalidLength);
+        }
+
+        let banned_list = parsed.get(2).map(|m| m.as_str()).unwrap_or("");
+        if banned_list.len() > 13 {
+            return Err(MaskParsingError::InvalidLength);
+        }
+
+        let (has_blank, has_filled) = finder_mask
+            .chars()
+            .fold((false, false), |(has_blank, has_filled), char| {
+                (has_blank || char == '_', has_filled || char != '_')
+            });
+        if !has_blank || !has_filled {
+            return Err(MaskParsingError::InvalidQuery);
+        }
+
+        let combo = FinderMask {
+            mask: finder_mask.to_string(),
+            banned: banned_list.to_string(),
+        };
+        Ok(combo)
+    }
+
+    fn retain_only_allowed(&self, vec: Vec<String>) -> Vec<String> {
+        if vec.is_empty() {
+            return vec;
+        }
+
+        let mut banned = HashSet::new();
+        for char in self.banned.chars() {
+            banned.insert(char);
+        }
+
+        let banned = banned.into_iter().collect::<String>();
+        match Regex::new(format!("[{}]", banned.as_str()).as_str()).ok() {
+            Some(bans) => vec
+                .into_iter()
+                .filter(|it| bans.find(it).is_none())
+                .collect(),
+            None => vec,
+        }
+    }
+}
+
 impl<Bot, Formatter> WordFinderHandler for Bot
 where
     Bot: WordFinderBot<Bot::Response> + LookupBot<Formatter = Formatter> + Send + Sync + 'static,
@@ -180,33 +255,18 @@ where
     /// // let ok = bot.ensure_valid("a__le".to_string()).await;
     /// # }
     /// ```
-    async fn ensure_valid(&self, mask: String) -> bool {
-        if mask.len() < 2 || mask.len() > 15 {
-            let _ = self.answer(Self::on_length_invalid()).await;
-            return false;
-        }
-
-        let mut has_blank = false;
-        let mut has_filled = false;
-        for letter in mask.chars() {
-            match letter {
-                '_' => {
-                    has_blank = true;
-                }
-                'a'..='z' | 'A'..='Z' => {
-                    has_filled = true;
-                }
-                _ => {
-                    let _ = self.answer(Self::on_unknown_character()).await;
-                    return false;
-                }
+    async fn ensure_valid(&self, mask: String) -> Option<FinderMask> {
+        match FinderMask::from(mask) {
+            Ok(it) => Some(it),
+            Err(err) => {
+                let response = match err {
+                    MaskParsingError::WrongFormat => Self::on_wrong_format(),
+                    MaskParsingError::InvalidLength => Self::on_length_invalid(),
+                    MaskParsingError::InvalidQuery => Self::on_invalid_query(),
+                };
+                let _ = self.answer(response).await;
+                None
             }
-        }
-        if !has_blank || !has_filled {
-            let _ = self.answer(Self::on_invalid_query()).await;
-            false
-        } else {
-            true
         }
     }
     /// Create a Teloxide command handler for the word-finder feature.
@@ -222,7 +282,7 @@ where
             .filter_async(|bot: Bot, mask: String| async move {
                 bot.drop_empty(mask, Self::on_empty).await
             })
-            .filter_async(|bot: Bot, mask: String| async move { bot.ensure_valid(mask).await })
+            .filter_map_async(|bot: Bot, mask: String| async move { bot.ensure_valid(mask).await })
             .map_async(Self::get_possible_words)
             .filter_map_async(
                 |bot: Bot, response: Result<Vec<String>, LookupError>| async move {

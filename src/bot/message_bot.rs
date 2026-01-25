@@ -11,11 +11,11 @@ use crate::bloc::wordle::WordleBot;
 use crate::bot::LookupBot;
 use crate::commands::{FullMessageFormatter, MessageCommands};
 use crate::format::ToEscaped;
+use teloxide::Bot;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::Requester;
 use teloxide::types::{Message, ParseMode};
 use teloxide::utils::command::BotCommands;
-use teloxide::Bot;
 
 #[derive(Debug, Clone)]
 pub struct MessageBot {
@@ -264,8 +264,11 @@ impl WordFinderBot<String> for MessageBot {
     ///     "Sorry, your message contains unsupported characters - only a-z, A-Z and an underscore can be specified".to_string()
     /// );
     /// ```
-    fn on_unknown_character() -> String {
-        "Sorry, your message contains unsupported characters - only a-z, A-Z and an underscore can be specified".to_string()
+    fn on_wrong_format() -> String {
+        "Sorry, your message is in the wrong format, you can only specify:\
+        1. a-Z and an underscore characters for query, up to 15 chars;\
+        2. a-Z characters for banned list, up to 13 chars"
+            .to_string()
     }
 
     /// Return an error message describing why a word-finder query is invalid.
