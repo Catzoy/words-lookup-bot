@@ -8,8 +8,7 @@ use std::collections::HashSet;
 use std::sync::LazyLock;
 use teloxide::dptree::entry;
 
-const WORD_FIND: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new("^([a-zA-Z_]+),? ?([a-zA-Z]*)$").unwrap());
+const WORD_FIND: LazyLock<Regex> = LazyLock::new(|| Regex::new("^([a-z_]+),? ?([a-z]*)$").unwrap());
 
 pub trait WordFinderBot<Response>
 where
@@ -351,7 +350,7 @@ mod tests {
     }
     #[test]
     fn finder_mask_disallows_wrong_mask_format_all_underscores() {
-        let input = String::from("abc, jfk");
+        let input = String::from("___, jfk");
         let output = FinderMask::from(input);
         assert_eq!(output, Err(MaskParsingError::InvalidQuery));
     }

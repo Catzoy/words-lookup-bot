@@ -15,9 +15,12 @@ use teloxide::{
     prelude::{InlineQuery, Update},
 };
 
-static COMMAND_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(u.|sa.|f.)?(.+)").unwrap());
-#[derive(Debug, Clone)]
+static TEXT_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^([a-z_ ]+)$").unwrap());
+static URBAN_PATTER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(u)\.([a-z ]+)$").unwrap());
+static SYNO_PATTER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(sa)\.([a-z]+)$").unwrap());
+static FINDER_PATTER: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(f)\.([a-z_]+,? ?[a-z]+)?$").unwrap());
+#[derive(Debug, Clone, PartialEq)]
 pub enum QueryCommands {
     Suggestions,
     WordLookup(String),
@@ -36,9 +39,9 @@ enum CommandTag {
 impl CommandTag {
     fn from<S: Into<String>>(str: S) -> Option<Self> {
         match str.into().as_str() {
-            "u." => Some(CommandTag::Urban),
-            "sa." => Some(CommandTag::Thesaurus),
-            "f." => Some(CommandTag::Finder),
+            "u" => Some(CommandTag::Urban),
+            "sa" => Some(CommandTag::Thesaurus),
+            "f" => Some(CommandTag::Finder),
             _ => None,
         }
     }
@@ -67,37 +70,45 @@ impl CommandTag {
 /// // let iq = InlineQuery { query: "u.example".into(), .. };
 /// // assert!(matches!(extract_command(iq), Some(QueryCommands::UrbanLookup(p)) if p == "example"));
 /// ```
-fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryCommands> {
+fn extract_command(query: String) -> Option<QueryCommands> {
     if query.is_empty() {
         return Some(QueryCommands::Suggestions);
     }
 
-    let captures = COMMAND_PATTERN.captures(&query)?;
-    let input = captures.get(2)?.as_str();
-    let cmd = captures
-        .get(1)
-        .and_then(|m| CommandTag::from(m.as_str()))
-        .map(|tag| match tag {
+    let query = query.to_lowercase();
+    URBAN_PATTER
+        .captures(&query)
+        .or_else(|| SYNO_PATTER.captures(&query))
+        .or_else(|| FINDER_PATTER.captures(&query))
+        .and_then(|captures| {
+            let tag = captures.get(1)?.as_str();
+            let tag = CommandTag::from(tag)?;
+            let input = captures.get(2)?.as_str();
+            Some((tag, input.to_owned()))
+        })
+        .map(|(tag, input)| match tag {
             CommandTag::Urban => QueryCommands::UrbanLookup(input.to_owned()),
             CommandTag::Thesaurus => QueryCommands::ThesaurusLookup(input.to_owned()),
             CommandTag::Finder => QueryCommands::Finder(input.to_owned()),
         })
-        .unwrap_or_else(|| {
+        .or_else(|| {
+            let input = TEXT_PATTERN.captures(&query)?;
+            let input = input.get(1)?.as_str();
             if input.contains("_") {
-                return QueryCommands::Finder(input.to_owned());
+                return Some(QueryCommands::Finder(input.to_owned()));
             }
 
             let words = input
                 .split_whitespace()
-                .map(|s| s.to_lowercase())
+                .map(|s| s.to_owned())
                 .collect::<Vec<String>>();
-            match &words[..] {
+            let cmd = match &words[..] {
                 [] => QueryCommands::Suggestions,
                 [word] => QueryCommands::WordLookup(word.to_owned()),
                 _ => QueryCommands::PhraseLookup(words.join(" ")),
-            }
-        });
-    Some(cmd)
+            };
+            Some(cmd)
+        })
 }
 
 /// Builds the inline-query command handler that parses inline queries, debounces them, and dispatches each
@@ -116,7 +127,7 @@ fn extract_command(InlineQuery { query, .. }: InlineQuery) -> Option<QueryComman
 /// ```
 pub fn inlines_tree() -> CommandHandler {
     Update::filter_inline_query()
-        .filter_map(extract_command)
+        .filter_map(|InlineQuery { query, .. }: InlineQuery| extract_command(query))
         .map(|bot: Bot, query: InlineQuery| InlineBot { bot, query })
         .filter_async(debounce_inline_queries)
         .branch(
@@ -143,4 +154,71 @@ pub fn inlines_tree() -> CommandHandler {
             teloxide::dptree::case![QueryCommands::Finder(phrase)]
                 .branch(InlineBot::word_finder_handler()),
         )
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_input_displays_suggestions() {
+        let cmd = extract_command("".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::Suggestions));
+    }
+
+    #[test]
+    fn unrecognized_chars_display_nothing() {
+        let cmd = extract_command("123".to_owned());
+        assert_eq!(cmd, None);
+    }
+
+    #[test]
+    fn incomplete_query_display_nothing() {
+        let cmd = extract_command("u.".to_owned());
+        assert_eq!(cmd, None);
+    }
+    #[test]
+    fn u_displays_urban() {
+        let cmd = extract_command("u.urban".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::UrbanLookup("urban".to_owned())));
+    }
+
+    #[test]
+    fn sa_displays_thesaurus() {
+        let cmd = extract_command("sa.thesaurus".to_owned());
+        assert_eq!(
+            cmd,
+            Some(QueryCommands::ThesaurusLookup("thesaurus".to_owned()))
+        );
+    }
+
+    #[test]
+    fn f_displays_finder() {
+        let cmd = extract_command("f.f__der".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::Finder("f__der".to_owned())));
+    }
+    #[test]
+    fn f_banned_displays_finder() {
+        let cmd = extract_command("f.f__der, xxx".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::Finder("f__der, xxx".to_owned())));
+    }
+
+    #[test]
+    fn underscores_display_finder() {
+        let cmd = extract_command("___ly".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::Finder("___ly".to_owned())));
+    }
+
+    #[test]
+    fn single_word_displays_word_lookup() {
+        let cmd = extract_command("look".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::WordLookup("look".to_owned())));
+    }
+    #[test]
+    fn multiple_words_display_phrase_lookup() {
+        let cmd = extract_command("turn down".to_owned());
+        assert_eq!(
+            cmd,
+            Some(QueryCommands::PhraseLookup("turn down".to_owned()))
+        );
+    }
 }

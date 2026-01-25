@@ -121,11 +121,11 @@ fn extract_text_command(text: &str) -> MessageCommands {
 /// // assert!(matches!(cmd, MessageCommands::WordLookup(_) | MessageCommands::PhraseLookup(_)));
 /// ```
 fn extract_command(message: Message, me: Me) -> MessageCommands {
-    let text = message.text().unwrap_or_default();
+    let text = message.text().unwrap_or_default().to_lowercase();
     let username = me.username.clone().unwrap_or_default();
-    let cmd = MessageCommands::parse(text, &username).unwrap_or_else(|err| match err {
+    let cmd = MessageCommands::parse(text.as_str(), &username).unwrap_or_else(|err| match err {
         ParseError::UnknownCommand(cmd) if cmd.starts_with("/") => MessageCommands::Unknown,
-        _ => extract_text_command(text),
+        _ => extract_text_command(text.as_str()),
     });
 
     log::info!("Received message: {:?}", text);
