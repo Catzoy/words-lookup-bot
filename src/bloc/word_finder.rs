@@ -391,4 +391,83 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn finder_mask_retains_empty() {
+        let mask = FinderMask {
+            mask: String::from(""),
+            banned: String::from(""),
+        };
+        let words = Vec::<String>::new();
+        let retained = mask.retain_only_allowed(words.clone());
+        assert_eq!(retained, words);
+    }
+    #[test]
+    fn finder_mask_retains_every_on_empty_banlist() {
+        let mask = FinderMask {
+            mask: String::from(""),
+            banned: String::from(""),
+        };
+        let words = vec![String::from("abra"), String::from("cadabra")];
+        let retained = mask.retain_only_allowed(words.clone());
+        assert_eq!(retained, words);
+    }
+    #[test]
+    fn finder_mask_retains_none_on_full_banlist_match() {
+        let mask = FinderMask {
+            mask: String::from(""),
+            banned: String::from("abcdr"),
+        };
+        let words = vec![String::from("abra"), String::from("cadabra")];
+        let retained = mask.retain_only_allowed(words);
+        assert_eq!(retained, Vec::<String>::new());
+    }
+    #[test]
+    fn finder_mask_retains_some_on_partial_banlist_match() {
+        let mask = FinderMask {
+            mask: String::from(""),
+            banned: String::from("abcdr"),
+        };
+        let words = vec![
+            String::from("abra"),
+            String::from("cadabra"),
+            String::from("poke"),
+        ];
+        let retained = mask.retain_only_allowed(words);
+        assert_eq!(retained, vec![String::from("poke")]);
+    }
+    #[test]
+    fn finder_mask_retains_all_on_no_banlist_match() {
+        let mask = FinderMask {
+            mask: String::from(""),
+            banned: String::from("wqf"),
+        };
+        let words = vec![
+            String::from("abra"),
+            String::from("cadabra"),
+            String::from("poke"),
+        ];
+        let retained = mask.retain_only_allowed(words.clone());
+        assert_eq!(retained, words);
+    }
+    #[test]
+    fn finder_mask_retains_same_with_duplicates() {
+        let mask1 = FinderMask {
+            mask: String::from(""),
+            banned: String::from("abc"),
+        };
+        let mask2 = FinderMask {
+            mask: String::from(""),
+            banned: String::from("abcabc"),
+        };
+        let words = vec![
+            String::from("abra"),
+            String::from("cadabra"),
+            String::from("poke"),
+        ];
+        let retained1 = mask1.retain_only_allowed(words.clone());
+        let retained2 = mask2.retain_only_allowed(words.clone());
+        assert_eq!(retained1, vec![String::from("poke")]);
+        assert_eq!(retained2, retained1);
+    }
 }
