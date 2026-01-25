@@ -19,7 +19,7 @@ static TEXT_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^([a-z_ ]+)
 static URBAN_PATTER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(u)\.([a-z ]+)$").unwrap());
 static SYNO_PATTER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(sa)\.([a-z]+)$").unwrap());
 static FINDER_PATTER: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(f)\.([a-z_]+,? ?[a-z]+)?$").unwrap());
+    LazyLock::new(|| Regex::new(r"^(f)\.([a-z_]+(?:, *[a-z]*)?)$").unwrap());
 #[derive(Debug, Clone, PartialEq)]
 pub enum QueryCommands {
     Suggestions,
@@ -196,6 +196,19 @@ mod tests {
         let cmd = extract_command("f.f__der".to_owned());
         assert_eq!(cmd, Some(QueryCommands::Finder("f__der".to_owned())));
     }
+
+    #[test]
+    fn fcomma_displays_finder() {
+        let cmd = extract_command("f.f__der,".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::Finder("f__der,".to_owned())));
+    }
+
+    #[test]
+    fn fcommaspaces_displays_finder() {
+        let cmd = extract_command("f.f__der,    ".to_owned());
+        assert_eq!(cmd, Some(QueryCommands::Finder("f__der,    ".to_owned())));
+    }
+
     #[test]
     fn f_banned_displays_finder() {
         let cmd = extract_command("f.f__der, xxx".to_owned());
