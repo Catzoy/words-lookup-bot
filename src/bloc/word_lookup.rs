@@ -2,7 +2,9 @@ use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
 use crate::stands4::requests::{SearchAbbrsRequest, SearchWordRequest};
-use crate::stands4::{AbbreviationDefinition, Stands4Client, VecAbbreviationsExt, WordDefinition};
+use crate::stands4::{
+    AbbreviationDefinition, SliceAbbreviationsExt, Stands4Client, WordDefinition,
+};
 use futures::TryFutureExt;
 use teloxide::dptree::entry;
 
@@ -70,19 +72,16 @@ pub trait WordLookupHandler {
 }
 
 pub trait WordLookupFormatter<Value, Error> {
-    fn compose_word_defs(self, word: &str, defs: &Vec<WordDefinition>) -> Result<Value, Error>;
+    fn compose_word_defs(self, word: &str, defs: &[WordDefinition]) -> Result<Value, Error>;
 
-    fn compose_abbr_defs(
-        self,
-        word: &str,
-        defs: &Vec<AbbreviationDefinition>,
-    ) -> Result<Value, Error>;
+    fn compose_abbr_defs(self, word: &str, defs: &[AbbreviationDefinition])
+    -> Result<Value, Error>;
 
     fn compose_words_with_abbrs(
         self,
         word: &str,
-        words: &Vec<WordDefinition>,
-        abbrs: &Vec<AbbreviationDefinition>,
+        words: &[WordDefinition],
+        abbrs: &[AbbreviationDefinition],
     ) -> Result<Value, Error>;
 
     fn compose_word_response(self, word: String, entity: Entity) -> Result<Value, LookupError>;
@@ -109,7 +108,7 @@ where
     fn compose_word_defs(
         mut self,
         word: &str,
-        defs: &Vec<WordDefinition>,
+        defs: &[WordDefinition],
     ) -> Result<Formatter::Value, Formatter::Error> {
         self.append_title(format!("Found {} definitions", defs.len()));
 
@@ -149,7 +148,7 @@ where
     fn compose_abbr_defs(
         mut self,
         word: &str,
-        defs: &Vec<AbbreviationDefinition>,
+        defs: &[AbbreviationDefinition],
     ) -> Result<Formatter::Value, Formatter::Error> {
         self.append_title(format!("Found {} definitions", defs.len()));
 
@@ -196,8 +195,8 @@ where
     fn compose_words_with_abbrs(
         mut self,
         word: &str,
-        words: &Vec<WordDefinition>,
-        abbrs: &Vec<AbbreviationDefinition>,
+        words: &[WordDefinition],
+        abbrs: &[AbbreviationDefinition],
     ) -> Result<Formatter::Value, Formatter::Error> {
         self.append_title(format!("Found {} definitions", words.len()));
 

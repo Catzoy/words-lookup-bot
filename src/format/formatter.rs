@@ -13,15 +13,10 @@ pub trait LookupFormatter {
     fn link_provider(&self) -> &LinksProvider;
     fn visit_word(&mut self, i: usize, def: &WordDefinition);
     fn visit_phrase(&mut self, i: usize, def: &PhraseDefinition);
-    fn visit_abbreviations(
-        &mut self,
-        i: usize,
-        category: &str,
-        defs: &Vec<&AbbreviationDefinition>,
-    );
+    fn visit_abbreviations(&mut self, i: usize, category: &str, defs: &[&AbbreviationDefinition]);
     fn visit_syn_ant(&mut self, i: usize, def: &SynAntDefinitions);
     fn visit_urban_definition(&mut self, i: usize, def: &UrbanDefinition);
-    fn visit_word_finder_definition(&mut self, i: usize, def: &String);
+    fn visit_word_finder_definition(&mut self, i: usize, def: String);
     fn append_title(&mut self, title: String);
     fn append_link(&mut self, link: String);
     fn build(self) -> Result<Self::Value, Self::Error>;
@@ -45,10 +40,7 @@ where
     T: ToEscaped,
 {
     fn to_escaped(&self) -> Self {
-        match self {
-            None => None,
-            Some(it) => Some(it.to_escaped()),
-        }
+        self.as_ref().map(|i| i.to_escaped())
     }
 }
 
@@ -70,14 +62,14 @@ impl ToEscaped for String {
 
 static LINE_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.+)\n*").unwrap());
 
-fn lines_of(str: &String) -> Vec<String> {
+fn lines_of(str: &str) -> Vec<String> {
     LINE_PATTERN
-        .captures_iter(&str)
+        .captures_iter(str)
         .map(|c| c.index(1).to_string())
         .collect()
 }
 
-fn compose_multiline(header: &str, str: &String) -> String {
+fn compose_multiline(header: &str, str: &str) -> String {
     let lines = lines_of(str);
     let mut delimiter = "";
     if lines.len() > 1 {
@@ -86,11 +78,11 @@ fn compose_multiline(header: &str, str: &String) -> String {
     format!("{}{}{}", header, delimiter, lines.join(delimiter))
 }
 
-pub fn meaning(definition: &String) -> String {
+pub fn meaning(definition: &str) -> String {
     compose_multiline("*Meaning*: ", definition)
 }
 
-pub fn as_in(example: &String) -> String {
+pub fn as_in(example: &str) -> String {
     compose_multiline("*As in*: ", example)
 }
 

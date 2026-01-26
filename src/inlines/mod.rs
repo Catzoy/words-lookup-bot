@@ -1,6 +1,6 @@
 mod debouncer;
 pub mod formatting;
-mod inlines;
+mod inline;
 
 pub use debouncer::*;
-pub use inlines::*;
+pub use inline::*;
