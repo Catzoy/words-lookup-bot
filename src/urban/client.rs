@@ -1,5 +1,7 @@
 use crate::networking::api_client::ApiClient;
 use crate::urban::{UrbanDefinition, UrbanResponse};
+use log::error;
+use rustify::errors::ClientError;
 use std::default::Default;
 
 #[derive(Clone)]
@@ -71,14 +73,22 @@ impl UrbanDictionaryClient {
         &self,
         request: Endpoint,
     ) -> anyhow::Result<Vec<UrbanDefinition>> {
-        let response: UrbanResponse = self.client().exec(request).await?;
-        if response.status_code != 200 {
-            let err_msg = response
-                .message
-                .unwrap_or_else(|| "Urban lookup failed without an error!".to_string());
-            anyhow::bail!(err_msg);
-        }
-        Ok(response.data)
+        self.client()
+            .exec::<UrbanResponse, _, _>(request)
+            .await
+            .and_then(|response| match response.status_code {
+                200 => Ok(response.data),
+                _ => {
+                    let err_msg = response
+                        .message
+                        .unwrap_or_else(|| "Urban lookup failed without an error!".to_string());
+                    anyhow::bail!(err_msg);
+                }
+            })
+            .or_else(|err| match err.downcast::<ClientError>()? {
+                ClientError::ServerResponseError { code: 404, .. } => Ok(vec![]),
+                it => Err(it.into()),
+            })
     }
 }
 
