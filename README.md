@@ -55,6 +55,11 @@ Can look up:
         <td>Handle Telegram's 4096 message length requirement</td>
     </tr>
     <tr>
+        <td>:bug:</td>
+        <td>0.16.2</td>
+        <td>Handle Urban 404 response</td>
+    </tr>
+    <tr>
         <td>:white_check_mark:</td>
         <td>0.16.1</td>
         <td>Allow to ban 13 letters from word finder</td>
