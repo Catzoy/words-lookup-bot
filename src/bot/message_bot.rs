@@ -41,7 +41,9 @@ impl LookupBot for MessageBot {
     /// assert!(msg.contains("error processing your query"));
     /// ```
     fn error_response() -> Self::Response {
-        "There was an error processing your query, try again later, sorry.".to_string()
+        "There was an error processing your query, try again later, sorry."
+            .to_string()
+            .to_escaped()
     }
 
     /// Sends the given text as a message to the chat referenced by this instance's `message`, using MarkdownV2 parsing.
@@ -118,7 +120,7 @@ impl TeapotBot<String> for MessageBot {
     /// assert_eq!(msg, "I'm a teapot");
     /// ```
     fn teapot(&self) -> String {
-        "I'm a teapot".to_string()
+        "I'm a teapot".to_string().to_escaped()
     }
 }
 
@@ -132,7 +134,7 @@ impl UnknownBot<String> for MessageBot {
     /// assert_eq!( "I don't know that command, sorry.", "I don't know that command, sorry.");
     /// ```
     fn unknown_response(&self) -> String {
-        "I don't know that command, sorry.".to_string()
+        "I don't know that command, sorry.".to_string().to_escaped()
     }
 }
 
@@ -148,7 +150,9 @@ impl WordleBot<String> for MessageBot {
     /// assert!(msg.contains("Could not get today's wordle"));
     /// ```
     fn wordle_error_response() -> String {
-        "Could not get today's wordle, sorry, try again in an hour or so.".to_string()
+        "Could not get today's wordle, sorry, try again in an hour or so."
+            .to_string()
+            .to_escaped()
     }
 }
 impl WordLookupBot<String> for MessageBot {
@@ -163,7 +167,9 @@ impl WordLookupBot<String> for MessageBot {
     /// assert_eq!(msg, "You need to specify a word to look up, like so: `\\word give`");
     /// ```
     fn on_empty() -> String {
-        "You need to specify a word to look up, like so: `\\word give`".to_string()
+        "You need to specify a word to look up, like so: `\\word give`"
+            .to_string()
+            .to_escaped()
     }
 }
 
@@ -179,7 +185,9 @@ impl PhraseLookupBot<String> for MessageBot {
     /// assert_eq!(msg, "You need to specify a phrase to look up, like so: `\\phrase buckle up`");
     /// ```
     fn on_empty() -> String {
-        "You need to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
+        "You need to specify a phrase to look up, like so: `\\phrase buckle up`"
+            .to_string()
+            .to_escaped()
     }
 }
 
@@ -193,7 +201,9 @@ impl ThesaurusLookupBot<String> for MessageBot {
     /// assert_eq!(msg, "You need to specify a phrase to look up, like so: `\\thesaurus cool down`");
     /// ```
     fn on_empty() -> String {
-        "You need to specify a phrase to look up, like so: `\\thesaurus cool down`".to_string()
+        "You need to specify a phrase to look up, like so: `\\thesaurus cool down`"
+            .to_string()
+            .to_escaped()
     }
 }
 
@@ -212,7 +222,9 @@ impl UrbanLookupBot<String> for MessageBot {
     /// assert!(hint.contains("\\urban gone lemon"));
     /// ```
     fn on_empty() -> String {
-        "You need to specify a phrase to look up, like so: `\\urban gone lemon`".to_string()
+        "You need to specify a phrase to look up, like so: `\\urban gone lemon`"
+            .to_string()
+            .to_escaped()
     }
 }
 
@@ -228,7 +240,9 @@ impl WordFinderBot<String> for MessageBot {
     /// assert_eq!(msg, "You need to specify a mask to run query for, like so: `\\\\finder a___e`");
     /// ```
     fn on_empty() -> String {
-        "You need to specify a mask to run query for, like so: `\\finder a___e`".to_string()
+        "You need to specify a mask to run query for, like so: `\\finder a___e`"
+            .to_string()
+            .to_escaped()
     }
 
     /// Provide the error message used when a finder query has an invalid length.
@@ -246,7 +260,9 @@ impl WordFinderBot<String> for MessageBot {
     /// );
     /// ```
     fn on_length_invalid() -> String {
-        "Sorry, finder can only process up to 15 symbols, but at least two".to_string()
+        "Sorry, finder can only process up to 15 symbols, but at least two"
+            .to_string()
+            .to_escaped()
     }
 
     /// Returns an error message describing the required input format for finder queries.
@@ -275,6 +291,7 @@ impl WordFinderBot<String> for MessageBot {
         1. a-Z and an underscore characters for query, up to 15 chars;\
         2. a-Z characters for banned list, up to 13 chars"
             .to_string()
+            .to_escaped()
     }
 
     /// Return an error message describing why a word-finder query is invalid.
@@ -293,5 +310,6 @@ impl WordFinderBot<String> for MessageBot {
         it either has all underscores, which would result in a whole dictionary of response, \
         or no underscore, in which case you already know the word!"
             .to_string()
+            .to_escaped()
     }
 }
