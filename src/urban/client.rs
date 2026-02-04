@@ -1,6 +1,5 @@
 use crate::networking::api_client::ApiClient;
 use crate::urban::{UrbanDefinition, UrbanResponse};
-use log::error;
 use rustify::errors::ClientError;
 use std::default::Default;
 
