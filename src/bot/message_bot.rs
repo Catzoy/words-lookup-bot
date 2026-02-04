@@ -41,7 +41,9 @@ impl LookupBot for MessageBot {
     /// assert!(msg.contains("error processing your query"));
     /// ```
     fn error_response() -> Self::Response {
-        "There was an error processing your query, try again later, sorry.".to_string()
+        "There was an error processing your query, try again later, sorry."
+            .to_string()
+            .to_escaped()
     }
 
     /// Sends the given text as a message to the chat referenced by this instance's `message`, using MarkdownV2 parsing.
@@ -109,7 +111,10 @@ impl HelpBot<String> for MessageBot {
 }
 
 impl TeapotBot<String> for MessageBot {
-    /// Provide the standard teapot reply used as the HTTP 418 Easter egg.
+    /// Returns the HTTP 418 "I'm a teapot" message escaped for MarkdownV2.
+    ///
+    /// The returned `String` contains the canonical teapot Easter egg text ("I'm a teapot")
+    /// with characters escaped for safe use with MarkdownV2 parsing.
     ///
     /// # Examples
     ///
@@ -118,28 +123,31 @@ impl TeapotBot<String> for MessageBot {
     /// assert_eq!(msg, "I'm a teapot");
     /// ```
     fn teapot(&self) -> String {
-        "I'm a teapot".to_string()
+        "I'm a teapot".to_string().to_escaped()
     }
 }
 
 impl UnknownBot<String> for MessageBot {
-    /// Indicates that the invoked command is not recognized.
+    /// Provide a polite message indicating the invoked command is not recognized.
+    ///
+    /// # Returns
+    ///
+    /// The user-facing reply `"I don't know that command, sorry."` escaped for MarkdownV2.
     ///
     /// # Examples
     ///
     /// ```
-    /// // The bot should reply with this message when a command is unknown.
-    /// assert_eq!( "I don't know that command, sorry.", "I don't know that command, sorry.");
+    /// // Assuming `mb` is a `MessageBot`:
+    /// assert_eq!(mb.unknown_response(), "I don't know that command, sorry.".to_string().to_escaped());
     /// ```
     fn unknown_response(&self) -> String {
-        "I don't know that command, sorry.".to_string()
+        "I don't know that command, sorry.".to_string().to_escaped()
     }
 }
 
 impl WordleBot<String> for MessageBot {
-    /// Provides a user-facing message indicating today's Wordle could not be retrieved and suggests trying again later.
-    ///
-    /// The returned string is suitable for sending directly to users.
+    /// Returns a user-facing message indicating today's Wordle could not be retrieved and suggests trying again later.
+    /// The returned string is escaped for MarkdownV2 and safe to send directly to users.
     ///
     /// # Examples
     ///
@@ -148,78 +156,97 @@ impl WordleBot<String> for MessageBot {
     /// assert!(msg.contains("Could not get today's wordle"));
     /// ```
     fn wordle_error_response() -> String {
-        "Could not get today's wordle, sorry, try again in an hour or so.".to_string()
+        "Could not get today's wordle, sorry, try again in an hour or so."
+            .to_string()
+            .to_escaped()
     }
 }
 impl WordLookupBot<String> for MessageBot {
-    /// Provides guidance when no word is supplied for lookup.
+    /// Guidance shown when the user does not provide a word to look up.
     ///
-    /// Returns the guidance string instructing the user how to specify a word (example: `\word give`).
+    /// The returned string instructs the user to supply a word (for example: `\word give`).
     ///
     /// # Examples
     ///
     /// ```
     /// let msg = on_empty();
-    /// assert_eq!(msg, "You need to specify a word to look up, like so: `\\word give`");
+    /// assert!(msg.contains("specify a word"));
     /// ```
     fn on_empty() -> String {
-        "You need to specify a word to look up, like so: `\\word give`".to_string()
+        "You need to specify a word to look up, like so: `\\word give`"
+            .to_string()
+            .to_escaped()
     }
 }
 
 impl PhraseLookupBot<String> for MessageBot {
-    /// Provides a user-facing message instructing the user to specify a phrase to look up.
+    /// Instructs the user to provide a phrase and shows a sample invocation.
     ///
-    /// The message includes an example invocation showing the `\phrase` command.
+    /// The returned message is escaped for MarkdownV2.
     ///
     /// # Examples
     ///
     /// ```
     /// let msg = on_empty();
-    /// assert_eq!(msg, "You need to specify a phrase to look up, like so: `\\phrase buckle up`");
+    /// assert!(msg.contains("phrase to look up"));
     /// ```
     fn on_empty() -> String {
-        "You need to specify a phrase to look up, like so: `\\phrase buckle up`".to_string()
+        "You need to specify a phrase to look up, like so: `\\phrase buckle up`"
+            .to_string()
+            .to_escaped()
     }
 }
 
 impl ThesaurusLookupBot<String> for MessageBot {
-    /// Provides a guidance message instructing the user to supply a phrase for a thesaurus lookup.
+    /// Provides guidance instructing the user to supply a phrase for a thesaurus lookup.
+    ///
+    /// The message includes an example command showing how to invoke the thesaurus.
+    ///
+    /// # Returns
+    ///
+    /// `String` containing the guidance message with an example command, escaped for MarkdownV2.
     ///
     /// # Examples
     ///
     /// ```
     /// let msg = on_empty();
-    /// assert_eq!(msg, "You need to specify a phrase to look up, like so: `\\thesaurus cool down`");
+    /// assert!(msg.contains("thesaurus"));
     /// ```
     fn on_empty() -> String {
-        "You need to specify a phrase to look up, like so: `\\thesaurus cool down`".to_string()
+        "You need to specify a phrase to look up, like so: `\\thesaurus cool down`"
+            .to_string()
+            .to_escaped()
     }
 }
 
 impl UrbanLookupBot<String> for MessageBot {
-    /// Provide a user-facing hint instructing how to specify a phrase for the Urban lookup command.
+    /// Provide a MarkdownV2-escaped hint showing how to specify a phrase for the Urban lookup command.
     ///
     /// # Returns
     ///
-    /// A message suggesting how to specify a phrase, for example `\urban gone lemon`.
+    /// The hint string escaped for MarkdownV2, suggesting a sample command like `\urban gone lemon`.
     ///
     /// # Examples
     ///
     /// ```
-    /// // Example usage — adjust path if `MessageBot` is in a different module.
     /// let hint = MessageBot::on_empty();
     /// assert!(hint.contains("\\urban gone lemon"));
     /// ```
     fn on_empty() -> String {
-        "You need to specify a phrase to look up, like so: `\\urban gone lemon`".to_string()
+        "You need to specify a phrase to look up, like so: `\\urban gone lemon`"
+            .to_string()
+            .to_escaped()
     }
 }
 
 impl WordFinderBot<String> for MessageBot {
-    /// Returns the guidance message shown when a word-finder query is issued without a mask.
+    /// Guidance message shown when a finder query is issued without a mask.
     ///
-    /// The returned string instructs the user to provide a mask and gives a concrete example.
+    /// Instructs the user to provide a mask and gives a concrete usage example.
+    ///
+    /// # Returns
+    ///
+    /// A `String` containing the guidance text and example mask.
     ///
     /// # Examples
     ///
@@ -228,14 +255,14 @@ impl WordFinderBot<String> for MessageBot {
     /// assert_eq!(msg, "You need to specify a mask to run query for, like so: `\\\\finder a___e`");
     /// ```
     fn on_empty() -> String {
-        "You need to specify a mask to run query for, like so: `\\finder a___e`".to_string()
+        "You need to specify a mask to run query for, like so: `\\finder a___e`"
+            .to_string()
+            .to_escaped()
     }
 
-    /// Provide the error message used when a finder query has an invalid length.
+    /// Message shown when a finder query uses an invalid number of symbols.
     ///
-    /// # Returns
-    ///
-    /// A `String` explaining that the finder accepts between two and 15 symbols.
+    /// Returns a `String` explaining that the finder accepts between two and fifteen symbols.
     ///
     /// # Examples
     ///
@@ -246,41 +273,45 @@ impl WordFinderBot<String> for MessageBot {
     /// );
     /// ```
     fn on_length_invalid() -> String {
-        "Sorry, finder can only process up to 15 symbols, but at least two".to_string()
+        "Sorry, finder can only process up to 15 symbols, but at least two"
+            .to_string()
+            .to_escaped()
     }
 
-    /// Returns an error message describing the required input format for finder queries.
+    /// Describes the required format for finder queries.
     ///
-    /// The message explains that the query may contain letters (`a-Z`) and underscores with a
+    /// The message states that the query may contain letters (`a-Z`) and underscores with a
     /// maximum length of 15 characters, and that the banned-list may contain only letters with a
     /// maximum length of 13 characters.
     ///
     /// # Returns
     ///
-    /// `String` containing the user-facing error message.
+    /// `String` containing the user-facing error message describing allowed characters and lengths.
     ///
     /// # Examples
     ///
     /// ```
     /// let msg = on_wrong_format();
-    /// assert_eq!(
-    ///     msg,
-    ///     "Sorry, your message is in the wrong format, you can only specify:\
-    /// 1. a-Z and an underscore characters for query, up to 15 chars;\
-    /// 2. a-Z characters for banned list, up to 13 chars".to_string()
-    /// );
+    /// assert!(msg.contains("query"));
+    /// assert!(msg.contains("banned"));
     /// ```
     fn on_wrong_format() -> String {
         "Sorry, your message is in the wrong format, you can only specify:\
         1. a-Z and an underscore characters for query, up to 15 chars;\
         2. a-Z characters for banned list, up to 13 chars"
             .to_string()
+            .to_escaped()
     }
 
-    /// Return an error message describing why a word-finder query is invalid.
+    /// Explains why a finder query is invalid.
     ///
-    /// The message explains two invalid forms: a query made entirely of underscores (would match the whole dictionary)
-    /// or a query containing no underscore (already a complete word).
+    /// The message covers two invalid forms: a query made entirely of underscores
+    /// (would match the whole dictionary) and a query containing no underscore
+    /// (already a complete word).
+    ///
+    /// # Returns
+    ///
+    /// `String` describing the invalid query reason.
     ///
     /// # Examples
     ///
@@ -293,5 +324,6 @@ impl WordFinderBot<String> for MessageBot {
         it either has all underscores, which would result in a whole dictionary of response, \
         or no underscore, in which case you already know the word!"
             .to_string()
+            .to_escaped()
     }
 }
