@@ -46,14 +46,12 @@ impl UrbanDictionaryClient {
         }
     }
 
-    /// Execute the provided Endpoint against the Urban Dictionary API and return the parsed definitions.
+    /// Execute the given Endpoint against the Urban Dictionary API and return the parsed definitions.
     ///
-    /// If the API responds with a non-200 status code this function returns an error containing
-    /// the API's `message` field or the default message "Urban lookup failed without an error!".
-    ///
-    /// # Returns
-    ///
-    /// `Vec<UrbanDefinition>` containing the definitions returned by the API on success.
+    /// On a successful API response with HTTP status 200, returns the response's definitions. If the
+    /// API responds with a non-200 status, this returns an error containing the API `message` field or
+    /// the default message "Urban lookup failed without an error!". If the request fails with a server
+    /// response error with status code 404, this method returns an empty vector instead of an error.
     ///
     /// # Examples
     ///
@@ -92,11 +90,11 @@ impl UrbanDictionaryClient {
 }
 
 impl Default for UrbanDictionaryClient {
-    /// Constructs an UrbanDictionaryClient using a default `reqwest::Client`.
+    /// Create an UrbanDictionaryClient configured with a default `reqwest::Client`.
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust
     /// let _: UrbanDictionaryClient = UrbanDictionaryClient::default();
     /// ```
     fn default() -> Self {
