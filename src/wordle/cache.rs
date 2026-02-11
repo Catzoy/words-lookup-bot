@@ -32,12 +32,9 @@ impl WordleCache {
 
     /// Obtain the WordleDayAnswer for the current local day, using the cache when possible.
     ///
-    /// If the cached entry matches today's date, that cached `WordleDayAnswer` is returned.
-    /// Otherwise the function fetches the latest answer and definitions, updates the cache, and returns the newly fetched `WordleDayAnswer`.
-    ///
-    /// # Returns
-    ///
-    /// The `WordleDayAnswer` for the current local day.
+    /// If the cached entry matches today's date the cached `WordleDayAnswer` is returned;
+    /// otherwise the function fetches the latest answer and definitions, updates the cache,
+    /// and returns the newly fetched `WordleDayAnswer`.
     ///
     /// # Examples
     ///

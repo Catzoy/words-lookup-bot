@@ -55,21 +55,22 @@ impl<Formatter> WordleFormatter<Formatter::Value> for Formatter
 where
     Formatter: LookupFormatter,
 {
-    /// Builds a formatted response value from a Wordle day answer.
+    /// Compose a formatted response value for a Wordle day answer.
     ///
-    /// Attempts to compose the response using the formatter's `compose_word_defs`
-    /// implementation and maps any builder error to `LookupError::FailedResponseBuilder`.
+    /// Appends a title containing the day's solution (uppercased) and then delegates
+    /// to the formatter's `compose_word_defs` to build the rest of the response.
     ///
     /// # Returns
     ///
-    /// `Ok(value)` containing the formatted response on success, `Err(LookupError::FailedResponseBuilder)`
+    /// `Ok` with the formatter's output value on success, `Err(LookupError::FailedResponseBuilder)`
     /// if the response could not be built.
     ///
     /// # Examples
     ///
     /// ```ignore
     /// // `formatter` must implement `LookupFormatter`.
-    /// let response = formatter.compose_wordle_response(answer)?;
+    /// let result = formatter.compose_wordle_response(answer);
+    /// assert!(result.is_ok());
     /// ```
     fn compose_wordle_response(
         mut self,
