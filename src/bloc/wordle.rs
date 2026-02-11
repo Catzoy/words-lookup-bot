@@ -2,8 +2,8 @@ use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
-use crate::wordle::cache::WordleCache;
 use crate::wordle::WordleDayAnswer;
+use crate::wordle::cache::WordleCache;
 use teloxide::dptree::entry;
 
 pub trait WordleBot<Response> {
@@ -72,10 +72,18 @@ where
     /// let response = formatter.compose_wordle_response(answer)?;
     /// ```
     fn compose_wordle_response(
-        self,
-        answer: WordleDayAnswer,
+        mut self,
+        WordleDayAnswer {
+            answer,
+            definitions,
+            ..
+        }: WordleDayAnswer,
     ) -> Result<Formatter::Value, LookupError> {
-        self.compose_word_defs(&answer.answer.solution, &answer.definitions)
+        self.append_title(format!(
+            "Today's answer: `{}`",
+            answer.solution.to_uppercase()
+        ));
+        self.compose_word_defs(&answer.solution, &definitions)
             .map_err(|err| {
                 log::error!("Failed to build wordle response {:?}", err);
                 LookupError::FailedResponseBuilder

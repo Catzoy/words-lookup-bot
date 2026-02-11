@@ -65,7 +65,7 @@ impl WordleCache {
             self.wordle_client.exec(request).await?
         };
         let sw_request = SearchWordRequest {
-            word: today.to_string(),
+            word: newest.solution.to_string(),
         };
         let definitions = self.stands4_client.exec(sw_request).await?;
         let answer = WordleDayAnswer {
@@ -73,6 +73,7 @@ impl WordleCache {
             answer: newest,
             definitions,
         };
+        log::info!("New Wordle answer {:?}", answer);
         let clone = answer.clone();
         latest.replace(answer);
         Ok(clone)
