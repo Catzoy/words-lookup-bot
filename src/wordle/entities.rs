@@ -36,24 +36,21 @@ impl ToEscaped for WordleAnswer {
 
 #[derive(Clone, Debug)]
 pub struct WordleDayAnswer {
-    pub(crate) day: chrono::DateTime<chrono::Local>,
+    pub(crate) day: String,
     pub(crate) answer: WordleAnswer,
     pub(crate) definitions: Vec<WordDefinition>,
 }
 
 impl ToEscaped for WordleDayAnswer {
-    /// Create a new `WordleDayAnswer` with string content escaped in its nested fields.
+    /// Create an escaped copy of this `WordleDayAnswer`, escaping string content in all nested fields.
     ///
-    /// Escapes string data in the contained `answer` and each `WordDefinition` in `definitions`.
-    /// The `day` field is copied unchanged.
+    /// The returned `WordleDayAnswer` has its `day` string, the `answer`'s string fields, and each `WordDefinition`'s string fields escaped; non-string data is preserved unchanged.
     ///
     /// # Examples
     ///
     /// ```
-    /// use chrono::Local;
-    ///
     /// let original = WordleDayAnswer {
-    ///     day: Local::now(),
+    ///     day: "<2026-02-11>".to_string(),
     ///     answer: WordleAnswer {
     ///         solution: "<tag>".to_string(),
     ///         editor: "&editor".to_string(),
@@ -65,11 +62,11 @@ impl ToEscaped for WordleDayAnswer {
     /// let escaped = original.to_escaped();
     /// assert_ne!(escaped.answer.solution, original.answer.solution);
     /// assert_ne!(escaped.answer.editor, original.answer.editor);
-    /// assert_eq!(escaped.day, original.day);
+    /// assert_eq!(escaped.day, original.day.to_escaped());
     /// ```
     fn to_escaped(&self) -> Self {
         Self {
-            day: self.day,
+            day: self.day.to_escaped(),
             answer: self.answer.to_escaped(),
             definitions: self.definitions.to_escaped(),
         }

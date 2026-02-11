@@ -56,6 +56,11 @@ Can look up:
     </tr>
     <tr>
         <td>:bug:</td>
+        <td>0.16.3</td>
+        <td>Fix Wordle request</td>
+    </tr>
+    <tr>
+        <td>:bug:</td>
         <td>0.16.2</td>
         <td>Handle Urban 404 response</td>
     </tr>

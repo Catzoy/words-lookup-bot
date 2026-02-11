@@ -32,12 +32,9 @@ impl WordleCache {
 
     /// Obtain the WordleDayAnswer for the current local day, using the cache when possible.
     ///
-    /// If the cached entry matches today's date, that cached `WordleDayAnswer` is returned.
-    /// Otherwise the function fetches the latest answer and definitions, updates the cache, and returns the newly fetched `WordleDayAnswer`.
-    ///
-    /// # Returns
-    ///
-    /// The `WordleDayAnswer` for the current local day.
+    /// If the cached entry matches today's date the cached `WordleDayAnswer` is returned;
+    /// otherwise the function fetches the latest answer and definitions, updates the cache,
+    /// and returns the newly fetched `WordleDayAnswer`.
     ///
     /// # Examples
     ///
@@ -48,24 +45,24 @@ impl WordleCache {
     /// # }
     /// ```
     pub async fn require_fresh_answer(&mut self) -> anyhow::Result<WordleDayAnswer> {
-        let today = chrono::Local::now();
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         let mut latest = self.latest.lock().await;
-        if let Some(latest) = latest.as_ref() {
-            let today = today.format("%Y-%m-%d").to_string();
-            let known = latest.day.format("%Y-%m-%d").to_string();
-            if today == known {
-                log::info!("Wordle cache hit!");
-                return Ok(latest.clone());
-            }
+        if let Some(answer) = latest.as_ref()
+            && today == answer.day
+        {
+            log::info!("Wordle cache hit!");
+            return Ok(answer.clone());
         }
-        log::info!("Wordle cache miss!");
 
+        log::info!("Wordle cache miss!");
         let newest = {
-            let request = WordleAnswerRequest::new(&today);
+            let request = WordleAnswerRequest {
+                date: today.clone(),
+            };
             self.wordle_client.exec(request).await?
         };
         let sw_request = SearchWordRequest {
-            word: today.to_string(),
+            word: newest.solution.to_string(),
         };
         let definitions = self.stands4_client.exec(sw_request).await?;
         let answer = WordleDayAnswer {
@@ -73,8 +70,8 @@ impl WordleCache {
             answer: newest,
             definitions,
         };
-        let clone = answer.clone();
-        latest.replace(answer);
-        Ok(clone)
+        log::info!("New Wordle answer {:?}", answer);
+        latest.replace(answer.clone());
+        Ok(answer)
     }
 }

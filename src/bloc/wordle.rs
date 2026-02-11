@@ -2,8 +2,8 @@ use crate::bloc::common::{CommandHandler, LookupError};
 use crate::bloc::word_lookup::WordLookupFormatter;
 use crate::bot::{LookupBot, LookupBotX};
 use crate::format::LookupFormatter;
-use crate::wordle::cache::WordleCache;
 use crate::wordle::WordleDayAnswer;
+use crate::wordle::cache::WordleCache;
 use teloxide::dptree::entry;
 
 pub trait WordleBot<Response> {
@@ -55,27 +55,36 @@ impl<Formatter> WordleFormatter<Formatter::Value> for Formatter
 where
     Formatter: LookupFormatter,
 {
-    /// Builds a formatted response value from a Wordle day answer.
+    /// Compose a formatted response value for a Wordle day answer.
     ///
-    /// Attempts to compose the response using the formatter's `compose_word_defs`
-    /// implementation and maps any builder error to `LookupError::FailedResponseBuilder`.
+    /// Appends a title containing the day's solution (uppercased) and then delegates
+    /// to the formatter's `compose_word_defs` to build the rest of the response.
     ///
     /// # Returns
     ///
-    /// `Ok(value)` containing the formatted response on success, `Err(LookupError::FailedResponseBuilder)`
+    /// `Ok` with the formatter's output value on success, `Err(LookupError::FailedResponseBuilder)`
     /// if the response could not be built.
     ///
     /// # Examples
     ///
     /// ```ignore
     /// // `formatter` must implement `LookupFormatter`.
-    /// let response = formatter.compose_wordle_response(answer)?;
+    /// let result = formatter.compose_wordle_response(answer);
+    /// assert!(result.is_ok());
     /// ```
     fn compose_wordle_response(
-        self,
-        answer: WordleDayAnswer,
+        mut self,
+        WordleDayAnswer {
+            answer,
+            definitions,
+            ..
+        }: WordleDayAnswer,
     ) -> Result<Formatter::Value, LookupError> {
-        self.compose_word_defs(&answer.answer.solution, &answer.definitions)
+        self.append_title(format!(
+            "Today's answer: `{}`",
+            answer.solution.to_uppercase()
+        ));
+        self.compose_word_defs(&answer.solution, &definitions)
             .map_err(|err| {
                 log::error!("Failed to build wordle response {:?}", err);
                 LookupError::FailedResponseBuilder
