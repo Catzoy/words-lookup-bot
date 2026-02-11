@@ -48,20 +48,20 @@ impl WordleCache {
     /// # }
     /// ```
     pub async fn require_fresh_answer(&mut self) -> anyhow::Result<WordleDayAnswer> {
-        let today = chrono::Local::now();
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         let mut latest = self.latest.lock().await;
-        if let Some(latest) = latest.as_ref() {
-            let today = today.format("%Y-%m-%d").to_string();
-            let known = latest.day.format("%Y-%m-%d").to_string();
-            if today == known {
-                log::info!("Wordle cache hit!");
-                return Ok(latest.clone());
-            }
+        if let Some(answer) = latest.as_ref()
+            && today == answer.day
+        {
+            log::info!("Wordle cache hit!");
+            return Ok(answer.clone());
         }
-        log::info!("Wordle cache miss!");
 
+        log::info!("Wordle cache miss!");
         let newest = {
-            let request = WordleAnswerRequest::new(&today);
+            let request = WordleAnswerRequest {
+                date: today.clone(),
+            };
             self.wordle_client.exec(request).await?
         };
         let sw_request = SearchWordRequest {
@@ -74,8 +74,7 @@ impl WordleCache {
             definitions,
         };
         log::info!("New Wordle answer {:?}", answer);
-        let clone = answer.clone();
-        latest.replace(answer);
-        Ok(clone)
+        latest.replace(answer.clone());
+        Ok(answer)
     }
 }
